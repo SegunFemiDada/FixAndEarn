@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fixandearn-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: fixandearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - fixandearn_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fixandearn"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: fixandearn-api
+    environment:
+      NODE_ENV: development
+      API_PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/fixandearn?schema=public
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "pnpm prisma:generate && pnpm prisma:migrate:deploy && pnpm dev"
+    volumes:
+      - ./apps/api:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  fixandearn_pgdata:

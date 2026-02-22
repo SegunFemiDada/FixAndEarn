@@ -1,0 +1,16 @@
+{
+  "name": "fixandearn",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev:api": "pnpm -C apps/api dev",
+    "build:api": "pnpm -C apps/api build",
+    "test:api": "pnpm -C apps/api test",
+    "test:api:cov": "pnpm -C apps/api test:cov",
+    "test:api:e2e": "pnpm -C apps/api test:e2e",
+    "lint:api": "pnpm -C apps/api lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

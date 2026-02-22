@@ -1,0 +1,206 @@
+// Path: /apps/api/src/modules/wallet/wallet.controller.ts
+import { Body, Controller, Get, Inject, Post, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { PrismaService } from "../../infra/prisma/prisma.service";
+import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
+import { CurrentUser } from "../../common/auth/current-user.decorator";
+import { Roles } from "../../common/auth/roles.decorator";
+import { CryptoService } from "../../common/crypto/crypto.service";
+import { PAYSTACK_PROVIDER } from "../payments/payments.module";
+import { PaystackProvider } from "../payments/paystack/paystack.provider";
+import { LedgerService } from "./ledger.service";
+import { WalletService } from "./wallet.service";
+import { InitiateDepositDto } from "./dto/initiate-deposit.dto";
+import { WebhookSimulateDto } from "./dto/webhook-simulate.dto";
+import { SaveBankDetailsDto } from "./dto/save-bank-details.dto";
+import { WithdrawRequestDto } from "./dto/withdraw-request.dto";
+import { Public } from "../../common/auth/public.decorator";
+import { WebhookSecretGuard } from "../../common/auth/webhook-secret.guard";
+import { EscrowLockService } from "./escrow-lock.service";
+
+@ApiTags("wallet")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller("wallet")
+export class WalletController {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly walletService: WalletService,
+    private readonly ledgerService: LedgerService,
+    private readonly crypto: CryptoService,
+    private readonly escrowLock: EscrowLockService,
+    @Inject(PAYSTACK_PROVIDER) private readonly paystack: PaystackProvider
+  ) {}
+
+  @Get("balance")
+  async balance(@CurrentUser() user: { userId: string }) {
+    const wallet = await this.walletService.getOrCreateWallet(user.userId);
+    return {
+      balanceMilliFec: wallet.balanceMilliFec,
+      balanceFec: wallet.balanceMilliFec / 1000
+    };
+  }
+
+  @Get("withdrawable-balance")
+  @Roles("FIXER")
+  async withdrawableBalance(@CurrentUser() user: { userId: string }) {
+    const wallet = await this.walletService.getOrCreateWallet(user.userId);
+    const lockedEscrowMilliFec = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
+
+    const withdrawableBalanceMilliFec = Math.max(0, wallet.balanceMilliFec - lockedEscrowMilliFec);
+
+    return {
+      withdrawableBalanceMilliFec,
+      withdrawableBalanceFec: withdrawableBalanceMilliFec / 1000
+    };
+  }
+
+  @Post("deposits/initiate")
+  async initiateDeposit(@CurrentUser() user: { userId: string }, @Body() dto: InitiateDepositDto) {
+    const dbUser = await this.prisma.user.findUnique({ where: { id: user.userId } });
+    if (!dbUser) return { error: "User not found" };
+
+    const succeededDeposits = await this.prisma.depositIntent.count({
+      where: { userId: user.userId, status: "SUCCEEDED" }
+    });
+
+    if (succeededDeposits === 0) {
+      if (dto.amountMilliFec < 1000) return { error: "First deposit min is 1.0 FEC (1000 milliFEC)." };
+      if (dto.amountMilliFec > 2000) return { error: "First deposit max is 2.0 FEC (2000 milliFEC)." };
+    }
+
+    const baseNaira = dto.amountMilliFec;
+    const clientFeeNaira = Math.ceil(baseNaira * 0.015);
+    const platformAbsorbedExtraNaira = baseNaira > 2500 ? 100 : 0;
+
+    const clientChargeNaira = baseNaira + clientFeeNaira;
+    const amountKobo = clientChargeNaira * 100;
+
+    const paystackRef = `ps_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+    await this.prisma.depositIntent.create({
+      data: {
+        userId: user.userId,
+        amountMilliFec: dto.amountMilliFec,
+        amountKobo,
+        paystackRef,
+        status: "PENDING"
+      }
+    });
+
+    const init = await this.paystack.initializeTransaction({
+      email: dbUser.email,
+      amountKobo,
+      reference: paystackRef,
+      metadata: { baseNaira, clientFeeNaira, platformAbsorbedExtraNaira }
+    });
+
+    return {
+      paystackRef: init.reference,
+      authorizationUrl: init.authorizationUrl,
+      amountMilliFec: dto.amountMilliFec,
+      amountKobo,
+      fee: { clientFeeNaira, platformAbsorbedExtraNaira }
+    };
+  }
+
+  @Public()
+  @UseGuards(WebhookSecretGuard)
+  @Post("deposits/webhook-simulate")
+  async webhookSimulate(@Body() dto: WebhookSimulateDto) {
+    const intent = await this.prisma.depositIntent.findUnique({
+      where: { paystackRef: dto.paystackRef }
+    });
+
+    if (!intent) return { error: "Deposit intent not found" };
+    if (intent.status !== "PENDING") return { ok: true, status: intent.status };
+
+    if (dto.status === "failed") {
+      await this.prisma.depositIntent.update({
+        where: { paystackRef: dto.paystackRef },
+        data: { status: "FAILED" }
+      });
+      return { ok: true, status: "FAILED" };
+    }
+
+    await this.prisma.depositIntent.update({
+      where: { paystackRef: dto.paystackRef },
+      data: { status: "SUCCEEDED" }
+    });
+
+    await this.ledgerService.addEntry({
+      userId: intent.userId,
+      type: "DEPOSIT",
+      direction: "CREDIT",
+      amountMilliFec: intent.amountMilliFec,
+      idempotencyKey: `deposit:${intent.paystackRef}`,
+      reference: intent.paystackRef,
+      metadata: { amountKobo: intent.amountKobo }
+    });
+
+    return { ok: true, status: "SUCCEEDED" };
+  }
+
+  @Post("bank-details")
+  @Roles("FIXER")
+  async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
+    const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
+
+    const record = await this.prisma.bankDetails.upsert({
+      where: { userId: user.userId },
+      update: {
+        bankName: dto.bankName,
+        accountName: dto.accountName,
+        accountNumber: dto.accountNumber,
+        bvnEncrypted: encrypted.ciphertextB64,
+        bvnIv: encrypted.ivB64
+      },
+      create: {
+        userId: user.userId,
+        bankName: dto.bankName,
+        accountName: dto.accountName,
+        accountNumber: dto.accountNumber,
+        bvnEncrypted: encrypted.ciphertextB64,
+        bvnIv: encrypted.ivB64
+      }
+    });
+
+    return {
+      ok: true,
+      bankName: record.bankName,
+      accountName: record.accountName,
+      accountNumber: record.accountNumber
+    };
+  }
+
+  @Post("withdrawals/request")
+  @Roles("FIXER")
+  async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
+    const wallet = await this.walletService.getOrCreateWallet(user.userId);
+
+    const bank = await this.prisma.bankDetails.findUnique({ where: { userId: user.userId } });
+    if (!bank) return { error: "Bank details required before requesting withdrawal." };
+
+    const lockedEscrowMilliFec = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
+    const withdrawableBalanceMilliFec = Math.max(0, wallet.balanceMilliFec - lockedEscrowMilliFec);
+
+    if (dto.amountMilliFec > withdrawableBalanceMilliFec) {
+      return { error: "Insufficient withdrawable balance." };
+    }
+
+    const req = await this.prisma.withdrawalRequest.create({
+      data: { userId: user.userId, amountMilliFec: dto.amountMilliFec, status: "PENDING" }
+    });
+
+    await this.ledgerService.addEntry({
+      userId: user.userId,
+      type: "WITHDRAWAL_REQUEST",
+      direction: "DEBIT",
+      amountMilliFec: dto.amountMilliFec,
+      idempotencyKey: `withdraw_req:${req.id}`,
+      reference: req.id
+    });
+
+    return { ok: true, requestId: req.id, status: req.status };
+  }
+}
