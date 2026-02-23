@@ -63,6 +63,8 @@ model User {
   jobsAssigned     Job[]     @relation("UserJobsAssigned")
   disputesOpened   Dispute[] @relation("DisputesOpened")
   disputesResolved Dispute[] @relation("DisputesResolved")
+  averageRating    Float     @default(0)
+  totalRatings     Int       @default(0)
 
   @@map("users")
 }
@@ -313,9 +315,10 @@ model Job {
   completedRequestedAt DateTime?
   completedApprovedAt  DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   dispute   Dispute?
+  JobRating JobRating?
 
   @@index([status])
   @@index([skillCategory])
@@ -683,4 +686,18 @@ model Dispute {
 
   @@index([status])
   @@map("disputes")
+}
+
+model JobRating {
+  id    String @id @default(uuid())
+  jobId String @unique
+  job   Job    @relation(fields: [jobId], references: [id])
+
+  clientId String
+  fixerId  String
+
+  rating Int
+  review String?
+
+  createdAt DateTime @default(now())
 }

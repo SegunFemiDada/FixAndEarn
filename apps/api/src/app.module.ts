@@ -18,6 +18,7 @@ import { ChatModule } from "./chat/chat.module";
 import { FixersModule } from "./modules/fixers/fixers.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { DisputesModule } from "./modules/disputes/disputes.module";
+import { RatingsModule } from "./modules/ratings/ratings.module";
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { DisputesModule } from "./modules/disputes/disputes.module";
     ChatModule,
     FixersModule,
     NotificationsModule,
-    DisputesModule],
+    DisputesModule,
+    RatingsModule],
   providers: [
     {
       provide: APP_GUARD,

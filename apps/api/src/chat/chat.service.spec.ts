@@ -1,3 +1,4 @@
+// Path: apps/api/src/chat/chat.service.spec.ts
 import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { ChatService } from "./chat.service";
 
@@ -13,36 +14,56 @@ describe("ChatService - Conversations + Safety", () => {
     createMessage: jest.fn(),
     createModerationFlags: jest.fn(),
     ensureNegotiation: jest.fn(),
-    updateNegotiation: jest.fn()
+    updateNegotiation: jest.fn(),
+    acceptAgreement: jest.fn(),
+    getConversationByJobFixer: jest.fn(),
+    getConversationMessages: jest.fn()
   };
 
-  const moderation: any = { scan: jest.fn().mockReturnValue([]) };
+  const moderationService: any = { scan: jest.fn().mockReturnValue([]) };
+
   const prisma: any = {
     user: { findUnique: jest.fn() },
-    $transaction: jest.fn(async (fn: any) => fn({ job: { update: jest.fn() }, negotiation: { update: jest.fn() }, conversation: { update: jest.fn() } }))
+    $transaction: jest.fn(async (fn: any) =>
+      fn({
+        job: { update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn() },
+        negotiation: { update: jest.fn(), findUnique: jest.fn() },
+        conversation: { update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn() },
+        ledgerEntry: { findUnique: jest.fn() },
+        appMeta: { findUnique: jest.fn(), upsert: jest.fn() },
+        wallet: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+        user: { create: jest.fn() }
+      })
+    )
   };
 
-const walletService: any = {
-  // add methods only if the tests call them
-};
+  const walletService: any = {
+    getOrCreateWallet: jest.fn()
+  };
 
-const ledgerService = {
-  // mock only what is used
-  transfer: jest.fn(),
-};
+  const ledgerService: any = {
+    addEntry: jest.fn()
+  };
 
-const notificationsService = {
-  create: jest.fn(),
-};
+  const notificationsService: any = {
+    create: jest.fn()
+  };
 
-const svc = new ChatService(
-  repo,
-  moderation,
-  prisma,
-  walletService,
-  ledgerService as any,
-  notificationsService as any,
-);
+  const realtime: any = {
+    roomFor: jest.fn((jobId: string, fixerId: string) => `job:${jobId}:fixer:${fixerId}`),
+    emitToRoom: jest.fn()
+  };
+
+  const svc = new ChatService(
+    repo,
+    moderationService,
+    prisma,
+    walletService,
+    ledgerService,
+    notificationsService,
+    realtime
+  );
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -50,9 +71,9 @@ const svc = new ChatService(
   test("listJobConversations blocks non-owner", async () => {
     repo.getJob.mockResolvedValue({ id: "job1", clientId: "clientA" });
 
-    await expect(svc.listJobConversations("job1", "clientB", { skip: 0, take: 20 } as any)).rejects.toBeInstanceOf(
-      ForbiddenException
-    );
+    await expect(
+      svc.listJobConversations("job1", "clientB", { skip: 0, take: 20 } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   test("sendMessage blocks when job is CANCELLED", async () => {
@@ -63,7 +84,9 @@ const svc = new ChatService(
       applications: [{ fixerId: "fixerA" }]
     });
 
-    await expect(svc.sendMessage("job1", "fixerA", "clientA", "hello")).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      svc.sendMessage("job1", "fixerA", "clientA", "hello")
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   test("sendMessage blocks when user is inactive", async () => {
@@ -76,7 +99,9 @@ const svc = new ChatService(
 
     prisma.user.findUnique.mockResolvedValue({ isActive: false });
 
-    await expect(svc.sendMessage("job1", "fixerA", "clientA", "hello")).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      svc.sendMessage("job1", "fixerA", "clientA", "hello")
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   test("listJobConversations returns mapped summaries", async () => {
@@ -88,7 +113,13 @@ const svc = new ChatService(
         fixer: { id: "fixerA", fullName: "Fixer A", email: "a@test.com", isActive: true },
         status: "OPEN",
         messages: [{ createdAt: new Date("2026-02-01T10:00:00Z") }],
-        negotiation: { status: "OPEN", proposedPriceMilliFec: 1000, lockedPriceMilliFec: null, clientAcceptedAt: null, fixerAcceptedAt: null },
+        negotiation: {
+          status: "OPEN",
+          proposedPriceMilliFec: 1000,
+          lockedPriceMilliFec: null,
+          clientAcceptedAt: null,
+          fixerAcceptedAt: null
+        },
         updatedAt: new Date("2026-02-01T10:01:00Z")
       }
     ]);
@@ -101,8 +132,9 @@ const svc = new ChatService(
 
   test("listJobConversations throws when job missing", async () => {
     repo.getJob.mockResolvedValue(null);
-    await expect(svc.listJobConversations("job404", "clientA", { skip: 0, take: 20 } as any)).rejects.toBeInstanceOf(
-      NotFoundException
-    );
+
+    await expect(
+      svc.listJobConversations("job404", "clientA", { skip: 0, take: 20 } as any)
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

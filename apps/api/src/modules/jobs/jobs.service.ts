@@ -278,17 +278,6 @@ try {
     if (completion.status === "APPROVED") return { ok: true, status: "ALREADY_APPROVED" };
     if (completion.status !== "PENDING") throw new BadRequestException("Invalid completion request status.");
 
-    const requiredMilliFec = job.lockedPriceMilliFec ?? job.priceMilliFec;
-
-    const wallet = await this.walletService.getOrCreateWallet(args.clientId);
-
-    if (wallet.balanceMilliFec < requiredMilliFec) {
-      throw new ForbiddenException(
-        `INSUFFICIENT_FUNDS_TO_APPROVE_COMPLETION: need ${(requiredMilliFec / 1000).toFixed(2)} FEC, ` +
-          `have ${(wallet.balanceMilliFec / 1000).toFixed(2)} FEC.`
-      );
-    }
-
     const res = await this.repo.approveCompletionAndPay({
       jobId: args.jobId,
       clientId: args.clientId,

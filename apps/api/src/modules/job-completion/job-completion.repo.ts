@@ -30,6 +30,30 @@ export class JobCompletionRepo {
     }
     return pw;
   }
+    private async ensureEscrowUserId(tx: any): Promise<string> {
+    const key = "ESCROW_USER_ID";
+    const meta = await tx.appMeta.findUnique({ where: { key } });
+    if (meta?.value) return meta.value;
+
+    const escrowUser = await tx.user.create({
+      data: {
+        email: "escrow@fixandearn.internal",
+        fullName: "FixAndEarn Escrow",
+        passwordHash: "DISABLED",
+        isActive: true
+      }
+    });
+
+    await tx.wallet.create({ data: { userId: escrowUser.id, balanceMilliFec: 0 } });
+
+    await tx.appMeta.upsert({
+      where: { key },
+      update: { value: escrowUser.id },
+      create: { key, value: escrowUser.id }
+    });
+
+    return escrowUser.id;
+  }
 
   async approveAndSettle(args: {
     jobId: string;
@@ -52,9 +76,11 @@ export class JobCompletionRepo {
         throw new Error("INVALID_LOCKED_PRICE");
       }
 
-      const clientWallet = await tx.wallet.findUnique({ where: { userId: clientId } });
+      const escrowUserId = await this.ensureEscrowUserId(tx);
+
+      const escrowWallet = await tx.wallet.findUnique({ where: { userId: escrowUserId } });
       const fixerWallet = await tx.wallet.findUnique({ where: { userId: fixerId } });
-      if (!clientWallet || !fixerWallet) throw new Error("WALLET_NOT_FOUND");
+      if (!escrowWallet || !fixerWallet) throw new Error("WALLET_NOT_FOUND");
 
       // Idempotency keys
       const payKey = `job_payment:${jobId}`;
@@ -65,26 +91,26 @@ export class JobCompletionRepo {
       const existingPayment = await tx.ledgerEntry.findUnique({ where: { idempotencyKey: payKey } });
 
       if (!existingPayment) {
-        if (clientWallet.balanceMilliFec < amountMilliFec) throw new Error("INSUFFICIENT_BALANCE");
-
+        
+        if (escrowWallet.balanceMilliFec < amountMilliFec) throw new Error("ESCROW_INSUFFICIENT_BALANCE");
         const commission = Math.floor(amountMilliFec * 0.1);
         const payout = amountMilliFec - commission;
 
         // Client pays full amount
-        await tx.ledgerEntry.create({
+                await tx.ledgerEntry.create({
           data: {
-            walletId: clientWallet.id,
+            walletId: escrowWallet.id,
             type: "JOB_PAYMENT",
             direction: "DEBIT",
             amountMilliFec,
             idempotencyKey: payKey,
             reference: jobId,
-            metadata: { jobId, fixerId }
+            metadata: { jobId, clientId, fixerId, source: "ESCROW" }
           }
         });
 
         await tx.wallet.update({
-          where: { id: clientWallet.id },
+          where: { id: escrowWallet.id },
           data: { balanceMilliFec: { decrement: amountMilliFec } }
         });
 
