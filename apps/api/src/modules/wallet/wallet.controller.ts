@@ -1,4 +1,4 @@
-// Path: /apps/api/src/modules/wallet/wallet.controller.ts
+// Path: apps/api/src/modules/wallet/wallet.controller.ts
 import { Body, Controller, Get, Inject, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "../../infra/prisma/prisma.service";
@@ -17,6 +17,8 @@ import { WithdrawRequestDto } from "./dto/withdraw-request.dto";
 import { Public } from "../../common/auth/public.decorator";
 import { WebhookSecretGuard } from "../../common/auth/webhook-secret.guard";
 import { EscrowLockService } from "./escrow-lock.service";
+import { BankDetailsResponse } from "./dto/bank-details.response";
+import { WalletHistoryResponse } from "./dto/wallet-history.response";
 
 @ApiTags("wallet")
 @ApiBearerAuth()
@@ -37,7 +39,7 @@ export class WalletController {
     const wallet = await this.walletService.getOrCreateWallet(user.userId);
     return {
       balanceMilliFec: wallet.balanceMilliFec,
-      balanceFec: wallet.balanceMilliFec / 1000
+      balanceFec: wallet.balanceMilliFec / 1000,
     };
   }
 
@@ -51,7 +53,7 @@ export class WalletController {
 
     return {
       withdrawableBalanceMilliFec,
-      withdrawableBalanceFec: withdrawableBalanceMilliFec / 1000
+      withdrawableBalanceFec: withdrawableBalanceMilliFec / 1000,
     };
   }
 
@@ -61,7 +63,7 @@ export class WalletController {
     if (!dbUser) return { error: "User not found" };
 
     const succeededDeposits = await this.prisma.depositIntent.count({
-      where: { userId: user.userId, status: "SUCCEEDED" }
+      where: { userId: user.userId, status: "SUCCEEDED" },
     });
 
     if (succeededDeposits === 0) {
@@ -84,15 +86,15 @@ export class WalletController {
         amountMilliFec: dto.amountMilliFec,
         amountKobo,
         paystackRef,
-        status: "PENDING"
-      }
+        status: "PENDING",
+      },
     });
 
     const init = await this.paystack.initializeTransaction({
       email: dbUser.email,
       amountKobo,
       reference: paystackRef,
-      metadata: { baseNaira, clientFeeNaira, platformAbsorbedExtraNaira }
+      metadata: { baseNaira, clientFeeNaira, platformAbsorbedExtraNaira },
     });
 
     return {
@@ -100,7 +102,7 @@ export class WalletController {
       authorizationUrl: init.authorizationUrl,
       amountMilliFec: dto.amountMilliFec,
       amountKobo,
-      fee: { clientFeeNaira, platformAbsorbedExtraNaira }
+      fee: { clientFeeNaira, platformAbsorbedExtraNaira },
     };
   }
 
@@ -109,7 +111,7 @@ export class WalletController {
   @Post("deposits/webhook-simulate")
   async webhookSimulate(@Body() dto: WebhookSimulateDto) {
     const intent = await this.prisma.depositIntent.findUnique({
-      where: { paystackRef: dto.paystackRef }
+      where: { paystackRef: dto.paystackRef },
     });
 
     if (!intent) return { error: "Deposit intent not found" };
@@ -118,14 +120,14 @@ export class WalletController {
     if (dto.status === "failed") {
       await this.prisma.depositIntent.update({
         where: { paystackRef: dto.paystackRef },
-        data: { status: "FAILED" }
+        data: { status: "FAILED" },
       });
       return { ok: true, status: "FAILED" };
     }
 
     await this.prisma.depositIntent.update({
       where: { paystackRef: dto.paystackRef },
-      data: { status: "SUCCEEDED" }
+      data: { status: "SUCCEEDED" },
     });
 
     await this.ledgerService.addEntry({
@@ -135,10 +137,36 @@ export class WalletController {
       amountMilliFec: intent.amountMilliFec,
       idempotencyKey: `deposit:${intent.paystackRef}`,
       reference: intent.paystackRef,
-      metadata: { amountKobo: intent.amountKobo }
+      metadata: { amountKobo: intent.amountKobo },
     });
 
     return { ok: true, status: "SUCCEEDED" };
+  }
+
+  @Get("bank-details")
+  @Roles("FIXER")
+  async getBankDetails(@CurrentUser() user: { userId: string }): Promise<BankDetailsResponse> {
+    const bank = await this.prisma.bankDetails.findUnique({
+      where: { userId: user.userId },
+    });
+
+    if (!bank) {
+      return {
+        hasBankDetails: false,
+        bankName: null,
+        accountName: null,
+        accountNumber: null,
+        updatedAt: null,
+      };
+    }
+
+    return {
+      hasBankDetails: true,
+      bankName: bank.bankName,
+      accountName: bank.accountName,
+      accountNumber: bank.accountNumber,
+      updatedAt: bank.updatedAt ? bank.updatedAt.toISOString() : null,
+    };
   }
 
   @Post("bank-details")
@@ -153,7 +181,7 @@ export class WalletController {
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
         bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64
+        bvnIv: encrypted.ivB64,
       },
       create: {
         userId: user.userId,
@@ -161,15 +189,71 @@ export class WalletController {
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
         bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64
-      }
+        bvnIv: encrypted.ivB64,
+      },
     });
 
     return {
       ok: true,
       bankName: record.bankName,
       accountName: record.accountName,
-      accountNumber: record.accountNumber
+      accountNumber: record.accountNumber,
+    };
+  }
+
+  // ✅ Client deposit history
+  @Get("deposits/history")
+  @Roles("CLIENT")
+  async depositHistory(@CurrentUser() user: { userId: string }): Promise<WalletHistoryResponse> {
+    const rows = await this.prisma.depositIntent.findMany({
+      where: { userId: user.userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        amountMilliFec: true,
+        amountKobo: true,
+        paystackRef: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      items: rows.map((r) => ({
+        id: r.id,
+        amountMilliFec: r.amountMilliFec,
+        amountKobo: r.amountKobo,
+        paystackRef: r.paystackRef,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  // ✅ Fixer withdrawal history
+  @Get("withdrawals/history")
+  @Roles("FIXER")
+  async withdrawalHistory(@CurrentUser() user: { userId: string }): Promise<WalletHistoryResponse> {
+    const rows = await this.prisma.withdrawalRequest.findMany({
+      where: { userId: user.userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        amountMilliFec: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      items: rows.map((r) => ({
+        id: r.id,
+        amountMilliFec: r.amountMilliFec,
+        status: r.status,
+        createdAt: r.createdAt.toISOString(),
+      })),
     };
   }
 
@@ -189,7 +273,7 @@ export class WalletController {
     }
 
     const req = await this.prisma.withdrawalRequest.create({
-      data: { userId: user.userId, amountMilliFec: dto.amountMilliFec, status: "PENDING" }
+      data: { userId: user.userId, amountMilliFec: dto.amountMilliFec, status: "PENDING" },
     });
 
     await this.ledgerService.addEntry({
@@ -198,7 +282,7 @@ export class WalletController {
       direction: "DEBIT",
       amountMilliFec: dto.amountMilliFec,
       idempotencyKey: `withdraw_req:${req.id}`,
-      reference: req.id
+      reference: req.id,
     });
 
     return { ok: true, requestId: req.id, status: req.status };
