@@ -8,12 +8,14 @@ import { CryptoService } from "../../common/crypto/crypto.service";
 import { AuthModule } from "../auth/auth.module";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { EscrowLockService } from "./escrow-lock.service";
+import { WithdrawalReversalService } from "./withdrawal-reversal.service";
+
 
 
 @Module({
   imports: [PaymentsModule, AuthModule],
-  providers: [WalletService, LedgerService, CryptoService, PrismaService, EscrowLockService],
-  exports: [WalletService, LedgerService],
+  providers: [WalletService, LedgerService, CryptoService, PrismaService, EscrowLockService, WithdrawalReversalService],
+  exports: [WalletService, LedgerService, WithdrawalReversalService],
   controllers: [WalletController]
 })
 export class WalletModule {}
