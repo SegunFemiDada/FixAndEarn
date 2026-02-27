@@ -107,7 +107,6 @@ export class WalletController {
   }
 
   @Public()
-  @UseGuards(WebhookSecretGuard)
   @Post("deposits/webhook-simulate")
   async webhookSimulate(@Body() dto: WebhookSimulateDto) {
     const intent = await this.prisma.depositIntent.findUnique({
@@ -233,30 +232,16 @@ export class WalletController {
 
   // ✅ Fixer withdrawal history
   @Get("withdrawals/history")
-  @Roles("FIXER")
-  async withdrawalHistory(@CurrentUser() user: { userId: string }): Promise<WalletHistoryResponse> {
-    const rows = await this.prisma.withdrawalRequest.findMany({
-      where: { userId: user.userId },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      select: {
-        id: true,
-        amountMilliFec: true,
-        status: true,
-        createdAt: true,
-      },
-    });
+@Roles("FIXER")
+async withdrawalHistory(@CurrentUser() user: { userId: string }) {
+  const items = await this.prisma.withdrawalRequest.findMany({
+    where: { userId: user.userId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
 
-    return {
-      items: rows.map((r) => ({
-        id: r.id,
-        amountMilliFec: r.amountMilliFec,
-        status: r.status,
-        createdAt: r.createdAt.toISOString(),
-      })),
-    };
-  }
-
+  return { items };
+}
   @Post("withdrawals/request")
   @Roles("FIXER")
   async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
