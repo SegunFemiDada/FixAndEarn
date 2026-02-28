@@ -172,14 +172,14 @@ export class WalletController {
   async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
     const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
 
-    const record = await this.prisma.bankDetails.upsert({
+    let record = await this.prisma.bankDetails.upsert({
       where: { userId: user.userId },
       update: {
         bankName: dto.bankName,
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
         bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64,
+        bvnIv: encrypted.ivB64
       },
       create: {
         userId: user.userId,
@@ -187,15 +187,37 @@ export class WalletController {
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
         bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64,
-      },
+        bvnIv: encrypted.ivB64
+      }
     });
+
+    // ✅ Milestone 1: create and store Paystack transfer recipient code (idempotent)
+    if (!record.paystackRecipientCode) {
+      // NOTE: dto only has bankName today. Stub ignores bankCode.
+      // When real Paystack integration is added, bankCode resolution will be handled in provider.
+      const created = await this.paystack.createTransferRecipient({
+        name: record.accountName,
+        accountNumber: record.accountNumber,
+        bankCode: record.bankName
+      });
+
+      // Update only if still empty (avoid races / double writes)
+      await this.prisma.bankDetails.updateMany({
+        where: { userId: user.userId, paystackRecipientCode: null },
+        data: { paystackRecipientCode: created.recipientCode }
+      });
+
+      record = await this.prisma.bankDetails.findUniqueOrThrow({
+        where: { userId: user.userId }
+      });
+    }
 
     return {
       ok: true,
       bankName: record.bankName,
       accountName: record.accountName,
       accountNumber: record.accountNumber,
+      paystackRecipientCode: record.paystackRecipientCode
     };
   }
 

@@ -11,6 +11,10 @@
     "lint:api": "pnpm -C apps/api lint"
   },
   "devDependencies": {
+    "@types/paystack": "^2.0.5",
     "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "paystack": "^2.0.1"
   }
 }

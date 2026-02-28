@@ -12,7 +12,6 @@ import { LedgerService } from "../modules/wallet/ledger.service";
 import type { Prisma } from "@prisma/client";
 import { NotificationsService } from "../modules/notifications/notifications.service";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
-import { CurrentUserPayload } from "src/common/types/current-user";
 
 type ActorRole = "CLIENT" | "FIXER";
 
@@ -31,9 +30,9 @@ export class ChatService {
   // Keep this aligned with JobsService
   private static readonly JOB_POST_FEE_MILLI_FEC = 1000;
 
-  private assertUserActive(user: CurrentUserPayload) {
-    if (!user?.isActive) throw new ForbiddenException("USER_INACTIVE");
-  }
+  private assertUserActive(user: { isActive?: boolean } | null | undefined) {
+  if (!user?.isActive) throw new ForbiddenException("USER_INACTIVE");
+}
 
   // Messaging allowed when job is OPEN or IN_PROGRESS
   private assertJobMessagingAllowed(job: any) {
