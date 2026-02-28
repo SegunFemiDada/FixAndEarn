@@ -2,6 +2,7 @@ import { Controller, Get, Post, Param, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { NotificationsService } from "./notifications.service";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
 @UseGuards(JwtAuthGuard)
 @Controller("notifications")
@@ -10,7 +11,7 @@ export class NotificationsController {
 
   @Get()
   async list(
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Query("skip") skip?: string,
     @Query("take") take?: string,
     @Query("unreadOnly") unreadOnly?: string
@@ -23,12 +24,12 @@ export class NotificationsController {
   }
 
   @Post(":id/read")
-  async read(@CurrentUser() user: any, @Param("id") id: string) {
+  async read(@CurrentUser() user: CurrentUserPayload, @Param("id") id: string) {
     return this.notifications.markRead(user.id, id);
   }
 
   @Post("read-all")
-  async readAll(@CurrentUser() user: any) {
+  async readAll(@CurrentUser() user: CurrentUserPayload) {
     return this.notifications.markAllRead(user.id);
   }
 }

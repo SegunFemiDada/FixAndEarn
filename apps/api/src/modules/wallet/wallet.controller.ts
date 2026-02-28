@@ -15,7 +15,6 @@ import { WebhookSimulateDto } from "./dto/webhook-simulate.dto";
 import { SaveBankDetailsDto } from "./dto/save-bank-details.dto";
 import { WithdrawRequestDto } from "./dto/withdraw-request.dto";
 import { Public } from "../../common/auth/public.decorator";
-import { WebhookSecretGuard } from "../../common/auth/webhook-secret.guard";
 import { EscrowLockService } from "./escrow-lock.service";
 import { BankDetailsResponse } from "./dto/bank-details.response";
 import { WalletHistoryResponse } from "./dto/wallet-history.response";

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../infra/prisma/prisma.service";
 import { AdminRole } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class AdminRepo {
@@ -31,7 +32,7 @@ export class AdminRepo {
     description: string;
     ip?: string | null;
     userAgent?: string | null;
-    metadata?: any;
+    metadata?: Prisma.JsonObject;
   }) {
     return this.prisma.adminAuditLog.create({
       data: {

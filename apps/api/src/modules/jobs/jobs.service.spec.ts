@@ -9,8 +9,8 @@ import { NotificationsService } from "../notifications/notifications.service";
 describe("JobsService", () => {
   let service: JobsService;
   let repo: any;
-  let walletService: any;
-  let ledgerService: any;
+  let _walletService: any;
+  let _ledgerService: any;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -63,8 +63,8 @@ describe("JobsService", () => {
 
     service = moduleRef.get(JobsService);
     repo = moduleRef.get(JobsRepo);
-    walletService = moduleRef.get(WalletService);
-    ledgerService = moduleRef.get(LedgerService);
+    _walletService = moduleRef.get(WalletService);
+    _ledgerService = moduleRef.get(LedgerService);
   });
 
   it("blocks createJob if not verified", async () => {

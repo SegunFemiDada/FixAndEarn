@@ -6,9 +6,10 @@ import { ChatService } from "./chat.service";
 import { ListMyConversationsDto } from "./dto/list-my-conversations.dto";
 import { ListJobConversationsDto } from "./dto/list-job-conversations.dto";
 import { GetConversationDetailDto } from "./dto/get-conversation-detail.dto";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
-function pickUserId(user: any): string {
-  const id = user?.userId ?? user?.id ?? user?.sub;
+function pickUserId(user: CurrentUserPayload): string {
+  const id = user.userId ?? user.id ?? user.sub;
   if (!id) throw new Error("CURRENT_USER_ID_MISSING");
   return String(id);
 }
@@ -19,7 +20,7 @@ export class ChatQueryController {
   constructor(private readonly chat: ChatService) {}
 
   @Get("chats/me")
-  async myConversations(@CurrentUser() user: any, @Query() q: ListMyConversationsDto) {
+  async myConversations(@CurrentUser() user: CurrentUserPayload, @Query() q: ListMyConversationsDto) {
     const userId = pickUserId(user);
     return this.chat.listMyConversations(userId, q);
   }
@@ -27,7 +28,7 @@ export class ChatQueryController {
   @Get("jobs/:jobId/chats")
   async jobConversations(
     @Param("jobId") jobId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Query() q: ListJobConversationsDto
   ) {
     const userId = pickUserId(user);
@@ -38,7 +39,7 @@ export class ChatQueryController {
   async detail(
     @Param("jobId") jobId: string,
     @Param("fixerId") fixerId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Query() q: GetConversationDetailDto
   ) {
     const userId = pickUserId(user);

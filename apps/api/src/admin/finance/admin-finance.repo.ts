@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class AdminFinanceRepo {
@@ -35,7 +36,7 @@ export class AdminFinanceRepo {
     });
   }
 
-  private async hasWithdrawalDebit(tx: any, walletId: string, withdrawalId: string) {
+  private async hasWithdrawalDebit(tx: Prisma.TransactionClient, walletId: string, withdrawalId: string) {
     const debit = await tx.ledgerEntry.findFirst({
       where: {
         walletId,
@@ -49,7 +50,7 @@ export class AdminFinanceRepo {
     return debit; // null or {id,type}
   }
 
-  private async hasWithdrawalReversal(tx: any, walletId: string, withdrawalId: string) {
+  private async hasWithdrawalReversal(tx: Prisma.TransactionClient, walletId: string, withdrawalId: string) {
     const credit = await tx.ledgerEntry.findFirst({
       where: {
         walletId,

@@ -25,7 +25,7 @@ describe('E2E - Chat + Negotiation (Milestone F)', () => {
     // - client creates OPEN job
     // - fixer applies to job
     const clientToken = 'REPLACE_WITH_HELPER_TOKEN';
-    const fixerToken = 'REPLACE_WITH_HELPER_TOKEN';
+    const _fixerToken = 'REPLACE_WITH_HELPER_TOKEN';
     const jobId = 'REPLACE_WITH_HELPER_JOB_ID';
     const fixerId = 'REPLACE_WITH_HELPER_FIXER_ID';
 

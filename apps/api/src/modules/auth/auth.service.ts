@@ -3,6 +3,7 @@ import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/co
 import { JwtService } from "@nestjs/jwt";
 import * as argon2 from "argon2";
 import { UsersService } from "../users/users.service";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,7 @@ export class AuthService {
     return this.jwt.signAsync({ sub: userId });
   }
 
-  private toUserResponse(user: any) {
+  private toUserResponse(user: CurrentUserPayload) {
     const roles = (user.roles ?? []).map((ur: any) => ur.role.code);
     return {
       id: user.id,

@@ -8,7 +8,7 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { LedgerEntryDirection, LedgerEntryType } from "@prisma/client";
 
 describe("Wallet + Ledger", () => {
-  let walletService: WalletService;
+  let _walletService: WalletService;
   let ledgerService: LedgerService;
   let prisma: PrismaService;
 
@@ -29,7 +29,7 @@ describe("Wallet + Ledger", () => {
       providers: [WalletService, LedgerService]
     }).compile();
 
-    walletService = moduleRef.get(WalletService);
+    _walletService = moduleRef.get(WalletService);
     ledgerService = moduleRef.get(LedgerService);
     prisma = moduleRef.get(PrismaService);
   });

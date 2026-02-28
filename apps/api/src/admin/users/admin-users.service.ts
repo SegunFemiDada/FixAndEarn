@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/commo
 import { AdminRole } from "@prisma/client";
 import { AdminAuditService } from "../audit/admin-audit.service";
 import { AdminUsersRepo } from "./admin-users.repo";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
 type AdminCtx = { adminId: string; role: AdminRole };
 
@@ -39,7 +40,7 @@ export class AdminUsersService {
     });
   }
 
-  private maskSensitive(user: any, adminRole: AdminRole) {
+  private maskSensitive(user: CurrentUserPayload, adminRole: AdminRole) {
     const out: any = { ...user };
 
     // BankDetails: only SUPER_ADMIN + FINANCE_OFFICER

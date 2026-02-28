@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { AdminRepo } from "../admin.repo";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class AdminAuditService {
@@ -11,7 +12,7 @@ export class AdminAuditService {
     description: string;
     ip?: string;
     userAgent?: string;
-    metadata?: any;
+    metadata?: Prisma.JsonObject;
   }) {
     await this.repo.createAuditLog({
       actorAdminId: args.actorAdminId,

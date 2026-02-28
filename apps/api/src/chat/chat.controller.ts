@@ -7,12 +7,19 @@ import { ProposePriceDto } from "./dto/propose-price.dto";
 import { LockPriceDto } from "./dto/lock-price.dto";
 import { RespondLockedPriceDto } from "./dto/respond-locked-price.dto";
 import { CurrentUser } from "../common/auth/current-user.decorator";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
-function pickUserId(user: any): string {
-  const id = user?.userId ?? user?.id ?? user?.sub;
-  if (!id) throw new Error("CURRENT_USER_ID_MISSING");
-  return String(id);
+// ...existing code...
+function pickUserId(user: CurrentUserPayload): string {
+  const id = (user as { id?: string | number }).id;
+  if (id !== undefined && id !== null) return String(id);
+
+  const sub = (user as { sub?: string | number }).sub;
+  if (sub !== undefined && sub !== null) return String(sub);
+
+  throw new Error("CURRENT_USER_ID_MISSING");
 }
+// ...existing code...
 
 @UseGuards(JwtAuthGuard)
 @Controller("jobs/:jobId/chats/:fixerId")
@@ -24,7 +31,7 @@ export class ChatController {
     @Param("jobId") jobId: string,
     @Param("fixerId") fixerId: string,
     @Body() dto: AcceptAgreementDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Headers("x-forwarded-for") xff?: string,
     @Headers("user-agent") ua?: string
   ) {
@@ -38,7 +45,7 @@ export class ChatController {
     @Param("jobId") jobId: string,
     @Param("fixerId") fixerId: string,
     @Body() dto: SendMessageDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Headers("x-forwarded-for") xff?: string,
     @Headers("user-agent") ua?: string
   ) {
@@ -52,7 +59,7 @@ export class ChatController {
     @Param("jobId") jobId: string,
     @Param("fixerId") fixerId: string,
     @Body() dto: ProposePriceDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: CurrentUserPayload
   ) {
     const userId = pickUserId(user);
     return this.chat.propose(jobId, fixerId, userId, dto.proposedPriceMilliFec);
@@ -63,7 +70,7 @@ export class ChatController {
     @Param("jobId") jobId: string,
     @Param("fixerId") fixerId: string,
     @Body() dto: LockPriceDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: CurrentUserPayload
   ) {
     const userId = pickUserId(user);
     return this.chat.lock(jobId, fixerId, userId, dto.lockedPriceMilliFec);
@@ -74,7 +81,7 @@ export class ChatController {
     @Param("jobId") jobId: string,
     @Param("fixerId") fixerId: string,
     @Body() dto: RespondLockedPriceDto,
-    @CurrentUser() user: any
+    @CurrentUser() user: CurrentUserPayload
   ) {
     const userId = pickUserId(user);
     return this.chat.respondLocked(jobId, fixerId, userId, dto.accept);

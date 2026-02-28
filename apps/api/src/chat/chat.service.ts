@@ -12,6 +12,7 @@ import { LedgerService } from "../modules/wallet/ledger.service";
 import type { Prisma } from "@prisma/client";
 import { NotificationsService } from "../modules/notifications/notifications.service";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
 type ActorRole = "CLIENT" | "FIXER";
 
@@ -30,7 +31,7 @@ export class ChatService {
   // Keep this aligned with JobsService
   private static readonly JOB_POST_FEE_MILLI_FEC = 1000;
 
-  private assertUserActive(user: any) {
+  private assertUserActive(user: CurrentUserPayload) {
     if (!user?.isActive) throw new ForbiddenException("USER_INACTIVE");
   }
 
@@ -305,7 +306,7 @@ export class ChatService {
     return this.repo.upsertConversation(jobId, fixerId);
   }
 
-  async acceptAgreement(jobId: string, fixerId: string, userId: string, accepted: boolean, ip?: string, userAgent?: string) {
+  async acceptAgreement(jobId: string, fixerId: string, userId: string, accepted: boolean, _ip?: string, _userAgent?: string) {
     if (!accepted) throw new BadRequestException("AGREEMENT_MUST_BE_ACCEPTED_TRUE");
 
     const job = await this.repo.getJobWithApplicant(jobId, fixerId);
@@ -337,7 +338,7 @@ this.realtime.emitToRoom(
 return { ok: true };
   }
 
-  async sendMessage(jobId: string, fixerId: string, userId: string, body: string, ip?: string, userAgent?: string) {
+  async sendMessage(jobId: string, fixerId: string, userId: string, body: string, _ip?: string, _userAgent?: string) {
     const job = await this.repo.getJobWithApplicant(jobId, fixerId);
     const role = this.assertMembership(job, userId, fixerId);
 

@@ -237,6 +237,8 @@ model BankDetails {
   bvnEncrypted String
   bvnIv        String
 
+  paystackRecipientCode String? // 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

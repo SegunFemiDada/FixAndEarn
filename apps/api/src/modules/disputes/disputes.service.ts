@@ -3,6 +3,7 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { DisputeResolutionType, DisputeStatus, JobStatus } from "@prisma/client";
 import { LedgerService } from "../wallet/ledger.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import type { Prisma } from "@prisma/client";
 
 @Injectable()
 export class DisputesService {
@@ -84,7 +85,7 @@ export class DisputesService {
     return { disputes };
   }
 
-  private async ensureEscrowUserId(tx: any): Promise<string> {
+  private async ensureEscrowUserId(tx: Prisma.TransactionClient): Promise<string> {
     const key = "ESCROW_USER_ID";
     const meta = await tx.appMeta.findUnique({ where: { key } });
     if (meta?.value) return meta.value;
@@ -110,7 +111,7 @@ export class DisputesService {
     return escrowUser.id;
   }
 
-  private async getOrCreatePlatformWallet(tx: any) {
+  private async getOrCreatePlatformWallet(tx: Prisma.TransactionClient) {
     let pw = await tx.platformWallet.findFirst();
     if (!pw) pw = await tx.platformWallet.create({ data: {} });
     return pw;

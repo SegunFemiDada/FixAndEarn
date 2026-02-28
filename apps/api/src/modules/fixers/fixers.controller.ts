@@ -3,13 +3,14 @@ import { Body, Controller, Get, Patch, UnauthorizedException, UseGuards } from "
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { FixersService } from "./fixers.service";
+import { CurrentUserPayload } from "src/common/types/current-user";
 
 @UseGuards(JwtAuthGuard)
 @Controller("fixers/me")
 export class FixersController {
   constructor(private readonly fixers: FixersService) {}
 
-  private getUserIdOrThrow(user: any): string {
+  private getUserIdOrThrow(user: CurrentUserPayload): string {
     const userId =
       user?.id ??
       user?.userId ??
@@ -25,13 +26,13 @@ export class FixersController {
   }
 
   @Get("availability")
-  getAvailability(@CurrentUser() user: any) {
+  getAvailability(@CurrentUser() user: CurrentUserPayload) {
     const userId = this.getUserIdOrThrow(user);
     return this.fixers.getMyAvailability(userId);
   }
 
   @Patch("availability")
-  setAvailability(@CurrentUser() user: any, @Body() body: { status?: "AVAILABLE" | "UNAVAILABLE" }) {
+  setAvailability(@CurrentUser() user: CurrentUserPayload, @Body() body: { status?: "AVAILABLE" | "UNAVAILABLE" }) {
     const userId = this.getUserIdOrThrow(user);
     return this.fixers.setMyPreferredAvailability(userId, body);
   }

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class JobCompletionRepo {
@@ -23,14 +24,14 @@ export class JobCompletionRepo {
     });
   }
 
-  private async getOrCreatePlatformWallet(tx: any) {
+  private async getOrCreatePlatformWallet(tx: Prisma.TransactionClient) {
     let pw = await tx.platformWallet.findFirst();
     if (!pw) {
       pw = await tx.platformWallet.create({ data: {} });
     }
     return pw;
   }
-    private async ensureEscrowUserId(tx: any): Promise<string> {
+    private async ensureEscrowUserId(tx: Prisma.TransactionClient): Promise<string> {
     const key = "ESCROW_USER_ID";
     const meta = await tx.appMeta.findUnique({ where: { key } });
     if (meta?.value) return meta.value;
