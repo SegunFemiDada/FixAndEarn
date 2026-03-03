@@ -233,7 +233,7 @@ model BankDetails {
   bankName      String
   accountName   String
   accountNumber String
-
+  bankCode      String
   bvnEncrypted String
   bvnIv        String
 
@@ -620,6 +620,7 @@ model PlatformLedgerEntry {
 }
 
 enum NotificationType {
+  JOB_APPLIED
   JOB_COMPLETION_REQUESTED
   JOB_COMPLETION_APPROVED
   JOB_COMPLETION_REJECTED

@@ -10,14 +10,17 @@ import { CurrentUser } from "../common/auth/current-user.decorator";
 import { CurrentUserPayload } from "src/common/types/current-user";
 
 // ...existing code...
-function pickUserId(user: CurrentUserPayload): string {
-  const id = (user as { id?: string | number }).id;
-  if (id !== undefined && id !== null) return String(id);
+function pickUserId(user: any): string {
+  const id =
+    user?.userId ??
+    user?.id ??
+    user?.sub ??
+    user?.payload?.userId ??
+    user?.payload?.id ??
+    user?.payload?.sub;
 
-  const sub = (user as { sub?: string | number }).sub;
-  if (sub !== undefined && sub !== null) return String(sub);
-
-  throw new Error("CURRENT_USER_ID_MISSING");
+  if (!id) throw new Error("CURRENT_USER_ID_MISSING");
+  return id;
 }
 // ...existing code...
 

@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/notifications/notifications.service.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { Prisma, NotificationType } from "@prisma/client";

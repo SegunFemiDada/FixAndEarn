@@ -28,3 +28,24 @@ export interface PaystackProvider {
     req: PaystackCreateRecipientRequest
   ): Promise<PaystackCreateRecipientResponse>;
 }
+export type PaystackResolveAccountResponse = {
+  accountName: string;
+  accountNumber: string;
+};
+export interface PaystackProvider {
+  initializeTransaction(req: PaystackInitRequest): Promise<PaystackInitResponse>;
+
+  resolveAccountNumber(accountNumber: string, bankCode: string): Promise<PaystackResolveAccountResponse>;
+
+  createTransferRecipient(req: PaystackCreateRecipientRequest): Promise<PaystackCreateRecipientResponse>;
+
+  initiateTransfer(req: {
+    recipientCode: string;
+    amountKobo: number;
+    reference: string;
+    reason?: string;
+  }): Promise<{
+    transferCode: string;
+    transferId?: string | null;
+  }>;
+}

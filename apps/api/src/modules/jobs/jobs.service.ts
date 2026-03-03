@@ -1,10 +1,12 @@
+// Path: apps/api/src/modules/jobs/jobs.service.ts
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
 } from "@nestjs/common";
+import { NotificationType } from "@prisma/client";
 import { JobsRepo } from "./jobs.repo";
 import { LedgerService } from "../wallet/ledger.service";
 import { WalletService } from "../wallet/wallet.service";
@@ -77,7 +79,7 @@ export class JobsService {
 
     const [rows, total] = await Promise.all([
       this.repo.listJobApplications(args.jobId, skip, take),
-      this.repo.countJobApplications(args.jobId)
+      this.repo.countJobApplications(args.jobId),
     ]);
 
     return {
@@ -90,8 +92,8 @@ export class JobsService {
         fixer: a.fixer ? { id: a.fixer.id, fullName: a.fixer.fullName, email: a.fixer.email } : null,
         note: a.note,
         status: a.status,
-        createdAt: a.createdAt
-      }))
+        createdAt: a.createdAt,
+      })),
     };
   }
 
@@ -119,7 +121,6 @@ export class JobsService {
     priceMilliFec: number;
   }) {
     this.ensurePositiveInt(args.priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
-
     await this.assertVerifiedUser(args.clientId);
 
     if (!args.skillCategory || args.skillCategory.trim().length < 2) {
@@ -130,12 +131,13 @@ export class JobsService {
     const JOB_POST_FEE_MILLI_FEC = 1000;
 
     const wallet = await this.walletService.getOrCreateWallet(args.clientId);
-
     const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
 
     if (wallet.balanceMilliFec < required) {
       throw new ForbiddenException(
-        `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(2)} FEC (price + 1.00 FEC posting fee).`
+        `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(
+          2
+        )} FEC (price + 1.00 FEC posting fee).`
       );
     }
 
@@ -146,7 +148,7 @@ export class JobsService {
       city: args.city.trim(),
       lga: args.lga?.trim() ?? null,
       area: args.area?.trim() ?? null,
-      priceMilliFec: args.priceMilliFec
+      priceMilliFec: args.priceMilliFec,
     });
 
     await this.ledgerService.addEntry({
@@ -156,7 +158,7 @@ export class JobsService {
       amountMilliFec: JOB_POST_FEE_MILLI_FEC,
       idempotencyKey: `job_post_fee:${job.id}`,
       reference: job.id,
-      metadata: { kind: "JOB_POSTING_FEE", jobId: job.id }
+      metadata: { kind: "JOB_POSTING_FEE", jobId: job.id },
     });
 
     return job;
@@ -193,13 +195,13 @@ export class JobsService {
     if (typeof args.patch.city === "string") data.city = args.patch.city.trim();
     if (typeof args.patch.lga === "string") data.lga = args.patch.lga.trim();
     if (typeof args.patch.area === "string") data.area = args.patch.area.trim();
+
     if (typeof args.patch.priceMilliFec === "number") {
       this.ensurePositiveInt(args.patch.priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
       data.priceMilliFec = args.patch.priceMilliFec;
     }
 
     if (Object.keys(data).length === 0) throw new BadRequestException("No valid fields to update.");
-
     return this.repo.updateJob(args.jobId, data);
   }
 
@@ -222,11 +224,28 @@ export class JobsService {
     }
     if (existing) throw new ConflictException("You previously interacted with this job application.");
 
-    return this.repo.createApplication({
+    const created = await this.repo.createApplication({
       jobId: args.jobId,
       fixerId: args.fixerId,
-      note: args.note?.trim()
+      note: args.note?.trim(),
     });
+
+    // Notify job owner (client)
+    try {
+      await this.notifications.create({
+        userId: job.clientId,
+        type: NotificationType.JOB_APPLIED,
+        title: "A fixer applied to your job",
+        body: "A fixer just applied to your job. Open the job to review applicants.",
+        idempotencyKey: `notif:job_applied:${job.id}:${args.fixerId}`,
+        data: {
+          jobId: job.id,
+          fixerId: args.fixerId,
+        },
+      });
+    } catch {}
+
+    return created;
   }
 
   // ======================================================
@@ -244,23 +263,23 @@ export class JobsService {
     const req = await this.repo.upsertCompletionRequest({
       jobId: args.jobId,
       fixerId: args.fixerId,
-      note: args.note?.trim()
+      note: args.note?.trim(),
     });
 
-    /// requestCompletion(...) after req is created
-try {
-  await this.notifications.create({
-    userId: job.clientId,
-    type: "JOB_COMPLETION_REQUESTED",
-    title: "Fixer requested job completion",
-    body: "Your fixer marked the job as done and requested your review.",
-    idempotencyKey: `notif:job_completion_requested:${job.id}`,
-    data: {
-      jobId: job.id,
-      fixerId: args.fixerId
-    }
-  });
-} catch {}
+    // Notify client
+    try {
+      await this.notifications.create({
+        userId: job.clientId,
+        type: NotificationType.JOB_COMPLETION_REQUESTED,
+        title: "Fixer requested job completion",
+        body: "Your fixer marked the job as done and requested your review.",
+        idempotencyKey: `notif:job_completion_requested:${job.id}`,
+        data: {
+          jobId: job.id,
+          fixerId: args.fixerId,
+        },
+      });
+    } catch {}
 
     return req;
   }
@@ -282,27 +301,27 @@ try {
       jobId: args.jobId,
       clientId: args.clientId,
       rating: args.rating,
-      comment: args.comment?.trim()
+      comment: args.comment?.trim(),
     });
 
-    // approveCompletion(...) after res is returned from repo.approveCompletionAndPay(...)
-try {
-  const fixerId = (res as any)?.fixerId ?? (job as any)?.fixerId ?? completion.fixerId;
-  if (fixerId) {
-    await this.notifications.create({
-      userId: fixerId,
-      type: "JOB_COMPLETION_APPROVED",
-      title: "Job completion approved",
-      body: "Client approved your completion request. Payout is processed.",
-      idempotencyKey: `notif:job_completion_approved:${job.id}`,
-      data: {
-        jobId: job.id,
-        clientId: args.clientId,
-        rating: args.rating
+    // Notify fixer
+    try {
+      const fixerId = (res as any)?.fixerId ?? (job as any)?.fixerId ?? completion.fixerId;
+      if (fixerId) {
+        await this.notifications.create({
+          userId: fixerId,
+          type: NotificationType.JOB_COMPLETION_APPROVED,
+          title: "Job completion approved",
+          body: "Client approved your completion request. Payout is processed.",
+          idempotencyKey: `notif:job_completion_approved:${job.id}`,
+          data: {
+            jobId: job.id,
+            clientId: args.clientId,
+            rating: args.rating,
+          },
+        });
       }
-    });
-  }
-} catch {}
+    } catch {}
 
     return res;
   }
@@ -322,27 +341,27 @@ try {
     const res = await this.repo.rejectCompletionRequest({
       jobId: args.jobId,
       clientId: args.clientId,
-      reason: args.reason?.trim()
+      reason: args.reason?.trim(),
     });
 
-    // rejectCompletion(...) after res is returned from repo.rejectCompletionRequest(...)
-try {
-  const fixerId = completion.fixerId ?? (job as any)?.fixerId;
-  if (fixerId) {
-    await this.notifications.create({
-      userId: fixerId,
-      type: "JOB_COMPLETION_REJECTED",
-      title: "Job completion rejected",
-      body: "Client rejected your completion request. Check their note and continue the job.",
-      idempotencyKey: `notif:job_completion_rejected:${job.id}`,
-      data: {
-        jobId: job.id,
-        clientId: args.clientId,
-        reason: args.reason?.trim() ?? null
+    // Notify fixer
+    try {
+      const fixerId = completion.fixerId ?? (job as any)?.fixerId;
+      if (fixerId) {
+        await this.notifications.create({
+          userId: fixerId,
+          type: NotificationType.JOB_COMPLETION_REJECTED,
+          title: "Job completion rejected",
+          body: "Client rejected your completion request. Check their note and continue the job.",
+          idempotencyKey: `notif:job_completion_rejected:${job.id}`,
+          data: {
+            jobId: job.id,
+            clientId: args.clientId,
+            reason: args.reason?.trim() ?? null,
+          },
+        });
       }
-    });
-  }
-} catch {}
+    } catch {}
 
     return res;
   }

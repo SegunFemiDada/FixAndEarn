@@ -1,5 +1,5 @@
 // Path: apps/api/src/modules/wallet/wallet.controller.ts
-import { Body, Controller, Get, Inject, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Post, UseGuards, BadRequestException } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
@@ -167,57 +167,72 @@ export class WalletController {
     };
   }
 
-  @Post("bank-details")
+    @Post("bank-details")
   @Roles("FIXER")
   async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
     const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
 
-    let record = await this.prisma.bankDetails.upsert({
+    const bankCode = dto.bankCode?.trim();
+    if (!bankCode) throw new BadRequestException("BANK_CODE_REQUIRED");
+
+    const existing = await this.prisma.bankDetails.findUnique({
+      where: { userId: user.userId }
+    });
+
+    // Optional safety check (doesn't block save if Paystack fails here)
+    try {
+      await this.paystack.resolveAccountNumber(dto.accountNumber, bankCode);
+    } catch {
+      // ignore transient issues
+    }
+
+    const shouldCreateRecipient =
+      !existing?.paystackRecipientCode ||
+      existing.bankName !== dto.bankName ||
+      existing.accountNumber !== dto.accountNumber ||
+      existing.accountName !== dto.accountName ||
+      existing.bankCode !== bankCode;
+
+    let recipientCode = existing?.paystackRecipientCode ?? null;
+
+    if (shouldCreateRecipient) {
+      const recipient = await this.paystack.createTransferRecipient({
+        name: dto.accountName,
+        accountNumber: dto.accountNumber,
+        bankCode
+      });
+      recipientCode = recipient.recipientCode;
+    }
+
+    const record = await this.prisma.bankDetails.upsert({
       where: { userId: user.userId },
       update: {
         bankName: dto.bankName,
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
+        bankCode, // ✅ add this
         bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64
+        bvnIv: encrypted.ivB64,
+        paystackRecipientCode: recipientCode
       },
       create: {
         userId: user.userId,
         bankName: dto.bankName,
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
+        bankCode, // ✅ add this
         bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64
+        bvnIv: encrypted.ivB64,
+        paystackRecipientCode: recipientCode
       }
     });
-
-    // ✅ Milestone 1: create and store Paystack transfer recipient code (idempotent)
-    if (!record.paystackRecipientCode) {
-      // NOTE: dto only has bankName today. Stub ignores bankCode.
-      // When real Paystack integration is added, bankCode resolution will be handled in provider.
-      const created = await this.paystack.createTransferRecipient({
-        name: record.accountName,
-        accountNumber: record.accountNumber,
-        bankCode: record.bankName
-      });
-
-      // Update only if still empty (avoid races / double writes)
-      await this.prisma.bankDetails.updateMany({
-        where: { userId: user.userId, paystackRecipientCode: null },
-        data: { paystackRecipientCode: created.recipientCode }
-      });
-
-      record = await this.prisma.bankDetails.findUniqueOrThrow({
-        where: { userId: user.userId }
-      });
-    }
 
     return {
       ok: true,
       bankName: record.bankName,
       accountName: record.accountName,
       accountNumber: record.accountNumber,
-      paystackRecipientCode: record.paystackRecipientCode
+      hasRecipientCode: Boolean(record.paystackRecipientCode)
     };
   }
 
