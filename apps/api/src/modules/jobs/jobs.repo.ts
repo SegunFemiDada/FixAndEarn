@@ -102,25 +102,44 @@ export class JobsRepo {
     });
   }
 
-  listJobApplications(jobId: string, skip: number, take: number) {
-    return this.prisma.jobApplication.findMany({
-      where: { jobId },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take,
-      select: {
-        jobId: true,
-        fixerId: true,
-        note: true,
-        status: true,
-        createdAt: true,
-        fixer: {
-          select: { id: true, fullName: true, email: true }
+  // apps/api/src/modules/jobs/jobs.repo.ts
+
+async listJobApplications(jobId: string, skip: number, take: number) {
+  return this.prisma.jobApplication.findMany({
+    where: { jobId },
+    orderBy: { createdAt: "desc" },
+    skip,
+    take,
+    select: {
+      jobId: true,
+      fixerId: true,
+      note: true,
+      status: true,
+      createdAt: true,
+      fixer: {
+        select: {
+          id: true,
+          fullName: true,
+
+          // availability (preferred stored on user)
+          fixerPreferredAvailability: true,
+          fixerAvailabilityUpdatedAt: true,
+
+          // rating aggregate (already on user)
+          averageRating: true,
+          totalRatings: true,
+
+          // derive BUSY
+          jobsAssigned: {
+            where: { status: "IN_PROGRESS" },
+            select: { id: true },
+            take: 1
+          }
         }
       }
-    });
-  }
-
+    }
+  });
+}
   countJobApplications(jobId: string) {
     return this.prisma.jobApplication.count({ where: { jobId } });
   }

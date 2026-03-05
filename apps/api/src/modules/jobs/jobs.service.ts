@@ -83,18 +83,41 @@ export class JobsService {
     ]);
 
     return {
-      jobId: args.jobId,
-      total,
-      skip,
-      take,
-      applications: rows.map((a: any) => ({
-        fixerId: a.fixerId,
-        fixer: a.fixer ? { id: a.fixer.id, fullName: a.fixer.fullName, email: a.fixer.email } : null,
-        note: a.note,
-        status: a.status,
-        createdAt: a.createdAt,
-      })),
+  jobId: args.jobId,
+  total,
+  skip,
+  take,
+  applications: rows.map((a: any) => {
+    const fixer = a.fixer;
+
+    const preferred = fixer?.fixerPreferredAvailability ?? "UNAVAILABLE";
+    const busy = Array.isArray(fixer?.jobsAssigned) && fixer.jobsAssigned.length > 0;
+
+    return {
+      fixerId: a.fixerId,
+      fixer: fixer
+        ? {
+            id: fixer.id,
+            fullName: fixer.fullName,
+
+            availability: {
+              preferred,
+              effective: busy ? "BUSY" : preferred,
+              updatedAt: fixer.fixerAvailabilityUpdatedAt ?? null
+            },
+
+            rating: {
+              average: typeof fixer.averageRating === "number" ? fixer.averageRating : 0,
+              count: typeof fixer.totalRatings === "number" ? fixer.totalRatings : 0
+            }
+          }
+        : null,
+      note: a.note,
+      status: a.status,
+      createdAt: a.createdAt
     };
+  })
+  };
   }
 
   // ======================================================
