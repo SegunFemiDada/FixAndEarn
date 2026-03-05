@@ -19,6 +19,7 @@ import { FixersModule } from "./modules/fixers/fixers.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { DisputesModule } from "./modules/disputes/disputes.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
+import { ProfilesModule } from "./modules/profiles/profiles.module";
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { RatingsModule } from "./modules/ratings/ratings.module";
     FixersModule,
     NotificationsModule,
     DisputesModule,
+    ProfilesModule,
     RatingsModule],
   providers: [
     {
