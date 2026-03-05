@@ -423,54 +423,66 @@ this.realtime.emitToRoom(room, "negotiation", { conversationId: convo.id });
   }
 
   async lock(jobId: string, fixerId: string, userId: string, lockedPriceMilliFec: number) {
-    const job = await this.repo.getJobWithApplicant(jobId, fixerId);
-    if (!job) throw new NotFoundException("JOB_NOT_FOUND");
+  const job = await this.repo.getJobWithApplicant(jobId, fixerId);
+  if (!job) throw new NotFoundException("JOB_NOT_FOUND");
 
-    const role = this.assertMembership(job, userId, fixerId);
+  const role = this.assertMembership(job, userId, fixerId);
 
-    this.assertJobNegotiationAllowed(job);
+  this.assertJobNegotiationAllowed(job);
 
-    // Client must be able to afford: locked price + 1FEC posting fee
-    await this.assertClientCanAffordPricePlusPostFee(job.clientId, lockedPriceMilliFec);
+  // Client must be able to afford: locked price + 1FEC posting fee
+  await this.assertClientCanAffordPricePlusPostFee(job.clientId, lockedPriceMilliFec);
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
-    this.assertUserActive(user);
+  const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+  this.assertUserActive(user);
 
-    if (role === "FIXER") this.assertFixerApplied(job, fixerId);
+  if (role === "FIXER") this.assertFixerApplied(job, fixerId);
 
-    const convo = await this.repo.upsertConversation(jobId, fixerId);
-    if (convo.status !== "OPEN") throw new ForbiddenException("CHAT_CLOSED");
+  const convo = await this.repo.upsertConversation(jobId, fixerId);
+  if (convo.status !== "OPEN") throw new ForbiddenException("CHAT_CLOSED");
 
-    const convoFresh = await this.repo.getConversationWithAgreements(convo.id);
-    this.assertAgreement(convoFresh, userId);
+  const convoFresh = await this.repo.getConversationWithAgreements(convo.id);
+  this.assertAgreement(convoFresh, userId);
 
-    const neg = await this.repo.ensureNegotiation(convo.id);
-    const next = lockPrice(
-      {
-        status: neg.status,
-        proposedPriceMilliFec: neg.proposedPriceMilliFec,
-        lockedPriceMilliFec: neg.lockedPriceMilliFec,
-        lockedByUserId: neg.lockedByUserId,
-        clientAcceptedAt: neg.clientAcceptedAt,
-        fixerAcceptedAt: neg.fixerAcceptedAt,
-        agreedAt: neg.agreedAt,
-        rejectedAt: neg.rejectedAt,
-        rejectedByUserId: neg.rejectedByUserId
-      },
-      lockedPriceMilliFec,
-      userId
-    );
+  const neg = await this.repo.ensureNegotiation(convo.id);
 
-    await this.repo.updateNegotiation(convo.id, {
-      status: next.status,
-      lockedPriceMilliFec: next.lockedPriceMilliFec,
-      lockedByUserId: next.lockedByUserId,
-      clientAcceptedAt: null,
-      fixerAcceptedAt: null
-    });
+  const next = lockPrice(
+    {
+      status: neg.status,
+      proposedPriceMilliFec: neg.proposedPriceMilliFec,
+      lockedPriceMilliFec: neg.lockedPriceMilliFec,
+      lockedByUserId: neg.lockedByUserId,
+      clientAcceptedAt: neg.clientAcceptedAt,
+      fixerAcceptedAt: neg.fixerAcceptedAt,
+      agreedAt: neg.agreedAt,
+      rejectedAt: neg.rejectedAt,
+      rejectedByUserId: neg.rejectedByUserId
+    },
+    lockedPriceMilliFec,
+    userId
+  );
 
-    return { ok: true };
-  }
+  await this.repo.updateNegotiation(convo.id, {
+    status: next.status,
+    lockedPriceMilliFec: next.lockedPriceMilliFec,
+    lockedByUserId: next.lockedByUserId,
+    clientAcceptedAt: null,
+    fixerAcceptedAt: null
+  });
+
+  // ✅ Emit realtime event so SSE clients refetch (same behavior as propose)
+  const room = this.realtime.roomFor(jobId, fixerId);
+  this.realtime.emitToRoom(room, "negotiation", {
+    jobId,
+    fixerId,
+    conversationId: convo.id,
+    status: next.status,
+    lockedPriceMilliFec: next.lockedPriceMilliFec,
+    lockedByUserId: next.lockedByUserId
+  });
+
+  return { ok: true };
+}
 
   async respondLocked(jobId: string, fixerId: string, userId: string, accept: boolean) {
     const job = await this.repo.getJobWithApplicant(jobId, fixerId);

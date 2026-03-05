@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/realtime/chat-realtime.service.ts
 import { Injectable } from "@nestjs/common";
 
 type EventPayload = any;
