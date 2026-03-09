@@ -6,10 +6,11 @@ import { JobsController } from "./jobs.controller";
 import { LedgerService } from "../wallet/ledger.service";
 import { WalletService } from "../wallet/wallet.service";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
 
 @Module({
   imports: [NotificationsModule],
   controllers: [JobsController],
-  providers: [JobsRepo, JobsService, LedgerService, WalletService]
+  providers: [JobsRepo, JobsService, LedgerService, WalletService, LocalStorageProvider]
 })
 export class JobsModule {}

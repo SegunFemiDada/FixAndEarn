@@ -11,6 +11,7 @@ import { JobsRepo } from "./jobs.repo";
 import { LedgerService } from "../wallet/ledger.service";
 import { WalletService } from "../wallet/wallet.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 
 @Injectable()
 export class JobsService {
@@ -35,22 +36,40 @@ export class JobsService {
     const rec = await this.repo.findIdentityVerificationByUserId(userId);
     if (!rec) throw new ForbiddenException("Verification required.");
   }
+  private mapJobImage(image: any) {
+  return {
+    ...image,
+    imageUrl: toPublicFileUrl(image?.imagePath),
+  };
+}
+
+private mapJob(job: any) {
+  if (!job) return job;
+
+  return {
+    ...job,
+    images: Array.isArray(job.images)
+      ? job.images.map((img: any) => this.mapJobImage(img))
+      : [],
+  };
+}
 
   // ======================================================
   // Marketplace list (OPEN jobs)
   // ======================================================
 
   async listJobs(query: {
-    skill?: string;
-    state?: string;
-    city?: string;
-    minPriceMilliFec?: number;
-    maxPriceMilliFec?: number;
-    take: number;
-    skip: number;
-  }) {
-    return this.repo.listOpenJobs(query);
-  }
+  skill?: string;
+  state?: string;
+  city?: string;
+  minPriceMilliFec?: number;
+  maxPriceMilliFec?: number;
+  take: number;
+  skip: number;
+}) {
+  const jobs = await this.repo.listOpenJobs(query);
+  return Array.isArray(jobs) ? jobs.map((job) => this.mapJob(job)) : [];
+}
 
   // ======================================================
   // Dashboards
@@ -96,22 +115,25 @@ export class JobsService {
     return {
       fixerId: a.fixerId,
       fixer: fixer
-        ? {
-            id: fixer.id,
-            fullName: fixer.fullName,
-
-            availability: {
-              preferred,
-              effective: busy ? "BUSY" : preferred,
-              updatedAt: fixer.fixerAvailabilityUpdatedAt ?? null
-            },
-
-            rating: {
-              average: typeof fixer.averageRating === "number" ? fixer.averageRating : 0,
-              count: typeof fixer.totalRatings === "number" ? fixer.totalRatings : 0
-            }
-          }
-        : null,
+  ? {
+      id: fixer.id,
+      fullName: fixer.fullName,
+      isVerified: fixer?.verification?.status === "APPROVED",
+      avatarPath:
+        fixer?.verification?.status === "APPROVED"
+          ? fixer.verification?.selfieImagePath ?? null
+          : null,
+      availability: {
+        preferred,
+        effective: busy ? "BUSY" : preferred,
+        updatedAt: fixer.fixerAvailabilityUpdatedAt ?? null,
+      },
+      rating: {
+        average: typeof fixer.averageRating === "number" ? fixer.averageRating : 0,
+        count: typeof fixer.totalRatings === "number" ? fixer.totalRatings : 0,
+      },
+    }
+  : null,
       note: a.note,
       status: a.status,
       createdAt: a.createdAt
@@ -125,67 +147,72 @@ export class JobsService {
   // ======================================================
 
   async getJob(jobId: string) {
-    const job = await this.repo.findJobById(jobId);
-    if (!job) throw new NotFoundException("Job not found.");
-    return job;
-  }
+  const job = await this.repo.findJobById(jobId);
+  if (!job) throw new NotFoundException("Job not found.");
+  return this.mapJob(job);
+}
 
   // ======================================================
   // Create job (with posting fee + affordability checks)
   // ======================================================
 
   async createJob(args: {
-    clientId: string;
-    skillCategory: string;
-    state: string;
-    city: string;
-    lga?: string;
-    area?: string;
-    priceMilliFec: number;
-  }) {
-    this.ensurePositiveInt(args.priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
-    await this.assertVerifiedUser(args.clientId);
+  clientId: string;
+  skillCategory: string;
+  state: string;
+  city: string;
+  lga?: string;
+  area?: string;
+  priceMilliFec: number;
+  imagePaths?: string[];
+}) {
+  this.ensurePositiveInt(args.priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
+  await this.assertVerifiedUser(args.clientId);
 
-    if (!args.skillCategory || args.skillCategory.trim().length < 2) {
-      throw new BadRequestException("skillCategory is required.");
-    }
-    if (!args.state || !args.city) throw new BadRequestException("state and city are required.");
-
-    const JOB_POST_FEE_MILLI_FEC = 1000;
-
-    const wallet = await this.walletService.getOrCreateWallet(args.clientId);
-    const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
-
-    if (wallet.balanceMilliFec < required) {
-      throw new ForbiddenException(
-        `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(
-          2
-        )} FEC (price + 1.00 FEC posting fee).`
-      );
-    }
-
-    const job = await this.repo.createJob({
-      clientId: args.clientId,
-      skillCategory: args.skillCategory.trim(),
-      state: args.state.trim(),
-      city: args.city.trim(),
-      lga: args.lga?.trim() ?? null,
-      area: args.area?.trim() ?? null,
-      priceMilliFec: args.priceMilliFec,
-    });
-
-    await this.ledgerService.addEntry({
-      userId: args.clientId,
-      type: "FEE",
-      direction: "DEBIT",
-      amountMilliFec: JOB_POST_FEE_MILLI_FEC,
-      idempotencyKey: `job_post_fee:${job.id}`,
-      reference: job.id,
-      metadata: { kind: "JOB_POSTING_FEE", jobId: job.id },
-    });
-
-    return job;
+  if (!args.skillCategory || args.skillCategory.trim().length < 2) {
+    throw new BadRequestException("skillCategory is required.");
   }
+  if (!args.state || !args.city) throw new BadRequestException("state and city are required.");
+
+  const JOB_POST_FEE_MILLI_FEC = 1000;
+
+  const wallet = await this.walletService.getOrCreateWallet(args.clientId);
+  const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
+
+  if (wallet.balanceMilliFec < required) {
+    throw new ForbiddenException(
+      `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(
+        2
+      )} FEC (price + 1.00 FEC posting fee).`
+    );
+  }
+
+  const job = await this.repo.createJob({
+    clientId: args.clientId,
+    skillCategory: args.skillCategory.trim(),
+    state: args.state.trim(),
+    city: args.city.trim(),
+    lga: args.lga?.trim() ?? null,
+    area: args.area?.trim() ?? null,
+    priceMilliFec: args.priceMilliFec,
+  });
+
+  if (Array.isArray(args.imagePaths) && args.imagePaths.length > 0) {
+    await this.repo.createJobImages(job.id, args.imagePaths.slice(0, 5));
+  }
+
+  await this.ledgerService.addEntry({
+    userId: args.clientId,
+    type: "FEE",
+    direction: "DEBIT",
+    amountMilliFec: JOB_POST_FEE_MILLI_FEC,
+    idempotencyKey: `job_post_fee:${job.id}`,
+    reference: job.id,
+    metadata: { kind: "JOB_POSTING_FEE", jobId: job.id },
+  });
+
+  return this.repo.findJobById(job.id);
+}
 
   // ======================================================
   // Update job

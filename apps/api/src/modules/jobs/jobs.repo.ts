@@ -22,11 +22,28 @@ export class JobsRepo {
   }) {
     return this.prisma.job.create({ data });
   }
+  createJobImages(jobId: string, imagePaths: string[]) {
+  if (!imagePaths.length) return Promise.resolve([]);
+
+  return this.prisma.jobImage.createMany({
+    data: imagePaths.map((imagePath, index) => ({
+      jobId,
+      imagePath,
+      sortOrder: index,
+    })),
+  });
+}
 
   findJobById(jobId: string) {
-    return this.prisma.job.findUnique({ where: { id: jobId } });
-  }
-
+  return this.prisma.job.findUnique({
+    where: { id: jobId },
+    include: {
+      images: {
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
+}
   updateJob(jobId: string, data: any) {
     return this.prisma.job.update({ where: { id: jobId }, data });
   }
@@ -57,11 +74,17 @@ export class JobsRepo {
     }
 
     return this.prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: query.skip,
-      take: query.take
-    });
+  where,
+  orderBy: { createdAt: "desc" },
+  skip: query.skip,
+  take: query.take,
+  include: {
+    images: {
+      orderBy: { sortOrder: "asc" },
+      take: 1,
+    },
+  },
+});
   }
 
   findApplication(jobId: string, fixerId: string) {
@@ -99,10 +122,10 @@ export class JobsRepo {
       skip: args.skip,
       take: args.take,
       include: { job: true }
+      
     });
   }
 
-  // apps/api/src/modules/jobs/jobs.repo.ts
 
 async listJobApplications(jobId: string, skip: number, take: number) {
   return this.prisma.jobApplication.findMany({
@@ -120,6 +143,12 @@ async listJobApplications(jobId: string, skip: number, take: number) {
         select: {
           id: true,
           fullName: true,
+          verification: {
+          select: {
+            status: true,
+            selfieImagePath: true,
+          },
+        },
 
           // availability (preferred stored on user)
           fixerPreferredAvailability: true,
@@ -136,6 +165,7 @@ async listJobApplications(jobId: string, skip: number, take: number) {
             take: 1
           }
         }
+        
       }
     }
   });

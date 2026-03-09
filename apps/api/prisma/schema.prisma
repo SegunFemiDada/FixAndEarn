@@ -234,8 +234,8 @@ model BankDetails {
   accountName   String
   accountNumber String
   bankCode      String
-  bvnEncrypted String
-  bvnIv        String
+  bvnEncrypted  String
+  bvnIv         String
 
   paystackRecipientCode String? // 
 
@@ -291,7 +291,6 @@ model Job {
   clientId String
   client   User   @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
 
-  // Assigned fixer once agreed
   fixerId String?
   fixer   User?   @relation("UserJobsAssigned", fields: [fixerId], references: [id], onDelete: SetNull)
 
@@ -301,7 +300,6 @@ model Job {
   lga           String?
   area          String?
 
-  // milliFEC integer
   priceMilliFec Int
   status        JobStatus @default(OPEN)
 
@@ -309,17 +307,17 @@ model Job {
 
   applications JobApplication[]
 
-  // Milestone F
   conversations     Conversation[]
   completionRequest JobCompletionRequest?
   review            JobReview?
 
-  // Milestone G timestamps (optional but useful)
+  images JobImage[]
+
   completedRequestedAt DateTime?
   completedApprovedAt  DateTime?
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   dispute   Dispute?
 
   @@index([status])
@@ -327,6 +325,20 @@ model Job {
   @@index([state, city])
   @@index([clientId])
   @@map("jobs")
+}
+
+model JobImage {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  imagePath String
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([jobId, sortOrder])
+  @@map("job_images")
 }
 
 model JobApplication {
@@ -627,6 +639,12 @@ enum NotificationType {
   ESCROW_LOCKED
   DISPUTE_OPENED
   DISPUTE_RESOLVED
+
+  DEPOSIT_SUCCEEDED
+  WITHDRAWAL_REQUESTED
+  WITHDRAWAL_APPROVED
+  WITHDRAWAL_REJECTED
+  WITHDRAWAL_PAID
 }
 
 model Notification {
