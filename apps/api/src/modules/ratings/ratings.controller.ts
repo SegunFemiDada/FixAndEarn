@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/ratings/ratings.controller.ts
 import { Controller, Post, Param, Body, UseGuards, Req } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { RatingsService } from "./ratings.service";

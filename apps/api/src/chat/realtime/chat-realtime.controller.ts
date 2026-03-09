@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/realtime/chat-realtime.controller.ts
 import { Controller, Get, Param, Req, Res, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { PrismaService } from "../../infra/prisma/prisma.service";

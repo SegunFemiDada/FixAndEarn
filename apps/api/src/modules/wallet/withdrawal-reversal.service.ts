@@ -1,5 +1,4 @@
 // Path: apps/api/src/modules/wallet/withdrawal-reversal.service.ts
-
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { LedgerService } from "./ledger.service";

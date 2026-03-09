@@ -23,15 +23,14 @@ import { AdminExportsService } from "./exports/admin-exports.service";
 import { AdminExportsRepo } from "./exports/admin-exports.repo";
 import { DisputesModule } from "../modules/disputes/disputes.module";
 import { AdminDisputesController } from "../modules/disputes/admin-disputes.controller";
-
-
-
+import { NotificationsModule } from "../modules/notifications/notifications.module";
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
     DisputesModule,
+    NotificationsModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -42,24 +41,29 @@ import { AdminDisputesController } from "../modules/disputes/admin-disputes.cont
       })
     })
   ],
-  controllers: [AdminController, AdminVerificationController, AdminFinanceController, AdminUsersController, AdminExportsController, AdminDisputesController], 
-providers: [
-  CryptoService,
-  AdminRepo,
-  AdminService,
-  AdminJwtStrategy,
-  AdminAuditService,
-  AdminVerificationRepo,
-  AdminVerificationService,
-  AdminFinanceRepo,
-  AdminFinanceService,
-  AdminUsersRepo,
-  AdminUsersService,
-  AdminExportsRepo,
-  AdminExportsService
-
-],
-
+  controllers: [
+    AdminController,
+    AdminVerificationController,
+    AdminFinanceController,
+    AdminUsersController,
+    AdminExportsController,
+    AdminDisputesController
+  ],
+  providers: [
+    CryptoService,
+    AdminRepo,
+    AdminService,
+    AdminJwtStrategy,
+    AdminAuditService,
+    AdminVerificationRepo,
+    AdminVerificationService,
+    AdminFinanceRepo,
+    AdminFinanceService,
+    AdminUsersRepo,
+    AdminUsersService,
+    AdminExportsRepo,
+    AdminExportsService
+  ],
   exports: [AdminService, AdminAuditService]
 })
 export class AdminModule {}

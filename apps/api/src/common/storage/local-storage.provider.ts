@@ -4,6 +4,7 @@ import { StorageProvider } from "./storage.provider";
 import * as fs from "fs";
 import * as path from "path";
 import { randomUUID } from "crypto";
+import * as sharp from "sharp";
 
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
@@ -11,10 +12,31 @@ export class LocalStorageProvider implements StorageProvider {
     const uploadDir = path.join(process.cwd(), "uploads", folder);
     fs.mkdirSync(uploadDir, { recursive: true });
 
-    const filename = `${randomUUID()}-${file.originalname}`;
-    const filePath = path.join(uploadDir, filename);
+    const safeBase = `${randomUUID()}`;
 
-    fs.writeFileSync(filePath, file.buffer);
-    return filePath;
+    if (file.mimetype?.startsWith("image/")) {
+      const filename = `${safeBase}.jpg`;
+      const diskPath = path.join(uploadDir, filename);
+
+      await sharp(file.buffer)
+        .rotate()
+        .resize({
+          width: 1280,
+          height: 1280,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: 80, mozjpeg: true })
+        .toFile(diskPath);
+
+      return `/uploads/${folder}/${filename}`;
+    }
+
+    const ext = path.extname(file.originalname || "").toLowerCase() || ".bin";
+    const filename = `${safeBase}${ext}`;
+    const diskPath = path.join(uploadDir, filename);
+
+    fs.writeFileSync(diskPath, file.buffer);
+    return `/uploads/${folder}/${filename}`;
   }
 }

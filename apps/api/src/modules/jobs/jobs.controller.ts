@@ -1,5 +1,17 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+//path: apps/api/src/modules/jobs/jobs.controller.ts
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";import { FileFieldsInterceptor } from "@nestjs/platform-express";import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
@@ -14,6 +26,8 @@ import { RejectCompletionDto } from "./dto/reject-completion.dto";
 import { ListMyJobsQuery } from "./dto/list-my-jobs.query";
 import { ListMyApplicationsQuery } from "./dto/list-my-applications.query";
 import { ListJobApplicationsQuery } from "./dto/list-job-applications.query";
+import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
+
 
 
 @ApiTags("jobs")
@@ -21,7 +35,10 @@ import { ListJobApplicationsQuery } from "./dto/list-job-applications.query";
 @UseGuards(JwtAuthGuard)
 @Controller("jobs")
 export class JobsController {
-  constructor(private readonly jobsService: JobsService) {}
+  constructor(
+  private readonly jobsService: JobsService,
+  private readonly storage: LocalStorageProvider
+) {}
 
   // Marketplace list (OPEN jobs only)
   @Get()
@@ -78,19 +95,49 @@ async myApplications(@CurrentUser() user: { userId: string }, @Query() q: ListMy
     });
   }
   // Only verified CLIENT can create
-  @Post()
-  @Roles("CLIENT")
-  async create(@CurrentUser() user: { userId: string }, @Body() dto: CreateJobDto) {
-    return this.jobsService.createJob({
-      clientId: user.userId,
-      skillCategory: dto.skillCategory,
-      state: dto.state,
-      city: dto.city,
-      lga: dto.lga,
-      area: dto.area,
-      priceMilliFec: dto.priceMilliFec
-    });
+ @Post()
+@Roles("CLIENT")
+@UseInterceptors(
+  FileFieldsInterceptor([
+    { name: "images", maxCount: 5 },
+  ])
+)
+async create(
+  @CurrentUser() user: { userId: string },
+  @Body() dto: CreateJobDto,
+  @UploadedFiles()
+  files: {
+    images?: Express.Multer.File[];
   }
+) {
+  const rawImages = files?.images ?? [];
+
+  const allowedImages = rawImages.filter((f) => f.mimetype?.startsWith("image/"));
+  if (allowedImages.length !== rawImages.length) {
+    throw new BadRequestException("Only image files are allowed for job images.");
+  }
+
+  for (const f of allowedImages) {
+    if ((f.size ?? 0) > 2 * 1024 * 1024) {
+      throw new BadRequestException("Each job image must be 2MB or less.");
+    }
+  }
+
+  const imagePaths = await Promise.all(
+    allowedImages.map((f) => this.storage.save(f, "jobs"))
+  );
+
+  return this.jobsService.createJob({
+    clientId: user.userId,
+    skillCategory: dto.skillCategory,
+    state: dto.state,
+    city: dto.city,
+    lga: dto.lga,
+    area: dto.area,
+    priceMilliFec: Number(dto.priceMilliFec),
+    imagePaths,
+  });
+}
 
   // Client can edit until a fixer applies
   @Patch(":id")

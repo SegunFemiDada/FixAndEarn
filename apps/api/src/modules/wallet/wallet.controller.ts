@@ -1,6 +1,6 @@
-// Path: apps/api/src/modules/wallet/wallet.controller.ts
 import { Body, Controller, Get, Inject, Post, UseGuards, BadRequestException } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { NotificationType } from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
@@ -18,6 +18,7 @@ import { Public } from "../../common/auth/public.decorator";
 import { EscrowLockService } from "./escrow-lock.service";
 import { BankDetailsResponse } from "./dto/bank-details.response";
 import { WalletHistoryResponse } from "./dto/wallet-history.response";
+import { NotificationsService } from "../notifications/notifications.service";
 
 @ApiTags("wallet")
 @ApiBearerAuth()
@@ -30,6 +31,7 @@ export class WalletController {
     private readonly ledgerService: LedgerService,
     private readonly crypto: CryptoService,
     private readonly escrowLock: EscrowLockService,
+    private readonly notifications: NotificationsService,
     @Inject(PAYSTACK_PROVIDER) private readonly paystack: PaystackProvider
   ) {}
 
@@ -138,6 +140,20 @@ export class WalletController {
       metadata: { amountKobo: intent.amountKobo },
     });
 
+    try {
+      await this.notifications.create({
+        userId: intent.userId,
+        type: NotificationType.DEPOSIT_SUCCEEDED,
+        title: "Deposit received",
+        body: `Your wallet has been credited with ${(intent.amountMilliFec / 1000).toFixed(2)} FEC.`,
+        idempotencyKey: `notif:deposit_succeeded:${intent.paystackRef}`,
+        data: {
+          paystackRef: intent.paystackRef,
+          amountMilliFec: intent.amountMilliFec,
+        },
+      });
+    } catch {}
+
     return { ok: true, status: "SUCCEEDED" };
   }
 
@@ -167,7 +183,7 @@ export class WalletController {
     };
   }
 
-    @Post("bank-details")
+  @Post("bank-details")
   @Roles("FIXER")
   async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
     const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
@@ -179,12 +195,9 @@ export class WalletController {
       where: { userId: user.userId }
     });
 
-    // Optional safety check (doesn't block save if Paystack fails here)
     try {
       await this.paystack.resolveAccountNumber(dto.accountNumber, bankCode);
-    } catch {
-      // ignore transient issues
-    }
+    } catch {}
 
     const shouldCreateRecipient =
       !existing?.paystackRecipientCode ||
@@ -210,7 +223,7 @@ export class WalletController {
         bankName: dto.bankName,
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
-        bankCode, // ✅ add this
+        bankCode,
         bvnEncrypted: encrypted.ciphertextB64,
         bvnIv: encrypted.ivB64,
         paystackRecipientCode: recipientCode
@@ -220,7 +233,7 @@ export class WalletController {
         bankName: dto.bankName,
         accountName: dto.accountName,
         accountNumber: dto.accountNumber,
-        bankCode, // ✅ add this
+        bankCode,
         bvnEncrypted: encrypted.ciphertextB64,
         bvnIv: encrypted.ivB64,
         paystackRecipientCode: recipientCode
@@ -236,7 +249,6 @@ export class WalletController {
     };
   }
 
-  // ✅ Client deposit history
   @Get("deposits/history")
   @Roles("CLIENT")
   async depositHistory(@CurrentUser() user: { userId: string }): Promise<WalletHistoryResponse> {
@@ -266,18 +278,18 @@ export class WalletController {
     };
   }
 
-  // ✅ Fixer withdrawal history
   @Get("withdrawals/history")
-@Roles("FIXER")
-async withdrawalHistory(@CurrentUser() user: { userId: string }) {
-  const items = await this.prisma.withdrawalRequest.findMany({
-    where: { userId: user.userId },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  @Roles("FIXER")
+  async withdrawalHistory(@CurrentUser() user: { userId: string }) {
+    const items = await this.prisma.withdrawalRequest.findMany({
+      where: { userId: user.userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
 
-  return { items };
-}
+    return { items };
+  }
+
   @Post("withdrawals/request")
   @Roles("FIXER")
   async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
@@ -305,6 +317,20 @@ async withdrawalHistory(@CurrentUser() user: { userId: string }) {
       idempotencyKey: `withdraw_req:${req.id}`,
       reference: req.id,
     });
+
+    try {
+      await this.notifications.create({
+        userId: user.userId,
+        type: NotificationType.WITHDRAWAL_REQUESTED,
+        title: "Withdrawal requested",
+        body: `Your withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC has been submitted.`,
+        idempotencyKey: `notif:withdrawal_requested:${req.id}`,
+        data: {
+          withdrawalId: req.id,
+          amountMilliFec: dto.amountMilliFec,
+        },
+      });
+    } catch {}
 
     return { ok: true, requestId: req.id, status: req.status };
   }

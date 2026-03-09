@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/chat.controller.ts
 import { Body, Controller, Headers, Param, Post, UseGuards } from "@nestjs/common";
 import { ChatService } from "./chat.service";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";

@@ -1,17 +1,17 @@
-// Path: /apps/api/src/modules/jobs/dto/create-job.dto.ts
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from "class-validator";
+import { Type } from "class-transformer";
+import { IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
 
 export class CreateJobDto {
   @IsString()
-  @IsNotEmpty()
+  @MinLength(2)
   skillCategory!: string;
 
   @IsString()
-  @IsNotEmpty()
+  @MinLength(2)
   state!: string;
 
   @IsString()
-  @IsNotEmpty()
+  @MinLength(2)
   city!: string;
 
   @IsOptional()
@@ -22,7 +22,7 @@ export class CreateJobDto {
   @IsString()
   area?: string;
 
-  // milliFEC integer
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   priceMilliFec!: number;
