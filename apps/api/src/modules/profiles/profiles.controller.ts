@@ -45,20 +45,22 @@ function mapRoleCodes(rawRoles: any[] | null | undefined): string[] {
   return rawRoles
     .map((r: any) => {
       if (!r) return null;
-
       if (typeof r === "string") return r;
-
-      // direct Role model shape
       if (typeof r.code === "string") return r.code;
       if (typeof r.role === "string") return r.role;
-
-      // join-table shape, e.g. { role: { code: "FIXER" } }
       if (r.role && typeof r.role.code === "string") return r.role.code;
       if (r.role && typeof r.role.role === "string") return r.role.role;
-
       return null;
     })
     .filter(Boolean);
+}
+
+function maskClientName(fullName?: string | null): string {
+  if (!fullName) return "Client";
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "Client";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[1][0]}.`;
 }
 
 @UseGuards(JwtAuthGuard)
@@ -83,16 +85,16 @@ export class ProfilesController {
             select: { id: true },
             take: 1,
           },
-         verification: {
-        select: {
-          status: true,
-          selfieImagePath: true,
-          instagram: true,
-          tiktok: true,
-          bio: true,
-          skills: true,
-        },
-      },
+          verification: {
+            select: {
+              status: true,
+              selfieImagePath: true,
+              instagram: true,
+              tiktok: true,
+              bio: true,
+              skills: true,
+            },
+          },
         },
       }),
       this.prisma.job.count({
@@ -141,12 +143,54 @@ export class ProfilesController {
           : null,
       },
       profile: {
-      bio: u.verification?.bio ?? null,
-      skills: u.verification?.skills ?? null,
-  },
+        bio: u.verification?.bio ?? null,
+        skills: u.verification?.skills ?? null,
+      },
       stats: {
         completedJobs,
       },
+    };
+  }
+
+  @Get("fixers/:fixerId/reviews")
+  async getFixerReviews(@Param("fixerId") fixerId: string) {
+    const fixer = await this.prisma.user.findUnique({
+      where: { id: fixerId },
+      select: { id: true, averageRating: true, totalRatings: true },
+    });
+
+    if (!fixer) throw new NotFoundException("USER_NOT_FOUND");
+
+    const reviews = await this.prisma.jobReview.findMany({
+      where: { fixerId },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        client: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
+    });
+
+    return {
+      fixerId,
+      averageRating: fixer.averageRating ?? 0,
+      totalRatings: fixer.totalRatings ?? 0,
+      reviews: reviews.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment ?? null,
+        createdAt: r.createdAt,
+        client: {
+          displayName: maskClientName(r.client?.fullName),
+        },
+      })),
     };
   }
 
@@ -201,15 +245,15 @@ export class ProfilesController {
           fixerPreferredAvailability: true,
           fixerAvailabilityUpdatedAt: true,
           roles: {
-          select: {
-            role: {
-              select: {
-                code: true,
-                name: true,
+            select: {
+              role: {
+                select: {
+                  code: true,
+                  name: true,
+                },
               },
             },
           },
-        },
           jobsAssigned: {
             where: { status: "IN_PROGRESS" },
             select: { id: true },
