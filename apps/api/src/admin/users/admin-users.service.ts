@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/users/admin-users.service.ts
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { AdminRole } from "@prisma/client";
 import { AdminAuditService } from "../audit/admin-audit.service";

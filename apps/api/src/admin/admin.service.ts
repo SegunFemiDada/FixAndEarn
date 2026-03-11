@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/admin.service.ts
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { AdminRepo } from "./admin.repo";

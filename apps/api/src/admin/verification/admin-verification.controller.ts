@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/verification/admin-verification.controller.ts
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";

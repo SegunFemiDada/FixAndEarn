@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/admin.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../infra/prisma/prisma.service";
 import { AdminRole } from "@prisma/client";

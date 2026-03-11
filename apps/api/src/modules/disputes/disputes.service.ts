@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/disputes/disputes.service.ts
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { DisputeResolutionType, DisputeStatus, JobStatus } from "@prisma/client";

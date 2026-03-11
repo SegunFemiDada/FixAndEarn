@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
+// Path: apps/api/src/modules/disputes/admin-disputes.controller.ts
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards, UnauthorizedException } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "../../admin/auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../../admin/auth/admin-roles.guard";
@@ -22,8 +23,12 @@ export class AdminDisputesController {
 
   @Post(":disputeId/resolve")
   async resolve(@Req() req: any, @Param("disputeId") disputeId: string, @Body() dto: ResolveDisputeDto) {
-    // AdminJwtStrategy puts admin in req.user. Your token payload uses { sub: admin.id, ... }
-const adminId = req.user?.adminId;
+    const adminId = req.user?.adminId ?? req.user?.sub;
+
+    if (!adminId) {
+      throw new UnauthorizedException("ADMIN_ID_MISSING");
+    }
+
     return this.disputes.resolveDispute({
       disputeId,
       adminUserId: adminId,

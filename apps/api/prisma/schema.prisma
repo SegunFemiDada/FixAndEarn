@@ -28,24 +28,19 @@ model User {
 
   roles UserRole[]
 
-  // Identity verification (one per person/account)
   verification IdentityVerification?
 
-  // Wallet + finance
   wallet      Wallet?
   bankDetails BankDetails?
   deposits    DepositIntent[]
   withdrawals WithdrawalRequest[]
 
-  // Fixer availability (preferred status; effective BUSY is derived from jobs)
   fixerPreferredAvailability AvailabilityStatus @default(UNAVAILABLE)
   fixerAvailabilityUpdatedAt DateTime?
 
-  // Jobs
   jobsPosted      Job[]            @relation("UserJobsPosted")
   jobApplications JobApplication[] @relation("UserJobApplications")
 
-  // Milestone F relations
   conversationsAsFixer      Conversation[]         @relation("ConversationFixer")
   chatAgreements            ChatAgreement[]
   chatMessagesSent          ChatMessage[]          @relation("ChatMessageSender")
@@ -55,16 +50,13 @@ model User {
 
   notifications Notification[]
 
-  // Admin controls
   adminNotes    String?
   forceReverify Boolean @default(false)
 
-  // Assigned jobs (when negotiation AGREED)
-  jobsAssigned     Job[]     @relation("UserJobsAssigned")
-  disputesOpened   Dispute[] @relation("DisputesOpened")
-  disputesResolved Dispute[] @relation("DisputesResolved")
-  averageRating    Float     @default(0)
-  totalRatings     Int       @default(0)
+  jobsAssigned   Job[]     @relation("UserJobsAssigned")
+  disputesOpened Dispute[] @relation("DisputesOpened")
+  averageRating  Float     @default(0)
+  totalRatings   Int       @default(0)
 
   @@map("users")
 }
@@ -563,9 +555,10 @@ model Admin {
 
   isActive Boolean @default(true)
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  AdminAuditLog AdminAuditLog[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  AdminAuditLog    AdminAuditLog[]
+  resolvedDisputes Dispute[]
 
   @@map("admins")
 }
@@ -699,7 +692,7 @@ model Dispute {
 
   resolutionType    DisputeResolutionType?
   resolvedByAdminId String?
-  resolvedByAdmin   User?                  @relation("DisputesResolved", fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
+  resolvedByAdmin   Admin?                 @relation(fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
   resolvedAt        DateTime?
 
   createdAt DateTime @default(now())
