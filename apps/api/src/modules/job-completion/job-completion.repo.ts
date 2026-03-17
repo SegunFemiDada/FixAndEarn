@@ -1,7 +1,7 @@
 //path: apps/api/src/modules/job-completion/job-completion.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma } from "@prisma/client";
+import { Prisma, WalletRole } from "@prisma/client";
 
 @Injectable()
 export class JobCompletionRepo {
@@ -46,7 +46,13 @@ export class JobCompletionRepo {
       }
     });
 
-    await tx.wallet.create({ data: { userId: escrowUser.id, balanceMilliFec: 0 } });
+        await tx.wallet.create({
+      data: {
+        userId: escrowUser.id,
+        role: WalletRole.SYSTEM,
+        balanceMilliFec: 0,
+      },
+    });
 
     await tx.appMeta.upsert({
       where: { key },
@@ -80,8 +86,23 @@ export class JobCompletionRepo {
 
       const escrowUserId = await this.ensureEscrowUserId(tx);
 
-      const escrowWallet = await tx.wallet.findUnique({ where: { userId: escrowUserId } });
-      const fixerWallet = await tx.wallet.findUnique({ where: { userId: fixerId } });
+            const escrowWallet = await tx.wallet.findUnique({
+        where: {
+          userId_role: {
+            userId: escrowUserId,
+            role: WalletRole.SYSTEM,
+          },
+        },
+      });
+
+      const fixerWallet = await tx.wallet.findUnique({
+        where: {
+          userId_role: {
+            userId: fixerId,
+            role: WalletRole.FIXER,
+          },
+        },
+      });
       if (!escrowWallet || !fixerWallet) throw new Error("WALLET_NOT_FOUND");
 
       // Idempotency keys

@@ -1,4 +1,4 @@
-//path: apps/api/src/admin/users/admin-users.repo.ts
+// Path: apps/api/src/admin/users/admin-users.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 
@@ -13,13 +13,13 @@ export class AdminUsersRepo {
       const q = args.q.trim();
       where.OR = [
         { email: { contains: q, mode: "insensitive" } },
-        { fullName: { contains: q, mode: "insensitive" } }
+        { fullName: { contains: q, mode: "insensitive" } },
       ];
     }
 
     if (args.role) {
       where.roles = {
-        some: { role: { code: args.role } }
+        some: { role: { code: args.role } },
       };
     }
 
@@ -37,8 +37,8 @@ export class AdminUsersRepo {
         createdAt: true,
         updatedAt: true,
         roles: { select: { role: { select: { code: true, name: true } } } },
-        verification: { select: { status: true, state: true, city: true, lga: true } }
-      }
+        verification: { select: { status: true, state: true, city: true, lga: true } },
+      },
     });
   }
 
@@ -56,11 +56,20 @@ export class AdminUsersRepo {
         updatedAt: true,
         roles: { select: { role: { select: { code: true, name: true } } } },
         verification: true,
-        wallet: true,
+        wallets: {
+          select: {
+            id: true,
+            role: true,
+            balanceMilliFec: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { createdAt: "asc" },
+        },
         bankDetails: true,
         deposits: { orderBy: { createdAt: "desc" }, take: 20 },
-        withdrawals: { orderBy: { createdAt: "desc" }, take: 20 }
-      }
+        withdrawals: { orderBy: { createdAt: "desc" }, take: 20 },
+      },
     });
   }
 

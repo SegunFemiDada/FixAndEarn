@@ -1,36 +1,71 @@
 // Path: /apps/api/src/modules/verification/dto/submit-verification.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
-import { IsArray, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 class AddressDto {
-  @ApiProperty() @IsString() house!: string;
-  @ApiProperty() @IsString() street!: string;
-  @ApiProperty() @IsString() area!: string;
-  @ApiProperty() @IsString() busStop!: string;
-  @ApiProperty() @IsString() lga!: string;
-  @ApiProperty() @IsString() city!: string;
-  @ApiProperty() @IsString() state!: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  house?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  street?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  area?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  busStop?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  lga?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  state?: string;
 }
 
 export class SubmitVerificationDto {
-  @ApiProperty({ description: "BVN (will be hashed, not stored raw)" })
+  @ApiProperty({ description: "BVN (will be hashed, not stored raw)", required: false })
+  @IsOptional()
   @IsString()
-  @MinLength(6)
-  bvn!: string;
+  bvn?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  bio!: string;
+  bio?: string;
 
-  @ApiProperty({ type: [String] })
+  @ApiProperty({ type: [String], required: false })
+  @IsOptional()
   @IsArray()
-  skills!: string[];
+  skills?: string[];
 
-  @ApiProperty({ type: AddressDto })
+  @ApiProperty({ type: AddressDto, required: false })
+  @IsOptional()
   @ValidateNested()
   @Type(() => AddressDto)
-  address!: AddressDto;
+  address?: AddressDto;
 
   @ApiProperty({ required: false })
   @IsOptional()

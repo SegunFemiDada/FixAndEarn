@@ -30,7 +30,7 @@ model User {
 
   verification IdentityVerification?
 
-  wallet      Wallet?
+  wallets     Wallet[]
   bankDetails BankDetails?
   deposits    DepositIntent[]
   withdrawals WithdrawalRequest[]
@@ -157,10 +157,17 @@ enum LedgerEntryDirection {
   DEBIT
 }
 
+enum WalletRole {
+  CLIENT
+  FIXER
+  SYSTEM
+}
+
 model Wallet {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String     @id @default(uuid())
+  userId String
+  role   WalletRole @default(CLIENT)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // 1 milliFEC = ₦1
   balanceMilliFec Int @default(0)
@@ -170,6 +177,8 @@ model Wallet {
 
   entries LedgerEntry[]
 
+  @@unique([userId, role])
+  @@index([userId])
   @@map("wallets")
 }
 

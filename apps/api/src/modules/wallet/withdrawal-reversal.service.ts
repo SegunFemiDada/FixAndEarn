@@ -2,6 +2,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { LedgerService } from "./ledger.service";
+import { WalletRole } from "@prisma/client";
 
 @Injectable()
 export class WithdrawalReversalService {
@@ -27,12 +28,13 @@ export class WithdrawalReversalService {
     if (existing) return;
 
     await this.ledgerService.addEntry({
-      userId: withdrawal.userId,
-      type: "WITHDRAWAL_REVERSAL",
-      direction: "CREDIT",
-      amountMilliFec: withdrawal.amountMilliFec,
-      idempotencyKey,
-      reference: `REV_${withdrawal.id}`,
-    });
+  userId: withdrawal.userId,
+  role: WalletRole.FIXER,
+  type: "WITHDRAWAL_REVERSAL",
+  direction: "CREDIT",
+  amountMilliFec: withdrawal.amountMilliFec,
+  idempotencyKey: `withdrawal_reversal:${withdrawal.id}`,
+  reference: `REV_${withdrawal.id}`,
+});
   }
 }

@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, WalletRole } from "@prisma/client";
 import { JobsRepo } from "./jobs.repo";
 import { LedgerService } from "../wallet/ledger.service";
 import { WalletService } from "../wallet/wallet.service";
@@ -176,7 +176,7 @@ private mapJob(job: any) {
 
   const JOB_POST_FEE_MILLI_FEC = 1000;
 
-  const wallet = await this.walletService.getOrCreateWallet(args.clientId);
+    const wallet = await this.walletService.getOrCreateWallet(args.clientId, WalletRole.CLIENT);
   const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
 
   if (wallet.balanceMilliFec < required) {
@@ -201,8 +201,9 @@ private mapJob(job: any) {
     await this.repo.createJobImages(job.id, args.imagePaths.slice(0, 5));
   }
 
-  await this.ledgerService.addEntry({
+    await this.ledgerService.addEntry({
     userId: args.clientId,
+    role: WalletRole.CLIENT,
     type: "FEE",
     direction: "DEBIT",
     amountMilliFec: JOB_POST_FEE_MILLI_FEC,

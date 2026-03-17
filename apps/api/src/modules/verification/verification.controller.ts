@@ -26,30 +26,11 @@ export class VerificationController {
     private readonly verification: VerificationService
   ) {}
 
-  /**
-   * GET /verification/me
-   * Returns the current user's verification status
-   */
   @Get("me")
-async getMyVerification(
-  @CurrentUser() user: { userId: string }
-) {
-  const record = await this.verification.getMine(user.userId);
-
-  if (!record) {
-    return null;
+  async getMyVerification(@CurrentUser() user: { userId: string }) {
+    return this.verification.getMine(user.userId);
   }
 
-  return {
-    status: record.status,
-    reviewReason: record.reviewReason ?? null,
-    forceReverify: false,
-  };
-}
-
-  /**
-   * POST /verification/submit
-   */
   @Post("submit")
   @ApiConsumes("multipart/form-data")
   @UseInterceptors(
@@ -73,15 +54,9 @@ async getMyVerification(
     const selfie = files.selfie?.[0];
     const utilityBill = files.utilityBill?.[0];
 
-    if (!ninImage || !selfie || !utilityBill) {
-      return {
-        error: "ninImage, selfie, and utilityBill are required.",
-      };
-    }
-
-    const ninImagePath = await this.storage.save(ninImage, "nin");
-    const selfiePath = await this.storage.save(selfie, "selfie");
-    const utilityBillPath = await this.storage.save(utilityBill, "utility");
+    const ninImagePath = ninImage ? await this.storage.save(ninImage, "nin") : undefined;
+    const selfiePath = selfie ? await this.storage.save(selfie, "selfie") : undefined;
+    const utilityBillPath = utilityBill ? await this.storage.save(utilityBill, "utility") : undefined;
 
     const record = await this.verification.submit(user.userId, {
       ...dto,

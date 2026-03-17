@@ -9,6 +9,7 @@ import { ListJobConversationsDto } from "./dto/list-job-conversations.dto";
 import { ListModerationFlagsDto } from "./dto/list-moderation-flags.dto";
 import { WalletService } from "../modules/wallet/wallet.service";
 import { LedgerService } from "../modules/wallet/ledger.service";
+import { WalletRole } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { NotificationsService } from "../modules/notifications/notifications.service";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
@@ -70,15 +71,34 @@ export class ChatService {
     if (!ok) throw new ForbiddenException("CHAT_AGREEMENT_REQUIRED");
   }
 
-  private async getOrCreateWalletForUser(userId: string, tx?: PrismaService | any) {
-    const db = tx ?? this.prisma;
+  private async getOrCreateWalletForUser(
+  userId: string,
+  role: WalletRole,
+  tx?: PrismaService | Prisma.TransactionClient
+) {
+  const db = tx ?? this.prisma;
 
-    let wallet = await db.wallet.findUnique({ where: { userId } });
-    if (!wallet) {
-      wallet = await db.wallet.create({ data: { userId, balanceMilliFec: 0 } });
-    }
-    return wallet;
+  let wallet = await db.wallet.findUnique({
+    where: {
+      userId_role: {
+        userId,
+        role,
+      },
+    },
+  });
+
+  if (!wallet) {
+    wallet = await db.wallet.create({
+      data: {
+        userId,
+        role,
+        balanceMilliFec: 0,
+      },
+    });
   }
+
+  return wallet;
+}
 
   private assertPositiveInt(n: number, msg: string) {
     if (!Number.isInteger(n) || n <= 0) throw new BadRequestException(msg);
@@ -97,7 +117,7 @@ export class ChatService {
   ) {
     this.assertPositiveInt(priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
 
-    const wallet = await this.getOrCreateWalletForUser(clientId, tx);
+    const wallet = await this.getOrCreateWalletForUser(clientId, WalletRole.CLIENT, tx);
     const required = priceMilliFec + ChatService.JOB_POST_FEE_MILLI_FEC;
 
     if (wallet.balanceMilliFec < required) {
@@ -125,8 +145,12 @@ export class ChatService {
       }
     });
 
-    await tx.wallet.create({
-      data: { userId: escrowUser.id, balanceMilliFec: 0 }
+        await tx.wallet.create({
+      data: {
+        userId: escrowUser.id,
+        role: WalletRole.SYSTEM,
+        balanceMilliFec: 0
+      }
     });
 
     await tx.appMeta.upsert({
@@ -169,41 +193,42 @@ export class ChatService {
 
     // Use ONLY existing Prisma enum values.
     // Label escrow ops via metadata.kind.
-    await this.ledgerService.addEntry({
-      userId: clientId,
-      type: "ADJUSTMENT",
-      direction: "DEBIT",
-      amountMilliFec,
-      idempotencyKey: debitKey,
-      reference: jobId,
-      metadata: {
-        kind: "ESCROW_LOCK",
-        jobId,
-        conversationId,
-        clientId,
-        fixerId
-      },
-      prisma: tx
-    });
-    await this.ledgerService.addEntry({
-      userId: escrowUserId,
-      type: "ADJUSTMENT",
-      direction: "CREDIT",
-      amountMilliFec,
-      idempotencyKey: creditKey,
-      reference: jobId,
-      metadata: {
-        kind: "ESCROW_LOCK",
-        jobId,
-        conversationId,
-        clientId,
-        fixerId
-      },
-      prisma: tx
-    });
-    
-  }
-  
+  await this.ledgerService.addEntry({
+  userId: clientId,
+  role: WalletRole.CLIENT,
+  type: "ADJUSTMENT",
+  direction: "DEBIT",
+  amountMilliFec: amountMilliFec,
+  idempotencyKey: debitKey,
+  reference: jobId,
+  metadata: {
+    kind: "...",
+    jobId,
+    conversationId,
+    clientId,
+    fixerId,
+  },
+  prisma: tx,
+});
+
+await this.ledgerService.addEntry({
+  userId: escrowUserId,
+  role: WalletRole.SYSTEM,
+  type: "ADJUSTMENT",
+  direction: "CREDIT",
+  amountMilliFec: amountMilliFec,
+  idempotencyKey: creditKey,
+  reference: jobId,
+  metadata: {
+    kind: "...",
+    jobId,
+    conversationId,
+    clientId,
+    fixerId,
+  },
+  prisma: tx,
+});
+}
 
   // =====================
   // Conversation list
