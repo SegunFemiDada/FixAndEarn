@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/wallet/wallet.controller.ts
 import { Body, Controller, Get, Inject, Post, UseGuards, BadRequestException } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { NotificationType } from "@prisma/client";

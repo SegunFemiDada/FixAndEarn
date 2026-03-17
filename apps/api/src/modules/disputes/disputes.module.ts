@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/disputes/disputes.module.ts
 import { Module } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { LedgerService } from "../wallet/ledger.service";
