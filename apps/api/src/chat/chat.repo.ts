@@ -1,3 +1,4 @@
+// Path: apps/api/src/chat/chat.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../infra/prisma/prisma.service";
 
@@ -76,16 +77,19 @@ export class ChatRepo {
     });
   }
 
+  async setConversationStatus(conversationId: string, status: "OPEN" | "CLOSED") {
+    return this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status }
+    });
+  }
+
   async getConversationWithAgreements(conversationId: string) {
     return this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: { agreements: true, negotiation: true, job: true, fixer: true }
     });
   }
-
-  // ============
-  // NEW: Listing
-  // ============
 
   async listConversationsForJob(jobId: string, skip: number, take: number) {
     return this.prisma.conversation.findMany({
@@ -133,10 +137,6 @@ export class ChatRepo {
     });
   }
 
-  // ==========================
-  // NEW: Admin moderation feed
-  // ==========================
-
   async listModerationFlags(type: any | undefined, skip: number, take: number) {
     return this.prisma.moderationFlag.findMany({
       where: {
@@ -165,7 +165,8 @@ export class ChatRepo {
       }
     });
   }
-    async closeOtherConversationsForJob(jobId: string, keepConversationId: string) {
+
+  async closeOtherConversationsForJob(jobId: string, keepConversationId: string) {
     return this.prisma.conversation.updateMany({
       where: {
         jobId,
@@ -189,7 +190,6 @@ export class ChatRepo {
   }
 
   async getConversationMessages(conversationId: string, cursor: string | undefined, take: number) {
-    // We fetch newest-first for efficiency, then reverse in service for UI if needed.
     return this.prisma.chatMessage.findMany({
       where: { conversationId },
       orderBy: { createdAt: "desc" },
@@ -205,5 +205,4 @@ export class ChatRepo {
       }
     });
   }
-
 }
