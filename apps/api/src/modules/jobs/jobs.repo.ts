@@ -40,6 +40,9 @@ export class JobsRepo {
       images: {
         orderBy: { sortOrder: "asc" },
       },
+      completionRequest: true,
+      dispute: true,
+      review: true,
     },
   });
 }

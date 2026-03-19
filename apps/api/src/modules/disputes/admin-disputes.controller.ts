@@ -17,8 +17,7 @@ import { AdminRoles } from "../../admin/auth/admin-roles.decorator";
 import { AdminRole, DisputeStatus } from "@prisma/client";
 import { DisputesService } from "../../modules/disputes/disputes.service";
 import { ResolveDisputeDto } from "../../modules/disputes/dto/resolve-dispute.dto";
-import { ChatService } from "../../chat/chat.service";
-import { AdminDisputeChatMessageDto } from "./dto/admin-dispute-chat-message.dto";
+import { AdminDisputeChatMessageDto } from "../../modules/disputes/dto/admin-dispute-chat-message.dto";
 
 @ApiTags("admin.disputes")
 @ApiBearerAuth()
@@ -26,10 +25,7 @@ import { AdminDisputeChatMessageDto } from "./dto/admin-dispute-chat-message.dto
 @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.SUPPORT_OFFICER, AdminRole.FINANCE_OFFICER)
 @Controller("admin/disputes")
 export class AdminDisputesController {
-  constructor(
-    private readonly disputes: DisputesService,
-    private readonly chat: ChatService
-  ) {}
+  constructor(private readonly disputes: DisputesService) {}
 
   @Get()
   async list(@Query("status") status?: DisputeStatus) {
@@ -37,18 +33,16 @@ export class AdminDisputesController {
   }
 
   @Get(":disputeId/chat")
-  async getChat(
-    @Param("disputeId") disputeId: string,
-    @Query("cursor") cursor?: string,
-    @Query("take") take?: string
-  ) {
-    return this.chat.getDisputeConversationForAdmin(disputeId, {
-      cursor,
-      take: take ? Number(take) : undefined
+  async getChat(@Param("disputeId") disputeId: string, @Query("take") take?: string) {
+    const parsedTake = take ? Number(take) : undefined;
+
+    return this.disputes.getAdminDisputeChat({
+      disputeId,
+      take: Number.isFinite(parsedTake) ? parsedTake : undefined,
     });
   }
 
-  @Post(":disputeId/chat/message")
+  @Post(":disputeId/chat/messages")
   async sendChatMessage(
     @Req() req: any,
     @Param("disputeId") disputeId: string,
@@ -60,7 +54,11 @@ export class AdminDisputesController {
       throw new UnauthorizedException("ADMIN_ID_MISSING");
     }
 
-    return this.chat.sendAdminMessageToDispute(disputeId, adminId, dto.body);
+    return this.disputes.sendAdminDisputeChatMessage({
+      disputeId,
+      adminUserId: adminId,
+      body: dto.body,
+    });
   }
 
   @Post(":disputeId/resolve")
@@ -74,7 +72,21 @@ export class AdminDisputesController {
     return this.disputes.resolveDispute({
       disputeId,
       adminUserId: adminId,
-      resolutionType: dto.resolutionType
+      resolutionType: dto.resolutionType,
+    });
+  }
+
+  @Post(":disputeId/resolve-amicably")
+  async resolveAmicably(@Req() req: any, @Param("disputeId") disputeId: string) {
+    const adminId = req.user?.adminId ?? req.user?.sub;
+
+    if (!adminId) {
+      throw new UnauthorizedException("ADMIN_ID_MISSING");
+    }
+
+    return this.disputes.resolveDisputeAmicably({
+      disputeId,
+      adminUserId: adminId,
     });
   }
 }

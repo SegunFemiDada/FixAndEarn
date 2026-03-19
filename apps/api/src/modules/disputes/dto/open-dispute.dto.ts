@@ -1,4 +1,4 @@
-//path: apps/api/src/modules/disputes/dto/open-dispute.dto.ts
+// Path: apps/api/src/modules/disputes/dto/open-dispute.dto.ts
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
 export class OpenDisputeDto {
@@ -7,5 +7,6 @@ export class OpenDisputeDto {
   reason!: string;
 
   @IsOptional()
-  evidence?: any; // JSON
+  @IsString()
+  evidence?: string;
 }
