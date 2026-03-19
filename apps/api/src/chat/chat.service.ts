@@ -9,6 +9,7 @@ import { ListJobConversationsDto } from "./dto/list-job-conversations.dto";
 import { ListModerationFlagsDto } from "./dto/list-moderation-flags.dto";
 import { WalletService } from "../modules/wallet/wallet.service";
 import { LedgerService } from "../modules/wallet/ledger.service";
+import { WalletRole } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { NotificationsService } from "../modules/notifications/notifications.service";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
@@ -27,14 +28,12 @@ export class ChatService {
     private readonly realtime: ChatRealtimeService
   ) {}
 
-  // Keep this aligned with JobsService
   private static readonly JOB_POST_FEE_MILLI_FEC = 1000;
 
   private assertUserActive(user: { isActive?: boolean } | null | undefined) {
-  if (!user?.isActive) throw new ForbiddenException("USER_INACTIVE");
-}
+    if (!user?.isActive) throw new ForbiddenException("USER_INACTIVE");
+  }
 
-  // Messaging allowed when job is OPEN or IN_PROGRESS
   private assertJobMessagingAllowed(job: any) {
     if (!job) throw new NotFoundException("JOB_NOT_FOUND");
     if (job.status === "CANCELLED" || job.status === "COMPLETED") {
@@ -42,7 +41,6 @@ export class ChatService {
     }
   }
 
-  // Negotiation allowed only when job is OPEN
   private assertJobNegotiationAllowed(job: any) {
     if (!job) throw new NotFoundException("JOB_NOT_FOUND");
     if (job.status !== "OPEN") {
@@ -70,13 +68,32 @@ export class ChatService {
     if (!ok) throw new ForbiddenException("CHAT_AGREEMENT_REQUIRED");
   }
 
-  private async getOrCreateWalletForUser(userId: string, tx?: PrismaService | any) {
+  private async getOrCreateWalletForUser(
+    userId: string,
+    role: WalletRole,
+    tx?: PrismaService | Prisma.TransactionClient
+  ) {
     const db = tx ?? this.prisma;
 
-    let wallet = await db.wallet.findUnique({ where: { userId } });
+    let wallet = await db.wallet.findUnique({
+      where: {
+        userId_role: {
+          userId,
+          role,
+        },
+      },
+    });
+
     if (!wallet) {
-      wallet = await db.wallet.create({ data: { userId, balanceMilliFec: 0 } });
+      wallet = await db.wallet.create({
+        data: {
+          userId,
+          role,
+          balanceMilliFec: 0,
+        },
+      });
     }
+
     return wallet;
   }
 
@@ -84,32 +101,21 @@ export class ChatService {
     if (!Number.isInteger(n) || n <= 0) throw new BadRequestException(msg);
   }
 
-  /**
-   * IMPORTANT:
-   * - In negotiation we need: client can cover (locked/proposed price + 1FEC posting fee)
-   * - Posting fee might already be debited in JobsService, but we still enforce this rule here
-   *   to guarantee "smooth transaction" per your requirement.
-   */
   private async assertClientCanAffordPricePlusPostFee(
     clientId: string,
     priceMilliFec: number,
-    tx?: PrismaService | any
+    tx?: PrismaService | Prisma.TransactionClient
   ) {
     this.assertPositiveInt(priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
 
-    const wallet = await this.getOrCreateWalletForUser(clientId, tx);
+    const wallet = await this.getOrCreateWalletForUser(clientId, WalletRole.CLIENT, tx);
     const required = priceMilliFec + ChatService.JOB_POST_FEE_MILLI_FEC;
 
     if (wallet.balanceMilliFec < required) {
-      // keep message stable for frontend handling
       throw new ForbiddenException("CLIENT_INSUFFICIENT_WALLET_FOR_PRICE");
     }
   }
 
-  /**
-   * One-time escrow user + wallet, stored in AppMeta.
-   * This avoids env config and keeps it deterministic per DB.
-   */
   private async ensureEscrowUserId(tx: Prisma.TransactionClient): Promise<string> {
     const key = "ESCROW_USER_ID";
 
@@ -126,7 +132,11 @@ export class ChatService {
     });
 
     await tx.wallet.create({
-      data: { userId: escrowUser.id, balanceMilliFec: 0 }
+      data: {
+        userId: escrowUser.id,
+        role: WalletRole.SYSTEM,
+        balanceMilliFec: 0
+      }
     });
 
     await tx.appMeta.upsert({
@@ -136,6 +146,31 @@ export class ChatService {
     });
 
     return escrowUser.id;
+  }
+
+  private async ensureAdminLiaisonUserId(tx?: Prisma.TransactionClient): Promise<string> {
+    const db = tx ?? this.prisma;
+    const key = "ADMIN_LIAISON_USER_ID";
+
+    const meta = await db.appMeta.findUnique({ where: { key } });
+    if (meta?.value) return meta.value;
+
+    const adminUser = await db.user.create({
+      data: {
+        email: "admin.chat@fixandearn.internal",
+        fullName: "FixAndEarn Admin",
+        passwordHash: "DISABLED",
+        isActive: true
+      }
+    });
+
+    await db.appMeta.upsert({
+      where: { key },
+      update: { value: adminUser.id },
+      create: { key, value: adminUser.id }
+    });
+
+    return adminUser.id;
   }
 
   private async escrowLockFunds(args: {
@@ -153,8 +188,6 @@ export class ChatService {
     const debitKey = `escrow_lock:${jobId}:debit`;
     const creditKey = `escrow_lock:${jobId}:credit`;
 
-    // If one exists without the other, do NOT proceed silently.
-    // That indicates partial execution and should be investigated.
     const [alreadyDebited, alreadyCredited] = await Promise.all([
       tx.ledgerEntry.findUnique({ where: { idempotencyKey: debitKey } }),
       tx.ledgerEntry.findUnique({ where: { idempotencyKey: creditKey } })
@@ -164,50 +197,45 @@ export class ChatService {
       if (!(alreadyDebited && alreadyCredited)) {
         throw new BadRequestException("ESCROW_LOCK_INCONSISTENT_STATE");
       }
-      return; // already done
+      return;
     }
 
-    // Use ONLY existing Prisma enum values.
-    // Label escrow ops via metadata.kind.
     await this.ledgerService.addEntry({
       userId: clientId,
+      role: WalletRole.CLIENT,
       type: "ADJUSTMENT",
       direction: "DEBIT",
       amountMilliFec,
       idempotencyKey: debitKey,
       reference: jobId,
       metadata: {
-        kind: "ESCROW_LOCK",
+        kind: "ESCROW_LOCK_DEBIT",
         jobId,
         conversationId,
         clientId,
-        fixerId
+        fixerId,
       },
-      prisma: tx
+      prisma: tx,
     });
+
     await this.ledgerService.addEntry({
       userId: escrowUserId,
+      role: WalletRole.SYSTEM,
       type: "ADJUSTMENT",
       direction: "CREDIT",
       amountMilliFec,
       idempotencyKey: creditKey,
       reference: jobId,
       metadata: {
-        kind: "ESCROW_LOCK",
+        kind: "ESCROW_LOCK_CREDIT",
         jobId,
         conversationId,
         clientId,
-        fixerId
+        fixerId,
       },
-      prisma: tx
+      prisma: tx,
     });
-    
   }
-  
-
-  // =====================
-  // Conversation list
-  // =====================
 
   async listJobConversations(jobId: string, requesterId: string, q: ListJobConversationsDto) {
     const job = await this.repo.getJob(jobId);
@@ -261,10 +289,6 @@ export class ChatService {
     }));
   }
 
-  // ==========================
-  // Admin moderation flags
-  // ==========================
-
   async listModerationFlags(q: ListModerationFlagsDto) {
     const skip = q.skip ?? 0;
     const take = q.take ?? 50;
@@ -290,11 +314,6 @@ export class ChatService {
     }));
   }
 
-  // =========================
-  // Existing flows (tightened)
-  // =========================
-
-  // Conversation creation is negotiation-scoped, so job must still be OPEN
   async ensureConversation(jobId: string, fixerId: string) {
     const job = await this.repo.getJobWithApplicant(jobId, fixerId);
     if (!job) throw new NotFoundException("JOB_NOT_FOUND");
@@ -318,23 +337,22 @@ export class ChatService {
 
     if (role === "FIXER") this.assertFixerApplied(job, fixerId);
 
-   const convo = await this.repo.upsertConversation(jobId, fixerId);
+    const convo = await this.repo.upsertConversation(jobId, fixerId);
 
-await this.repo.acceptAgreement(convo.id, userId);
+    await this.repo.acceptAgreement(convo.id, userId);
 
-// Emit AFTER write
-this.realtime.emitToRoom(
-  this.realtime.roomFor(jobId, fixerId),
-  "agreement",
-  {
-    jobId,
-    fixerId,
-    conversationId: convo.id,
-    userId
-  }
-);
+    this.realtime.emitToRoom(
+      this.realtime.roomFor(jobId, fixerId),
+      "agreement",
+      {
+        jobId,
+        fixerId,
+        conversationId: convo.id,
+        userId
+      }
+    );
 
-return { ok: true };
+    return { ok: true };
   }
 
   async sendMessage(jobId: string, fixerId: string, userId: string, body: string, _ip?: string, _userAgent?: string) {
@@ -360,18 +378,20 @@ return { ok: true };
       msg.id,
       hits.map((h) => ({ type: h.type, matched: h.matched }))
     );
-const room = this.realtime.roomFor(jobId, fixerId);
-this.realtime.emitToRoom(room, "message:new", {
-  jobId,
-  fixerId,
-  conversationId: convo.id,
-  message: {
-    id: msg.id,
-    senderId: msg.senderId,
-    body: msg.body,
-    createdAt: msg.createdAt
-  }
-});
+
+    const room = this.realtime.roomFor(jobId, fixerId);
+    this.realtime.emitToRoom(room, "message:new", {
+      jobId,
+      fixerId,
+      conversationId: convo.id,
+      message: {
+        id: msg.id,
+        senderId: msg.senderId,
+        body: msg.body,
+        createdAt: msg.createdAt
+      }
+    });
+
     return { id: msg.id, createdAt: msg.createdAt };
   }
 
@@ -381,7 +401,6 @@ this.realtime.emitToRoom(room, "message:new", {
 
     const role = this.assertMembership(job, userId, fixerId);
 
-    // Client must be able to afford: proposed price + 1FEC posting fee
     await this.assertClientCanAffordPricePlusPostFee(job.clientId, proposedPriceMilliFec);
 
     this.assertJobNegotiationAllowed(job);
@@ -417,76 +436,75 @@ this.realtime.emitToRoom(room, "message:new", {
       status: next.status,
       proposedPriceMilliFec: next.proposedPriceMilliFec
     });
+
     const room = this.realtime.roomFor(jobId, fixerId);
-this.realtime.emitToRoom(room, "negotiation", { conversationId: convo.id });
+    this.realtime.emitToRoom(room, "negotiation", { conversationId: convo.id });
+
     return { ok: true };
   }
 
   async lock(jobId: string, fixerId: string, userId: string, lockedPriceMilliFec: number) {
-  const job = await this.repo.getJobWithApplicant(jobId, fixerId);
-  if (!job) throw new NotFoundException("JOB_NOT_FOUND");
+    const job = await this.repo.getJobWithApplicant(jobId, fixerId);
+    if (!job) throw new NotFoundException("JOB_NOT_FOUND");
 
-  const role = this.assertMembership(job, userId, fixerId);
+    const role = this.assertMembership(job, userId, fixerId);
 
-  this.assertJobNegotiationAllowed(job);
+    this.assertJobNegotiationAllowed(job);
+    await this.assertClientCanAffordPricePlusPostFee(job.clientId, lockedPriceMilliFec);
 
-  // Client must be able to afford: locked price + 1FEC posting fee
-  await this.assertClientCanAffordPricePlusPostFee(job.clientId, lockedPriceMilliFec);
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+    this.assertUserActive(user);
 
-  const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
-  this.assertUserActive(user);
+    if (role === "FIXER") this.assertFixerApplied(job, fixerId);
 
-  if (role === "FIXER") this.assertFixerApplied(job, fixerId);
+    const convo = await this.repo.upsertConversation(jobId, fixerId);
+    if (convo.status !== "OPEN") throw new ForbiddenException("CHAT_CLOSED");
 
-  const convo = await this.repo.upsertConversation(jobId, fixerId);
-  if (convo.status !== "OPEN") throw new ForbiddenException("CHAT_CLOSED");
+    const convoFresh = await this.repo.getConversationWithAgreements(convo.id);
+    this.assertAgreement(convoFresh, userId);
 
-  const convoFresh = await this.repo.getConversationWithAgreements(convo.id);
-  this.assertAgreement(convoFresh, userId);
+    const neg = await this.repo.ensureNegotiation(convo.id);
 
-  const neg = await this.repo.ensureNegotiation(convo.id);
+    const next = lockPrice(
+      {
+        status: neg.status,
+        proposedPriceMilliFec: neg.proposedPriceMilliFec,
+        lockedPriceMilliFec: neg.lockedPriceMilliFec,
+        lockedByUserId: neg.lockedByUserId,
+        clientAcceptedAt: neg.clientAcceptedAt,
+        fixerAcceptedAt: neg.fixerAcceptedAt,
+        agreedAt: neg.agreedAt,
+        rejectedAt: neg.rejectedAt,
+        rejectedByUserId: neg.rejectedByUserId
+      },
+      lockedPriceMilliFec,
+      userId
+    );
 
-  const next = lockPrice(
-    {
-      status: neg.status,
-      proposedPriceMilliFec: neg.proposedPriceMilliFec,
-      lockedPriceMilliFec: neg.lockedPriceMilliFec,
-      lockedByUserId: neg.lockedByUserId,
-      clientAcceptedAt: neg.clientAcceptedAt,
-      fixerAcceptedAt: neg.fixerAcceptedAt,
-      agreedAt: neg.agreedAt,
-      rejectedAt: neg.rejectedAt,
-      rejectedByUserId: neg.rejectedByUserId
-    },
-    lockedPriceMilliFec,
-    userId
-  );
+    await this.repo.updateNegotiation(convo.id, {
+      status: next.status,
+      lockedPriceMilliFec: next.lockedPriceMilliFec,
+      lockedByUserId: next.lockedByUserId,
+      clientAcceptedAt: null,
+      fixerAcceptedAt: null
+    });
 
-  await this.repo.updateNegotiation(convo.id, {
-    status: next.status,
-    lockedPriceMilliFec: next.lockedPriceMilliFec,
-    lockedByUserId: next.lockedByUserId,
-    clientAcceptedAt: null,
-    fixerAcceptedAt: null
-  });
+    const room = this.realtime.roomFor(jobId, fixerId);
+    this.realtime.emitToRoom(room, "negotiation", {
+      jobId,
+      fixerId,
+      conversationId: convo.id,
+      status: next.status,
+      lockedPriceMilliFec: next.lockedPriceMilliFec,
+      lockedByUserId: next.lockedByUserId
+    });
 
-  // ✅ Emit realtime event so SSE clients refetch (same behavior as propose)
-  const room = this.realtime.roomFor(jobId, fixerId);
-  this.realtime.emitToRoom(room, "negotiation", {
-    jobId,
-    fixerId,
-    conversationId: convo.id,
-    status: next.status,
-    lockedPriceMilliFec: next.lockedPriceMilliFec,
-    lockedByUserId: next.lockedByUserId
-  });
-
-  return { ok: true };
-}
+    return { ok: true };
+  }
 
   async respondLocked(jobId: string, fixerId: string, userId: string, accept: boolean) {
     const job = await this.repo.getJobWithApplicant(jobId, fixerId);
-    
+
     if (!job) throw new NotFoundException("JOB_NOT_FOUND");
 
     const role = this.assertMembership(job, userId, fixerId);
@@ -524,117 +542,117 @@ this.realtime.emitToRoom(room, "negotiation", { conversationId: convo.id });
       new Date()
     );
 
-if (next.status === "AGREED") {
-  const price = next.lockedPriceMilliFec;
-  if (!price) throw new BadRequestException("MISSING_LOCKED_PRICE");
+    if (next.status === "AGREED") {
+      const price = next.lockedPriceMilliFec;
+      if (!price) throw new BadRequestException("MISSING_LOCKED_PRICE");
 
-  await this.prisma.$transaction(async (tx) => {
-    await this.assertClientCanAffordPricePlusPostFee(job.clientId, price, tx);
+      await this.prisma.$transaction(async (tx) => {
+        await this.assertClientCanAffordPricePlusPostFee(job.clientId, price, tx);
 
-    await this.escrowLockFunds({
-      tx,
-      jobId,
-      conversationId: convo.id,
-      clientId: job.clientId,
-      fixerId,
-      amountMilliFec: price
-    });
+        await this.escrowLockFunds({
+          tx,
+          jobId,
+          conversationId: convo.id,
+          clientId: job.clientId,
+          fixerId,
+          amountMilliFec: price
+        });
 
-    await tx.negotiation.update({
-      where: { conversationId: convo.id },
-      data: {
-        status: "AGREED",
-        clientAcceptedAt: next.clientAcceptedAt ?? undefined,
-        fixerAcceptedAt: next.fixerAcceptedAt ?? undefined,
-        agreedAt: next.agreedAt ?? undefined
-      }
-    });
+        await tx.negotiation.update({
+          where: { conversationId: convo.id },
+          data: {
+            status: "AGREED",
+            clientAcceptedAt: next.clientAcceptedAt ?? undefined,
+            fixerAcceptedAt: next.fixerAcceptedAt ?? undefined,
+            agreedAt: next.agreedAt ?? undefined
+          }
+        });
 
-    await tx.job.update({
-      where: { id: jobId },
-      data: {
-        status: "IN_PROGRESS",
-        lockedPriceMilliFec: price,
-        fixerId
-      }
-    });
+        await tx.job.update({
+          where: { id: jobId },
+          data: {
+            status: "IN_PROGRESS",
+            lockedPriceMilliFec: price,
+            fixerId
+          }
+        });
 
-    await tx.conversation.updateMany({
-      where: {
+        await tx.conversation.updateMany({
+          where: {
+            jobId,
+            id: { not: convo.id },
+            status: "OPEN"
+          },
+          data: { status: "CLOSED" }
+        });
+
+        await this.notifications.create({
+          userId: job.clientId,
+          type: "ESCROW_LOCKED",
+          title: "Funds secured in escrow",
+          body: "Your agreed job amount has been secured in escrow. Payment happens only after completion approval.",
+          idempotencyKey: `notify:escrow_locked:${jobId}:${convo.id}`,
+          data: { jobId, fixerId, amountMilliFec: price, conversationId: convo.id },
+          prisma: tx
+        });
+      });
+
+      const room = this.realtime.roomFor(jobId, fixerId);
+
+      this.realtime.emitToRoom(room, "negotiation:agreed", {
         jobId,
-        id: { not: convo.id },
-        status: "OPEN"
-      },
-      data: { status: "CLOSED" }
+        fixerId,
+        conversationId: convo.id,
+        amountMilliFec: price
+      });
+
+      this.realtime.emitToRoom(room, "job:status", {
+        jobId,
+        status: "IN_PROGRESS"
+      });
+
+      return { status: "AGREED" };
+    }
+
+    if (next.status === "REJECTED") {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.negotiation.update({
+          where: { conversationId: convo.id },
+          data: {
+            status: "REJECTED",
+            rejectedAt: next.rejectedAt ?? undefined,
+            rejectedByUserId: next.rejectedByUserId ?? undefined
+          }
+        });
+
+        await tx.conversation.update({
+          where: { id: convo.id },
+          data: { status: "CLOSED" }
+        });
+      });
+
+      this.realtime.emitToRoom(
+        this.realtime.roomFor(jobId, fixerId),
+        "negotiation:rejected",
+        { jobId, fixerId, conversationId: convo.id }
+      );
+
+      return { status: "REJECTED" };
+    }
+
+    await this.repo.updateNegotiation(convo.id, {
+      status: next.status,
+      clientAcceptedAt: next.clientAcceptedAt ?? undefined,
+      fixerAcceptedAt: next.fixerAcceptedAt ?? undefined
     });
 
-    await this.notifications.create({
-      userId: job.clientId,
-      type: "ESCROW_LOCKED",
-      title: "Funds secured in escrow",
-      body: "Your agreed job amount has been secured in escrow. Payment happens only after completion approval.",
-      idempotencyKey: `notify:escrow_locked:${jobId}:${convo.id}`,
-      data: { jobId, fixerId, amountMilliFec: price, conversationId: convo.id },
-      prisma: tx
-    });
-  });
+    this.realtime.emitToRoom(
+      this.realtime.roomFor(jobId, fixerId),
+      "negotiation:locked",
+      { jobId, fixerId, conversationId: convo.id }
+    );
 
-  // 🔥 Emit AFTER transaction commits
-  const room = this.realtime.roomFor(jobId, fixerId);
-
-  this.realtime.emitToRoom(room, "negotiation:agreed", {
-    jobId,
-    fixerId,
-    conversationId: convo.id,
-    amountMilliFec: price
-  });
-
-  this.realtime.emitToRoom(room, "job:status", {
-    jobId,
-    status: "IN_PROGRESS"
-  });
-
-  return { status: "AGREED" };
-}
-
-  if (next.status === "REJECTED") {
-  await this.prisma.$transaction(async (tx) => {
-    await tx.negotiation.update({
-      where: { conversationId: convo.id },
-      data: {
-        status: "REJECTED",
-        rejectedAt: next.rejectedAt ?? undefined,
-        rejectedByUserId: next.rejectedByUserId ?? undefined
-      }
-    });
-
-    await tx.conversation.update({
-      where: { id: convo.id },
-      data: { status: "CLOSED" }
-    });
-  });
-
-  this.realtime.emitToRoom(
-    this.realtime.roomFor(jobId, fixerId),
-    "negotiation:rejected",
-    { jobId, fixerId, conversationId: convo.id }
-  );
-
-  return { status: "REJECTED" };
-}
-await this.repo.updateNegotiation(convo.id, {
-  status: next.status,
-  clientAcceptedAt: next.clientAcceptedAt ?? undefined,
-  fixerAcceptedAt: next.fixerAcceptedAt ?? undefined
-});
-
-this.realtime.emitToRoom(
-  this.realtime.roomFor(jobId, fixerId),
-  "negotiation:locked",
-  { jobId, fixerId, conversationId: convo.id }
-);
-
-return { status: "LOCKED" };
+    return { status: "LOCKED" };
   }
 
   async getConversationDetail(jobId: string, fixerId: string, requesterId: string, q: { cursor?: string; take?: number }) {
@@ -658,7 +676,6 @@ return { status: "LOCKED" };
 
     const msgs = await this.repo.getConversationMessages(convo.id, cursor, take);
 
-    // Return oldest -> newest for sane UI rendering
     const messages = [...msgs].reverse().map((m: any) => ({
       id: m.id,
       senderId: m.senderId,
@@ -672,7 +689,159 @@ return { status: "LOCKED" };
       }))
     }));
 
-    // nextCursor is the oldest message in the returned page
+    const nextCursor = messages.length ? messages[0].id : null;
+
+    return {
+      conversation: {
+        id: convo.id,
+        status: convo.status,
+        jobId: convo.jobId,
+        fixerId: convo.fixerId,
+        updatedAt: convo.updatedAt
+      },
+      job: {
+        id: convo.job.id,
+        clientId: convo.job.clientId,
+        status: convo.job.status,
+        skillCategory: convo.job.skillCategory,
+        state: convo.job.state,
+        city: convo.job.city,
+        lga: convo.job.lga,
+        area: convo.job.area,
+        priceMilliFec: convo.job.priceMilliFec,
+        lockedPriceMilliFec: convo.job.lockedPriceMilliFec
+      },
+      fixer: convo.fixer,
+      negotiation: convo.negotiation
+        ? {
+            status: convo.negotiation.status,
+            proposedPriceMilliFec: convo.negotiation.proposedPriceMilliFec,
+            lockedPriceMilliFec: convo.negotiation.lockedPriceMilliFec,
+            lockedByUserId: convo.negotiation.lockedByUserId,
+            clientAcceptedAt: convo.negotiation.clientAcceptedAt,
+            fixerAcceptedAt: convo.negotiation.fixerAcceptedAt,
+            agreedAt: convo.negotiation.agreedAt,
+            rejectedAt: convo.negotiation.rejectedAt,
+            rejectedByUserId: convo.negotiation.rejectedByUserId
+          }
+        : null,
+      messages,
+      pagination: {
+        nextCursor,
+        take
+      }
+    };
+  }
+
+  async getDisputeConversationForAdmin(disputeId: string, q: { cursor?: string; take?: number }) {
+    const dispute = await this.prisma.dispute.findUnique({
+      where: { id: disputeId },
+      include: { job: true }
+    });
+
+    if (!dispute) throw new NotFoundException("DISPUTE_NOT_FOUND");
+    if (!dispute.job) throw new NotFoundException("DISPUTE_JOB_NOT_FOUND");
+    if (!dispute.job.fixerId) throw new BadRequestException("DISPUTE_JOB_HAS_NO_FIXER");
+
+    const convo = await this.repo.upsertConversation(dispute.job.id, dispute.job.fixerId);
+
+    const detail = await this.getConversationDetailForAdminInternal(dispute.job.id, dispute.job.fixerId, q);
+
+    return {
+      dispute: {
+        id: dispute.id,
+        status: dispute.status,
+        reason: dispute.reason,
+        resolutionType: dispute.resolutionType,
+        createdAt: dispute.createdAt,
+        resolvedAt: dispute.resolvedAt
+      },
+      ...detail,
+      conversation: {
+        ...detail.conversation,
+        id: convo.id
+      }
+    };
+  }
+
+  async sendAdminMessageToDispute(disputeId: string, adminId: string, body: string) {
+    const cleanBody = String(body ?? "").trim();
+    if (!cleanBody) throw new BadRequestException("MESSAGE_BODY_REQUIRED");
+
+    const dispute = await this.prisma.dispute.findUnique({
+      where: { id: disputeId },
+      include: { job: true }
+    });
+
+    if (!dispute) throw new NotFoundException("DISPUTE_NOT_FOUND");
+    if (!dispute.job) throw new NotFoundException("DISPUTE_JOB_NOT_FOUND");
+    if (!dispute.job.fixerId) throw new BadRequestException("DISPUTE_JOB_HAS_NO_FIXER");
+
+    const liaisonUserId = await this.ensureAdminLiaisonUserId();
+
+    const convo = await this.repo.upsertConversation(dispute.job.id, dispute.job.fixerId);
+
+    if (convo.status !== "OPEN") {
+      await this.repo.setConversationStatus(convo.id, "OPEN");
+    }
+
+    const message = await this.repo.createMessage(
+      convo.id,
+      liaisonUserId,
+      `[ADMIN] ${cleanBody}`
+    );
+
+    const room = this.realtime.roomFor(dispute.job.id, dispute.job.fixerId);
+    this.realtime.emitToRoom(room, "message:new", {
+      jobId: dispute.job.id,
+      fixerId: dispute.job.fixerId,
+      conversationId: convo.id,
+      message: {
+        id: message.id,
+        senderId: message.senderId,
+        body: message.body,
+        createdAt: message.createdAt,
+        adminId
+      }
+    });
+
+    return {
+      ok: true,
+      message: {
+        id: message.id,
+        senderId: message.senderId,
+        body: message.body,
+        createdAt: message.createdAt
+      }
+    };
+  }
+
+  private async getConversationDetailForAdminInternal(
+    jobId: string,
+    fixerId: string,
+    q: { cursor?: string; take?: number }
+  ) {
+    const convo = await this.repo.getConversationByJobFixer(jobId, fixerId);
+    if (!convo) throw new NotFoundException("CONVERSATION_NOT_FOUND");
+
+    const take = q.take ?? 30;
+    const cursor = q.cursor;
+
+    const msgs = await this.repo.getConversationMessages(convo.id, cursor, take);
+
+    const messages = [...msgs].reverse().map((m: any) => ({
+      id: m.id,
+      senderId: m.senderId,
+      body: m.body,
+      createdAt: m.createdAt,
+      flags: (m.flags ?? []).map((f: any) => ({
+        id: f.id,
+        type: f.type,
+        matched: f.matched,
+        createdAt: f.createdAt
+      }))
+    }));
+
     const nextCursor = messages.length ? messages[0].id : null;
 
     return {

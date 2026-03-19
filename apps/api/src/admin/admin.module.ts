@@ -1,3 +1,4 @@
+// Path: apps/api/src/admin/admin.module.ts
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -24,6 +25,7 @@ import { AdminExportsRepo } from "./exports/admin-exports.repo";
 import { DisputesModule } from "../modules/disputes/disputes.module";
 import { AdminDisputesController } from "../modules/disputes/admin-disputes.controller";
 import { NotificationsModule } from "../modules/notifications/notifications.module";
+import { ChatModule } from "../chat/chat.module";
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { NotificationsModule } from "../modules/notifications/notifications.modu
     PrismaModule,
     DisputesModule,
     NotificationsModule,
+    ChatModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

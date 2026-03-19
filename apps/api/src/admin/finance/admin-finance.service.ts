@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/finance/admin-finance.service.ts
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { NotificationType } from "@prisma/client";
 import { AdminAuditService } from "../audit/admin-audit.service";

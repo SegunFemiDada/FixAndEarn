@@ -1,6 +1,7 @@
+// Path: apps/api/src/admin/finance/admin-finance.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma } from "@prisma/client";
+import { Prisma, WalletRole } from "@prisma/client";
 
 @Injectable()
 export class AdminFinanceRepo {
@@ -13,13 +14,13 @@ export class AdminFinanceRepo {
       skip,
       take,
       include: {
-        user: { select: { id: true, email: true, fullName: true, isActive: true } }
-      }
+        user: { select: { id: true, email: true, fullName: true, isActive: true } },
+      },
     });
   }
 
-  getWithdrawal(id: string) {
-    return this.prisma.withdrawalRequest.findUnique({
+  async getWithdrawal(id: string) {
+    const row = await this.prisma.withdrawalRequest.findUnique({
       where: { id },
       include: {
         user: {
@@ -29,36 +30,67 @@ export class AdminFinanceRepo {
             fullName: true,
             isActive: true,
             bankDetails: true,
-            wallet: { select: { id: true, balanceMilliFec: true } }
-          }
-        }
-      }
+          },
+        },
+      },
     });
+
+    if (!row) return null;
+
+    const wallet = await this.prisma.wallet.findUnique({
+      where: {
+        userId_role: {
+          userId: row.userId,
+          role: WalletRole.FIXER,
+        },
+      },
+      select: {
+        id: true,
+        role: true,
+        balanceMilliFec: true,
+      },
+    });
+
+    return {
+      ...row,
+      user: {
+        ...row.user,
+        wallet,
+      },
+    };
   }
 
-  private async hasWithdrawalDebit(tx: Prisma.TransactionClient, walletId: string, withdrawalId: string) {
+  private async hasWithdrawalDebit(
+    tx: Prisma.TransactionClient,
+    walletId: string,
+    withdrawalId: string
+  ) {
     const debit = await tx.ledgerEntry.findFirst({
       where: {
         walletId,
         reference: withdrawalId,
         direction: "DEBIT",
-        type: { in: ["WITHDRAWAL_REQUEST", "WITHDRAWAL_APPROVED"] }
+        type: { in: ["WITHDRAWAL_REQUEST", "WITHDRAWAL_APPROVED"] },
       },
-      select: { id: true, type: true }
+      select: { id: true, type: true },
     });
 
-    return debit; // null or {id,type}
+    return debit;
   }
 
-  private async hasWithdrawalReversal(tx: Prisma.TransactionClient, walletId: string, withdrawalId: string) {
+  private async hasWithdrawalReversal(
+    tx: Prisma.TransactionClient,
+    walletId: string,
+    withdrawalId: string
+  ) {
     const credit = await tx.ledgerEntry.findFirst({
       where: {
         walletId,
         reference: withdrawalId,
         direction: "CREDIT",
-        type: { in: ["WITHDRAWAL_REJECTED"] }
+        type: { in: ["WITHDRAWAL_REJECTED"] },
       },
-      select: { id: true }
+      select: { id: true },
     });
 
     return credit;
@@ -76,19 +108,23 @@ export class AdminFinanceRepo {
       }
       if (wr.status !== "PENDING") throw new Error("WITHDRAWAL_NOT_PENDING");
 
-      const wallet = await tx.wallet.findUnique({ where: { userId: wr.userId } });
+      const wallet = await tx.wallet.findUnique({
+        where: {
+          userId_role: {
+            userId: wr.userId,
+            role: WalletRole.FIXER,
+          },
+        },
+      });
       if (!wallet) throw new Error("WALLET_NOT_FOUND");
 
-      // Detect whether funds were already debited/reserved at request time
       const existingDebit = await this.hasWithdrawalDebit(tx, wallet.id, withdrawalId);
 
       if (!existingDebit) {
-        // Pattern B: debit at approval time
         if (wallet.balanceMilliFec < wr.amountMilliFec) throw new Error("INSUFFICIENT_BALANCE");
 
         const idempotencyKey = `withdrawal_approve:${withdrawalId}`;
 
-        // Create DEBIT ledger entry (idempotent via unique key)
         await tx.ledgerEntry.create({
           data: {
             walletId: wallet.id,
@@ -97,13 +133,13 @@ export class AdminFinanceRepo {
             amountMilliFec: wr.amountMilliFec,
             idempotencyKey,
             reference: withdrawalId,
-            metadata: { withdrawalId }
-          }
+            metadata: { withdrawalId },
+          },
         });
 
         await tx.wallet.update({
           where: { id: wallet.id },
-          data: { balanceMilliFec: { decrement: wr.amountMilliFec } }
+          data: { balanceMilliFec: { decrement: wr.amountMilliFec } },
         });
       }
 
@@ -113,8 +149,8 @@ export class AdminFinanceRepo {
           status: "APPROVED",
           reviewedBy: adminId,
           reviewNote: note ?? null,
-          reviewedAt: new Date()
-        }
+          reviewedAt: new Date(),
+        },
       });
 
       return { ok: true, status: "APPROVED" as const };
@@ -132,10 +168,16 @@ export class AdminFinanceRepo {
       if (wr.status === "PAID") return { ok: true, status: "PAID" as const };
       if (wr.status !== "PENDING") throw new Error("WITHDRAWAL_NOT_PENDING");
 
-      const wallet = await tx.wallet.findUnique({ where: { userId: wr.userId } });
+      const wallet = await tx.wallet.findUnique({
+        where: {
+          userId_role: {
+            userId: wr.userId,
+            role: WalletRole.FIXER,
+          },
+        },
+      });
       if (!wallet) throw new Error("WALLET_NOT_FOUND");
 
-      // If request already debited/reserved funds, rejection must refund via ledger
       const existingDebit = await this.hasWithdrawalDebit(tx, wallet.id, withdrawalId);
       const existingReversal = await this.hasWithdrawalReversal(tx, wallet.id, withdrawalId);
 
@@ -150,13 +192,13 @@ export class AdminFinanceRepo {
             amountMilliFec: wr.amountMilliFec,
             idempotencyKey,
             reference: withdrawalId,
-            metadata: { withdrawalId, reason: note ?? null }
-          }
+            metadata: { withdrawalId, reason: note ?? null },
+          },
         });
 
         await tx.wallet.update({
           where: { id: wallet.id },
-          data: { balanceMilliFec: { increment: wr.amountMilliFec } }
+          data: { balanceMilliFec: { increment: wr.amountMilliFec } },
         });
       }
 
@@ -166,8 +208,8 @@ export class AdminFinanceRepo {
           status: "REJECTED",
           reviewedBy: adminId,
           reviewNote: note ?? null,
-          reviewedAt: new Date()
-        }
+          reviewedAt: new Date(),
+        },
       });
 
       return { ok: true, status: "REJECTED" as const };
@@ -190,8 +232,8 @@ export class AdminFinanceRepo {
           status: "PAID",
           reviewedBy: adminId,
           reviewNote: note ?? wr.reviewNote ?? null,
-          paidAt: new Date()
-        }
+          paidAt: new Date(),
+        },
       });
 
       return { ok: true, status: "PAID" as const };

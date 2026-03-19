@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/job-completion/job-completion.module.ts
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../../infra/prisma/prisma.module";
 import { JobsRepo } from "../jobs/jobs.repo";

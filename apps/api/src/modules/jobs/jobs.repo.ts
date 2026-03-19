@@ -1,8 +1,7 @@
 // Path: apps/api/src/modules/jobs/jobs.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma } from "@prisma/client";
-
+import { Prisma, WalletRole } from "@prisma/client";
 @Injectable()
 export class JobsRepo {
   constructor(private readonly prisma: PrismaService) {}
@@ -41,6 +40,9 @@ export class JobsRepo {
       images: {
         orderBy: { sortOrder: "asc" },
       },
+      completionRequest: true,
+      dispute: true,
+      review: true,
     },
   });
 }
@@ -241,7 +243,13 @@ async listJobApplications(jobId: string, skip: number, take: number) {
       }
     });
 
-    await tx.wallet.create({ data: { userId: platformUser.id, balanceMilliFec: 0 } });
+        await tx.wallet.create({
+      data: {
+        userId: platformUser.id,
+        role: WalletRole.SYSTEM,
+        balanceMilliFec: 0,
+      },
+    });
 
     await tx.appMeta.upsert({
       where: { key },
@@ -271,7 +279,13 @@ async listJobApplications(jobId: string, skip: number, take: number) {
       }
     });
 
-    await tx.wallet.create({ data: { userId: escrowUser.id, balanceMilliFec: 0 } });
+        await tx.wallet.create({
+      data: {
+        userId: escrowUser.id,
+        role: WalletRole.SYSTEM,
+        balanceMilliFec: 0,
+      },
+    });
 
     await tx.appMeta.upsert({
       where: { key },
@@ -376,15 +390,36 @@ async approveCompletionAndPay(args: { jobId: string; clientId: string; rating: n
 
     const escrowUserId = await this.ensureEscrowUserId(tx);
 
-    const escrowWallet = await tx.wallet.findUnique({ where: { userId: escrowUserId } });
+        const escrowWallet = await tx.wallet.findUnique({
+      where: {
+        userId_role: {
+          userId: escrowUserId,
+          role: WalletRole.SYSTEM,
+        },
+      },
+    });
     if (!escrowWallet) throw new Error("ESCROW_WALLET_MISSING");
     if (escrowWallet.balanceMilliFec < gross) throw new Error("ESCROW_INSUFFICIENT_BALANCE");
 
-    const fixerWallet = await tx.wallet.findUnique({ where: { userId: fixerId } });
+        const fixerWallet = await tx.wallet.findUnique({
+      where: {
+        userId_role: {
+          userId: fixerId,
+          role: WalletRole.FIXER,
+        },
+      },
+    });
     if (!fixerWallet) throw new Error("FIXER_WALLET_MISSING");
 
     const platformUserId = await this.ensurePlatformUserId(tx);
-    const platformWallet = await tx.wallet.findUnique({ where: { userId: platformUserId } });
+        const platformWallet = await tx.wallet.findUnique({
+      where: {
+        userId_role: {
+          userId: platformUserId,
+          role: WalletRole.SYSTEM,
+        },
+      },
+    });
     if (!platformWallet) throw new Error("PLATFORM_WALLET_MISSING");
 
     // 1) Debit escrow gross

@@ -1,6 +1,16 @@
-import { Body, Controller, Get, Inject, Post, UseGuards, BadRequestException } from "@nestjs/common";
+// Path: apps/api/src/modules/wallet/wallet.controller.ts
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { NotificationType } from "@prisma/client";
+import { NotificationType, WalletRole } from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
@@ -35,10 +45,51 @@ export class WalletController {
     @Inject(PAYSTACK_PROVIDER) private readonly paystack: PaystackProvider
   ) {}
 
+  private async getUserRoleCodes(userId: string): Promise<Array<"CLIENT" | "FIXER">> {
+    const rows = await this.prisma.userRole.findMany({
+      where: { userId },
+      select: { role: { select: { code: true } } },
+    });
+
+    return rows
+      .map((r) => r.role.code)
+      .filter((code): code is "CLIENT" | "FIXER" => code === "CLIENT" || code === "FIXER");
+  }
+
+  private async resolveBalanceRole(
+    userId: string,
+    requestedRole?: string
+  ): Promise<WalletRole> {
+    const roles = await this.getUserRoleCodes(userId);
+
+    if (requestedRole) {
+      const normalized = String(requestedRole).trim().toUpperCase();
+      if (normalized !== "CLIENT" && normalized !== "FIXER") {
+        throw new BadRequestException("INVALID_WALLET_ROLE");
+      }
+      if (!roles.includes(normalized)) {
+        throw new BadRequestException("ROLE_NOT_ASSIGNED_TO_USER");
+      }
+      return normalized === "FIXER" ? WalletRole.FIXER : WalletRole.CLIENT;
+    }
+
+    if (roles.length === 1 && roles[0] === "FIXER") {
+      return WalletRole.FIXER;
+    }
+
+    return WalletRole.CLIENT;
+  }
+
   @Get("balance")
-  async balance(@CurrentUser() user: { userId: string }) {
-    const wallet = await this.walletService.getOrCreateWallet(user.userId);
+  async balance(
+    @CurrentUser() user: { userId: string },
+    @Query("role") role?: string
+  ) {
+    const walletRole = await this.resolveBalanceRole(user.userId, role);
+    const wallet = await this.walletService.getOrCreateWallet(user.userId, walletRole);
+
     return {
+      role: walletRole,
       balanceMilliFec: wallet.balanceMilliFec,
       balanceFec: wallet.balanceMilliFec / 1000,
     };
@@ -47,18 +98,20 @@ export class WalletController {
   @Get("withdrawable-balance")
   @Roles("FIXER")
   async withdrawableBalance(@CurrentUser() user: { userId: string }) {
-    const wallet = await this.walletService.getOrCreateWallet(user.userId);
+    const wallet = await this.walletService.getOrCreateWallet(user.userId, WalletRole.FIXER);
     const lockedEscrowMilliFec = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
 
     const withdrawableBalanceMilliFec = Math.max(0, wallet.balanceMilliFec - lockedEscrowMilliFec);
 
     return {
+      role: WalletRole.FIXER,
       withdrawableBalanceMilliFec,
       withdrawableBalanceFec: withdrawableBalanceMilliFec / 1000,
     };
   }
 
   @Post("deposits/initiate")
+  @Roles("CLIENT")
   async initiateDeposit(@CurrentUser() user: { userId: string }, @Body() dto: InitiateDepositDto) {
     const dbUser = await this.prisma.user.findUnique({ where: { id: user.userId } });
     if (!dbUser) return { error: "User not found" };
@@ -132,6 +185,7 @@ export class WalletController {
 
     await this.ledgerService.addEntry({
       userId: intent.userId,
+      role: WalletRole.CLIENT,
       type: "DEPOSIT",
       direction: "CREDIT",
       amountMilliFec: intent.amountMilliFec,
@@ -192,7 +246,7 @@ export class WalletController {
     if (!bankCode) throw new BadRequestException("BANK_CODE_REQUIRED");
 
     const existing = await this.prisma.bankDetails.findUnique({
-      where: { userId: user.userId }
+      where: { userId: user.userId },
     });
 
     try {
@@ -212,7 +266,7 @@ export class WalletController {
       const recipient = await this.paystack.createTransferRecipient({
         name: dto.accountName,
         accountNumber: dto.accountNumber,
-        bankCode
+        bankCode,
       });
       recipientCode = recipient.recipientCode;
     }
@@ -226,7 +280,7 @@ export class WalletController {
         bankCode,
         bvnEncrypted: encrypted.ciphertextB64,
         bvnIv: encrypted.ivB64,
-        paystackRecipientCode: recipientCode
+        paystackRecipientCode: recipientCode,
       },
       create: {
         userId: user.userId,
@@ -236,8 +290,8 @@ export class WalletController {
         bankCode,
         bvnEncrypted: encrypted.ciphertextB64,
         bvnIv: encrypted.ivB64,
-        paystackRecipientCode: recipientCode
-      }
+        paystackRecipientCode: recipientCode,
+      },
     });
 
     return {
@@ -245,7 +299,7 @@ export class WalletController {
       bankName: record.bankName,
       accountName: record.accountName,
       accountNumber: record.accountNumber,
-      hasRecipientCode: Boolean(record.paystackRecipientCode)
+      hasRecipientCode: Boolean(record.paystackRecipientCode),
     };
   }
 
@@ -293,9 +347,11 @@ export class WalletController {
   @Post("withdrawals/request")
   @Roles("FIXER")
   async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
-    const wallet = await this.walletService.getOrCreateWallet(user.userId);
+    const wallet = await this.walletService.getOrCreateWallet(user.userId, WalletRole.FIXER);
 
-    const bank = await this.prisma.bankDetails.findUnique({ where: { userId: user.userId } });
+    const bank = await this.prisma.bankDetails.findUnique({
+      where: { userId: user.userId },
+    });
     if (!bank) return { error: "Bank details required before requesting withdrawal." };
 
     const lockedEscrowMilliFec = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
@@ -311,6 +367,7 @@ export class WalletController {
 
     await this.ledgerService.addEntry({
       userId: user.userId,
+      role: WalletRole.FIXER,
       type: "WITHDRAWAL_REQUEST",
       direction: "DEBIT",
       amountMilliFec: dto.amountMilliFec,

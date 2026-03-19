@@ -1,7 +1,12 @@
 // Path: /apps/api/src/modules/wallet/ledger.service.ts
 import { ConflictException, Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma, LedgerEntryDirection, LedgerEntryType } from "@prisma/client";
+import {
+  Prisma,
+  LedgerEntryDirection,
+  LedgerEntryType,
+  WalletRole,
+} from "@prisma/client";
 import { WalletService } from "./wallet.service";
 
 type PrismaLike = Prisma.TransactionClient | PrismaService;
@@ -15,6 +20,7 @@ export class LedgerService {
 
   async addEntry(input: {
     userId: string;
+    role: WalletRole;
     type: LedgerEntryType;
     direction: LedgerEntryDirection;
     amountMilliFec: number;
@@ -25,11 +31,14 @@ export class LedgerService {
   }) {
     const db = input.prisma ?? this.prisma;
 
-    const wallet = await this.walletService.getOrCreateWallet(input.userId, db);
+    const wallet = await this.walletService.getOrCreateWallet(
+      input.userId,
+      input.role,
+      db
+    );
 
-    // idempotency
     const existing = await db.ledgerEntry.findUnique({
-      where: { idempotencyKey: input.idempotencyKey }
+      where: { idempotencyKey: input.idempotencyKey },
     });
     if (existing) {
       throw new ConflictException("Duplicate ledger entry.");
@@ -41,7 +50,6 @@ export class LedgerService {
         : wallet.balanceMilliFec - input.amountMilliFec;
 
     if (newBalance < 0) {
-      // keep it generic; callers decide the message
       throw new ConflictException("Insufficient balance.");
     }
 
@@ -53,13 +61,13 @@ export class LedgerService {
         amountMilliFec: input.amountMilliFec,
         idempotencyKey: input.idempotencyKey,
         reference: input.reference,
-        metadata: input.metadata
-      }
+        metadata: input.metadata,
+      },
     });
 
     await db.wallet.update({
       where: { id: wallet.id },
-      data: { balanceMilliFec: newBalance }
+      data: { balanceMilliFec: newBalance },
     });
 
     return { entry, balanceMilliFec: newBalance };

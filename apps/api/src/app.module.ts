@@ -13,7 +13,6 @@ import { PaymentsModule } from "./modules/payments/payments.module";
 import { RolesGuard } from "./common/auth/roles.guard";
 import { JobsModule } from "./modules/jobs/jobs.module";
 import { AdminModule } from "./admin/admin.module";
-import { JobCompletionModule } from "./modules/job-completion/job-completion.module";
 import { ChatModule } from "./chat/chat.module";
 import { FixersModule } from "./modules/fixers/fixers.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
@@ -37,13 +36,13 @@ import { ProfilesModule } from "./modules/profiles/profiles.module";
     WalletModule,
     JobsModule,
     AdminModule,
-    JobCompletionModule,
     ChatModule,
     FixersModule,
     NotificationsModule,
     DisputesModule,
     ProfilesModule,
-    RatingsModule],
+    RatingsModule
+  ],
   providers: [
     {
       provide: APP_GUARD,
