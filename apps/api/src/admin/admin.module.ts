@@ -28,6 +28,9 @@ import { ChatModule } from "../chat/chat.module";
 import { AdminAnalyticsController } from "./analytics/admin-analytics.controller";
 import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
 import { AdminAnalyticsRepo } from "./analytics/admin-analytics.repo";
+import { AdminMessagingController } from "./messaging/admin-messaging.controller";
+import { AdminMessagingService } from "./messaging/admin-messaging.service";
+import { AdminMessagingRepo } from "./messaging/admin-messaging.repo";
 
 @Module({
   imports: [
@@ -53,7 +56,8 @@ import { AdminAnalyticsRepo } from "./analytics/admin-analytics.repo";
     AdminUsersController,
     AdminExportsController,
     AdminDisputesController,
-    AdminAnalyticsController
+    AdminAnalyticsController,
+    AdminMessagingController
   ],
   providers: [
     CryptoService,
@@ -70,7 +74,9 @@ import { AdminAnalyticsRepo } from "./analytics/admin-analytics.repo";
     AdminExportsRepo,
     AdminExportsService,
     AdminAnalyticsRepo,
-    AdminAnalyticsService
+    AdminAnalyticsService,
+    AdminMessagingRepo,
+    AdminMessagingService
   ],
   exports: [AdminService, AdminAuditService]
 })
