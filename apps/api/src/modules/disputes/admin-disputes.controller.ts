@@ -1,4 +1,3 @@
-// Path: apps/api/src/modules/disputes/admin-disputes.controller.ts
 import {
   Body,
   Controller,
@@ -14,10 +13,11 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "../../admin/auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../../admin/auth/admin-roles.guard";
 import { AdminRoles } from "../../admin/auth/admin-roles.decorator";
-import { AdminRole, DisputeStatus } from "@prisma/client";
+import { AdminRole } from "@prisma/client";
 import { DisputesService } from "../../modules/disputes/disputes.service";
 import { ResolveDisputeDto } from "../../modules/disputes/dto/resolve-dispute.dto";
 import { AdminDisputeChatMessageDto } from "../../modules/disputes/dto/admin-dispute-chat-message.dto";
+import { ListAdminDisputesDto } from "../../modules/disputes/dto/list-admin-disputes.dto";
 
 @ApiTags("admin.disputes")
 @ApiBearerAuth()
@@ -28,8 +28,11 @@ export class AdminDisputesController {
   constructor(private readonly disputes: DisputesService) {}
 
   @Get()
-  async list(@Query("status") status?: DisputeStatus) {
-    return this.disputes.listDisputes(status);
+  async list(@Query() query: ListAdminDisputesDto) {
+    return this.disputes.listDisputes({
+      status: query.status,
+      jobId: query.jobId,
+    });
   }
 
   @Get(":disputeId/chat")
