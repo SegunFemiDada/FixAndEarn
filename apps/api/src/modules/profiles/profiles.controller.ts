@@ -39,20 +39,12 @@ function normalizeStoredUploadPath(pathOrKey: string | null | undefined): string
   return pathOrKey;
 }
 
-function mapRoleCodes(rawRoles: any[] | null | undefined): string[] {
+function mapRoleCodes(rawRoles: Array<{ role?: { code?: string | null } | null }> | null | undefined): string[] {
   if (!Array.isArray(rawRoles)) return [];
 
   return rawRoles
-    .map((r: any) => {
-      if (!r) return null;
-      if (typeof r === "string") return r;
-      if (typeof r.code === "string") return r.code;
-      if (typeof r.role === "string") return r.role;
-      if (r.role && typeof r.role.code === "string") return r.role.code;
-      if (r.role && typeof r.role.role === "string") return r.role.role;
-      return null;
-    })
-    .filter(Boolean);
+    .map((r) => r?.role?.code ?? null)
+    .filter((v): v is string => typeof v === "string" && !!v.trim());
 }
 
 function maskClientName(fullName?: string | null): string {
@@ -228,12 +220,12 @@ export class ProfilesController {
   }
 
   @Get("me")
-  async getMyProfile(@Req() req: any) {
+  async getMyProfile(@Req() req: { user?: { userId?: string; id?: string; sub?: string } }) {
     const userId = req?.user?.userId ?? req?.user?.id ?? req?.user?.sub;
 
     if (!userId) throw new NotFoundException("USER_NOT_FOUND");
 
-    const [u, completedJobs] = await Promise.all([
+    const [u, completedJobs, recentReviews] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -279,6 +271,22 @@ export class ProfilesController {
         where: {
           fixerId: userId,
           status: "COMPLETED",
+        },
+      }),
+      this.prisma.jobReview.findMany({
+        where: { fixerId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          client: {
+            select: {
+              fullName: true,
+            },
+          },
         },
       }),
     ]);
@@ -336,6 +344,15 @@ export class ProfilesController {
       stats: {
         completedJobs,
       },
+      recentReviews: recentReviews.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment ?? null,
+        createdAt: r.createdAt.toISOString(),
+        client: {
+          displayName: maskClientName(r.client?.fullName),
+        },
+      })),
     };
   }
 }

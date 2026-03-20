@@ -41,7 +41,6 @@ export class JobsRepo {
         orderBy: { sortOrder: "asc" },
       },
       completionRequest: true,
-      dispute: true,
       review: true,
     },
   });

@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/auth/admin-roles.guard.ts
 import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ADMIN_ROLES_KEY } from "./admin-roles.decorator";
