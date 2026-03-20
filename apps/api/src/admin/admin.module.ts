@@ -1,4 +1,3 @@
-// Path: apps/api/src/admin/admin.module.ts
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -26,6 +25,9 @@ import { DisputesModule } from "../modules/disputes/disputes.module";
 import { AdminDisputesController } from "../modules/disputes/admin-disputes.controller";
 import { NotificationsModule } from "../modules/notifications/notifications.module";
 import { ChatModule } from "../chat/chat.module";
+import { AdminAnalyticsController } from "./analytics/admin-analytics.controller";
+import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
+import { AdminAnalyticsRepo } from "./analytics/admin-analytics.repo";
 
 @Module({
   imports: [
@@ -50,7 +52,8 @@ import { ChatModule } from "../chat/chat.module";
     AdminFinanceController,
     AdminUsersController,
     AdminExportsController,
-    AdminDisputesController
+    AdminDisputesController,
+    AdminAnalyticsController
   ],
   providers: [
     CryptoService,
@@ -65,7 +68,9 @@ import { ChatModule } from "../chat/chat.module";
     AdminUsersRepo,
     AdminUsersService,
     AdminExportsRepo,
-    AdminExportsService
+    AdminExportsService,
+    AdminAnalyticsRepo,
+    AdminAnalyticsService
   ],
   exports: [AdminService, AdminAuditService]
 })

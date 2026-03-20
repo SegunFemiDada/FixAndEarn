@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/auth/admin-roles.decorator.ts
 import { SetMetadata } from "@nestjs/common";
 import { AdminRole } from "@prisma/client";
 
