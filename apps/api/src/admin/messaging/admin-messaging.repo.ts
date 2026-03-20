@@ -100,27 +100,6 @@ export class AdminMessagingRepo {
 
     const conversationIds = conversations.map((item) => item.id);
 
-    const flaggedCounts = conversationIds.length
-      ? await this.prisma.moderationFlag.groupBy({
-          by: ["messageId"],
-          where: {
-            message: {
-              conversationId: {
-                in: conversationIds,
-              },
-            },
-          },
-          _count: {
-            _all: true,
-          },
-        })
-      : [];
-
-    const messageIdToFlagCount = new Map<string, number>();
-    for (const row of flaggedCounts) {
-      messageIdToFlagCount.set(row.messageId, row._count._all);
-    }
-
     const totalsByConversation = conversationIds.length
       ? await this.prisma.chatMessage.findMany({
           where: {
@@ -164,7 +143,7 @@ export class AdminMessagingRepo {
               senderId: lastMessage.senderId,
               body: lastMessage.body,
               createdAt: lastMessage.createdAt,
-              flagCount: messageIdToFlagCount.get(lastMessage.id) ?? lastMessage.flags.length,
+              flagCount: lastMessage.flags.length,
             }
           : null,
         job: conversation.job
@@ -198,6 +177,22 @@ export class AdminMessagingRepo {
             fixerId: true,
             status: true,
             lockedPriceMilliFec: true,
+            client: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                isActive: true,
+              },
+            },
+            fixer: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                isActive: true,
+              },
+            },
             dispute: {
               select: {
                 id: true,
@@ -257,6 +252,43 @@ export class AdminMessagingRepo {
         senderId: args.senderId,
         body: args.body,
       },
+    });
+  }
+
+  async setConversationStatus(conversationId: string, status: "OPEN" | "CLOSED") {
+    return this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { status },
+    });
+  }
+
+  async setUserActive(userId: string, isActive: boolean) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      select: {
+        id: true,
+        isActive: true,
+        email: true,
+        fullName: true,
+      },
+    });
+  }
+
+  async getAppMetaValue(key: string) {
+    const record = await this.prisma.appMeta.findUnique({
+      where: { key },
+      select: { value: true },
+    });
+
+    return record?.value ?? null;
+  }
+
+  async upsertAppMetaValue(key: string, value: string) {
+    return this.prisma.appMeta.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
     });
   }
 }

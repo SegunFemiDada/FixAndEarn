@@ -16,6 +16,22 @@ export class AdminMessagingService {
     private readonly notifications: NotificationsService
   ) {}
 
+  private strikeKey(userId: string) {
+    return `MODERATION_STRIKES:${userId}`;
+  }
+
+  private async getStrikeCount(userId: string) {
+    const raw = await this.repo.getAppMetaValue(this.strikeKey(userId));
+    const parsed = Number(raw ?? 0);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  }
+
+  private async incrementStrikeCount(userId: string) {
+    const next = (await this.getStrikeCount(userId)) + 1;
+    await this.repo.upsertAppMetaValue(this.strikeKey(userId), String(next));
+    return next;
+  }
+
   async listConversations(args: {
     jobId?: string;
     userId?: string;
@@ -53,6 +69,14 @@ export class AdminMessagingService {
       throw new NotFoundException("CONVERSATION_NOT_FOUND");
     }
 
+    const clientStrikeCount = conversation.job?.client?.id
+      ? await this.getStrikeCount(conversation.job.client.id)
+      : 0;
+
+    const fixerStrikeCount = conversation.job?.fixer?.id
+      ? await this.getStrikeCount(conversation.job.fixer.id)
+      : 0;
+
     return {
       conversation: {
         id: conversation.id,
@@ -71,6 +95,26 @@ export class AdminMessagingService {
             lockedPriceMilliFec: conversation.job.lockedPriceMilliFec,
           }
         : null,
+      participants: {
+        client: conversation.job?.client
+          ? {
+              id: conversation.job.client.id,
+              fullName: conversation.job.client.fullName,
+              email: conversation.job.client.email,
+              isActive: conversation.job.client.isActive,
+              strikeCount: clientStrikeCount,
+            }
+          : null,
+        fixer: conversation.job?.fixer
+          ? {
+              id: conversation.job.fixer.id,
+              fullName: conversation.job.fixer.fullName,
+              email: conversation.job.fixer.email,
+              isActive: conversation.job.fixer.isActive,
+              strikeCount: fixerStrikeCount,
+            }
+          : null,
+      },
       dispute: conversation.job?.dispute
         ? {
             id: conversation.job.dispute.id,
@@ -179,6 +223,255 @@ export class AdminMessagingService {
         body: message.body,
         createdAt: message.createdAt,
       },
+    };
+  }
+
+  async warnConversationTargets(args: {
+    conversationId: string;
+    adminId: string;
+    target: "CLIENT" | "FIXER" | "BOTH";
+    reason?: string;
+  }) {
+    const detail = await this.repo.getConversationById(args.conversationId, 1);
+    if (!detail) throw new NotFoundException("CONVERSATION_NOT_FOUND");
+
+    const targets: Array<{
+      userId: string;
+      role: "CLIENT" | "FIXER";
+      fullName: string;
+    }> = [];
+
+    if ((args.target === "CLIENT" || args.target === "BOTH") && detail.job?.client) {
+      targets.push({
+        userId: detail.job.client.id,
+        role: "CLIENT",
+        fullName: detail.job.client.fullName,
+      });
+    }
+
+    if ((args.target === "FIXER" || args.target === "BOTH") && detail.job?.fixer) {
+      targets.push({
+        userId: detail.job.fixer.id,
+        role: "FIXER",
+        fullName: detail.job.fixer.fullName,
+      });
+    }
+
+    if (targets.length === 0) {
+      throw new BadRequestException("NO_VALID_WARNING_TARGET");
+    }
+
+    const warnedUsers = await Promise.all(
+      targets.map(async (target) => {
+        const strikeCount = await this.incrementStrikeCount(target.userId);
+
+        await this.notifications.create({
+          userId: target.userId,
+          type: NotificationType.DISPUTE_OPENED,
+          title: "Policy warning",
+          body:
+            args.reason?.trim() ||
+            "Your recent chat activity breached FixAndEarn policy. Continued violations may result in restrictions.",
+          idempotencyKey: `notif:policy_warning:${args.conversationId}:${target.userId}:${strikeCount}`,
+          data: {
+            conversationId: detail.id,
+            jobId: detail.jobId,
+            strikeCount,
+            targetRole: target.role,
+            reason: args.reason?.trim() ?? null,
+          },
+        });
+
+        return {
+          userId: target.userId,
+          role: target.role,
+          strikeCount,
+        };
+      })
+    );
+
+    await this.audit.log({
+      actorAdminId: args.adminId,
+      action: "ADMIN_MESSAGING_WARN",
+      description: "Admin issued moderation warning",
+      metadata: {
+        conversationId: detail.id,
+        jobId: detail.jobId,
+        target: args.target,
+        warnedUsers,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    return {
+      ok: true,
+      warnedUsers,
+    };
+  }
+
+  async restrictConversation(args: {
+    conversationId: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    const detail = await this.repo.getConversationById(args.conversationId, 1);
+    if (!detail) throw new NotFoundException("CONVERSATION_NOT_FOUND");
+
+    if (detail.status !== "CLOSED") {
+      await this.repo.setConversationStatus(detail.id, "CLOSED");
+    }
+
+    const recipients = [detail.job?.clientId, detail.job?.fixerId].filter(Boolean) as string[];
+
+    await Promise.all(
+      recipients.map((userId) =>
+        this.notifications.create({
+          userId,
+          type: NotificationType.DISPUTE_OPENED,
+          title: "Conversation restricted",
+          body:
+            args.reason?.trim() ||
+            "This conversation has been restricted by FixAndEarn admin due to policy concerns.",
+          idempotencyKey: `notif:conversation_restricted:${detail.id}:${userId}`,
+          data: {
+            conversationId: detail.id,
+            jobId: detail.jobId,
+            reason: args.reason?.trim() ?? null,
+          },
+        })
+      )
+    );
+
+    await this.audit.log({
+      actorAdminId: args.adminId,
+      action: "ADMIN_MESSAGING_RESTRICT_CONVERSATION",
+      description: "Admin restricted conversation",
+      metadata: {
+        conversationId: detail.id,
+        jobId: detail.jobId,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    return {
+      ok: true,
+      status: "CLOSED" as const,
+    };
+  }
+
+  async addUserStrike(args: {
+    userId: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    const strikeCount = await this.incrementStrikeCount(args.userId);
+
+    await this.notifications.create({
+      userId: args.userId,
+      type: NotificationType.DISPUTE_OPENED,
+      title: "Policy strike recorded",
+      body:
+        args.reason?.trim() ||
+        "A moderation strike has been recorded against your account due to policy violations.",
+      idempotencyKey: `notif:user_strike:${args.userId}:${strikeCount}`,
+      data: {
+        userId: args.userId,
+        strikeCount,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    await this.audit.log({
+      actorAdminId: args.adminId,
+      action: "ADMIN_MESSAGING_ADD_STRIKE",
+      description: "Admin added moderation strike to user",
+      metadata: {
+        userId: args.userId,
+        strikeCount,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    return {
+      ok: true,
+      userId: args.userId,
+      strikeCount,
+    };
+  }
+
+  async suspendUser(args: {
+    userId: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    const user = await this.repo.setUserActive(args.userId, false);
+
+    await this.notifications.create({
+      userId: user.id,
+      type: NotificationType.DISPUTE_OPENED,
+      title: "Account suspended",
+      body:
+        args.reason?.trim() ||
+        "Your FixAndEarn account has been suspended pending further review.",
+      idempotencyKey: `notif:user_suspended:${user.id}`,
+      data: {
+        userId: user.id,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    await this.audit.log({
+      actorAdminId: args.adminId,
+      action: "ADMIN_MESSAGING_SUSPEND_USER",
+      description: "Admin suspended user from messaging oversight",
+      metadata: {
+        userId: user.id,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    return {
+      ok: true,
+      userId: user.id,
+      isActive: user.isActive,
+    };
+  }
+
+  async unsuspendUser(args: {
+    userId: string;
+    adminId: string;
+    reason?: string;
+  }) {
+    const user = await this.repo.setUserActive(args.userId, true);
+
+    await this.notifications.create({
+      userId: user.id,
+      type: NotificationType.DISPUTE_RESOLVED,
+      title: "Account restored",
+      body:
+        args.reason?.trim() ||
+        "Your FixAndEarn account has been restored.",
+      idempotencyKey: `notif:user_unsuspended:${user.id}`,
+      data: {
+        userId: user.id,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    await this.audit.log({
+      actorAdminId: args.adminId,
+      action: "ADMIN_MESSAGING_UNSUSPEND_USER",
+      description: "Admin restored suspended user",
+      metadata: {
+        userId: user.id,
+        reason: args.reason?.trim() ?? null,
+      },
+    });
+
+    return {
+      ok: true,
+      userId: user.id,
+      isActive: user.isActive,
     };
   }
 }

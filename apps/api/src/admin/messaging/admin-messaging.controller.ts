@@ -17,6 +17,8 @@ import { AdminRoles } from "../auth/admin-roles.decorator";
 import { AdminMessagingService } from "./admin-messaging.service";
 import { ListAdminConversationsDto } from "./dto/list-admin-conversations.dto";
 import { AdminDisputeChatMessageDto } from "../../modules/disputes/dto/admin-dispute-chat-message.dto";
+import { AdminMessagingConversationActionDto } from "./dto/admin-messaging-conversation-action.dto";
+import { AdminMessagingUserActionDto } from "./dto/admin-messaging-user-action.dto";
 
 @ApiTags("admin-messaging")
 @ApiBearerAuth()
@@ -56,15 +58,93 @@ export class AdminMessagingController {
     @Body() dto: AdminDisputeChatMessageDto
   ) {
     const adminId = req.user?.adminId ?? req.user?.sub;
-
-    if (!adminId) {
-      throw new UnauthorizedException("ADMIN_ID_MISSING");
-    }
+    if (!adminId) throw new UnauthorizedException("ADMIN_ID_MISSING");
 
     return this.svc.sendConversationMessage({
       conversationId,
       adminId,
       body: dto.body,
+    });
+  }
+
+  @Post("conversations/:conversationId/warn")
+  async warnConversation(
+    @Req() req: any,
+    @Param("conversationId") conversationId: string,
+    @Body() dto: AdminMessagingConversationActionDto
+  ) {
+    const adminId = req.user?.adminId ?? req.user?.sub;
+    if (!adminId) throw new UnauthorizedException("ADMIN_ID_MISSING");
+
+    return this.svc.warnConversationTargets({
+      conversationId,
+      adminId,
+      target: dto.target,
+      reason: dto.reason,
+    });
+  }
+
+  @Post("conversations/:conversationId/restrict")
+  async restrictConversation(
+    @Req() req: any,
+    @Param("conversationId") conversationId: string,
+    @Body() dto: AdminMessagingUserActionDto
+  ) {
+    const adminId = req.user?.adminId ?? req.user?.sub;
+    if (!adminId) throw new UnauthorizedException("ADMIN_ID_MISSING");
+
+    return this.svc.restrictConversation({
+      conversationId,
+      adminId,
+      reason: dto.reason,
+    });
+  }
+
+  @Post("users/:userId/strike")
+  async addStrike(
+    @Req() req: any,
+    @Param("userId") userId: string,
+    @Body() dto: AdminMessagingUserActionDto
+  ) {
+    const adminId = req.user?.adminId ?? req.user?.sub;
+    if (!adminId) throw new UnauthorizedException("ADMIN_ID_MISSING");
+
+    return this.svc.addUserStrike({
+      userId,
+      adminId,
+      reason: dto.reason,
+    });
+  }
+
+  @Post("users/:userId/suspend")
+  async suspendUser(
+    @Req() req: any,
+    @Param("userId") userId: string,
+    @Body() dto: AdminMessagingUserActionDto
+  ) {
+    const adminId = req.user?.adminId ?? req.user?.sub;
+    if (!adminId) throw new UnauthorizedException("ADMIN_ID_MISSING");
+
+    return this.svc.suspendUser({
+      userId,
+      adminId,
+      reason: dto.reason,
+    });
+  }
+
+  @Post("users/:userId/unsuspend")
+  async unsuspendUser(
+    @Req() req: any,
+    @Param("userId") userId: string,
+    @Body() dto: AdminMessagingUserActionDto
+  ) {
+    const adminId = req.user?.adminId ?? req.user?.sub;
+    if (!adminId) throw new UnauthorizedException("ADMIN_ID_MISSING");
+
+    return this.svc.unsuspendUser({
+      userId,
+      adminId,
+      reason: dto.reason,
     });
   }
 }
