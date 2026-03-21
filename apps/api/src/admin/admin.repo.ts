@@ -1,8 +1,6 @@
-//path: apps/api/src/admin/admin.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../infra/prisma/prisma.service";
-import { AdminRole } from "@prisma/client";
-import { Prisma } from "@prisma/client";
+import { AdminRole, Prisma } from "@prisma/client";
 
 @Injectable()
 export class AdminRepo {
@@ -14,6 +12,22 @@ export class AdminRepo {
 
   findById(id: string) {
     return this.prisma.admin.findUnique({ where: { id } });
+  }
+
+  listAdmins() {
+    return this.prisma.admin.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        is2faEnabled: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   createAdmin(data: {
@@ -42,8 +56,8 @@ export class AdminRepo {
         description: data.description,
         ip: data.ip ?? null,
         userAgent: data.userAgent ?? null,
-        metadata: data.metadata ?? undefined
-      }
+        metadata: data.metadata ?? undefined,
+      },
     });
   }
 }
