@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { AdminRepo } from "./admin.repo";
 import { CryptoService } from "../common/crypto/crypto.service";
@@ -20,11 +25,15 @@ export class AdminService {
     private readonly audit: AdminAuditService
   ) {}
 
+  private getTotpIssuer() {
+    return this.cfg.get<string>("ADMIN_TOTP_ISSUER", "FixAndEarn Admin");
+  }
+
   async bootstrapCreateSuperAdmin(args: {
     email: string;
     fullName: string;
     password: string;
-  }): Promise<{ ok: true; totpSecret: string }> {
+  }): Promise<{ ok: true; totpSecret: string; totpProvisioningUri: string }> {
     const enabled = this.cfg.get<string>("ADMIN_CREATE_BOOTSTRAP_ENABLED", "false") === "true";
     if (!enabled) throw new ForbiddenException("BOOTSTRAP_DISABLED");
 
@@ -36,6 +45,7 @@ export class AdminService {
     if (existing) throw new BadRequestException("ADMIN_ALREADY_EXISTS");
 
     const totpSecret = authenticator.generateSecret();
+    const totpProvisioningUri = authenticator.keyuri(email, this.getTotpIssuer(), totpSecret);
     const enc = this.crypto.encryptAes256Gcm(totpSecret);
 
     const passwordHash = await argon2.hash(args.password);
@@ -46,17 +56,92 @@ export class AdminService {
       passwordHash,
       role: AdminRole.SUPER_ADMIN,
       totpSecretEncrypted: enc.ciphertextB64,
-      totpSecretIv: enc.ivB64
+      totpSecretIv: enc.ivB64,
     });
 
     await this.audit.log({
       actorAdminId: admin.id,
       action: "ADMIN_BOOTSTRAP_CREATE",
       description: "Created initial SUPER_ADMIN via bootstrap endpoint",
-      metadata: { email }
+      metadata: { email },
     });
 
-    return { ok: true, totpSecret };
+    return { ok: true, totpSecret, totpProvisioningUri };
+  }
+
+  async createAdmin(args: {
+    actorAdminId: string;
+    email: string;
+    fullName: string;
+    password: string;
+    role: AdminRole;
+  }): Promise<{
+    ok: true;
+    admin: {
+      id: string;
+      email: string;
+      fullName: string;
+      role: AdminRole;
+      isActive: boolean;
+      is2faEnabled: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    totpSecret: string;
+    totpProvisioningUri: string;
+  }> {
+    const email = args.email.trim().toLowerCase();
+    if (!email.includes("@")) throw new BadRequestException("INVALID_EMAIL");
+    if (args.password.length < 10) throw new BadRequestException("PASSWORD_TOO_SHORT");
+    if (!args.fullName.trim()) throw new BadRequestException("FULL_NAME_REQUIRED");
+
+    const existing = await this.repo.findByEmail(email);
+    if (existing) throw new BadRequestException("ADMIN_ALREADY_EXISTS");
+
+    const totpSecret = authenticator.generateSecret();
+    const totpProvisioningUri = authenticator.keyuri(email, this.getTotpIssuer(), totpSecret);
+    const enc = this.crypto.encryptAes256Gcm(totpSecret);
+    const passwordHash = await argon2.hash(args.password);
+
+    const admin = await this.repo.createAdmin({
+      email,
+      fullName: args.fullName.trim(),
+      passwordHash,
+      role: args.role,
+      totpSecretEncrypted: enc.ciphertextB64,
+      totpSecretIv: enc.ivB64,
+    });
+
+    await this.audit.log({
+      actorAdminId: args.actorAdminId,
+      action: "ADMIN_CREATE",
+      description: `Created admin account with role ${args.role}`,
+      metadata: {
+        createdAdminId: admin.id,
+        createdAdminEmail: admin.email,
+        createdAdminRole: admin.role,
+      },
+    });
+
+    return {
+      ok: true,
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        fullName: admin.fullName,
+        role: admin.role,
+        isActive: admin.isActive,
+        is2faEnabled: admin.is2faEnabled,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt,
+      },
+      totpSecret,
+      totpProvisioningUri,
+    };
+  }
+
+  async listAdmins() {
+    return this.repo.listAdmins();
   }
 
   async login(args: {
@@ -80,7 +165,7 @@ export class AdminService {
         description: "Blocked admin login attempt for inactive admin account",
         ip: args.ip,
         userAgent: args.userAgent,
-        metadata: { email }
+        metadata: { email },
       });
 
       throw new UnauthorizedException("INVALID_CREDENTIALS");
@@ -94,17 +179,14 @@ export class AdminService {
         description: "Failed admin login due to invalid password",
         ip: args.ip,
         userAgent: args.userAgent,
-        metadata: { email }
+        metadata: { email },
       });
 
       throw new UnauthorizedException("INVALID_CREDENTIALS");
     }
 
     if (admin.is2faEnabled) {
-      const secret = this.crypto.decryptAes256Gcm(
-        admin.totpSecretEncrypted,
-        admin.totpSecretIv
-      );
+      const secret = this.crypto.decryptAes256Gcm(admin.totpSecretEncrypted, admin.totpSecretIv);
       const totpOk = authenticator.check(args.totp, secret);
 
       if (!totpOk) {
@@ -114,7 +196,7 @@ export class AdminService {
           description: "Failed admin login due to invalid TOTP",
           ip: args.ip,
           userAgent: args.userAgent,
-          metadata: { email }
+          metadata: { email },
         });
 
         throw new UnauthorizedException("INVALID_TOTP");
@@ -125,7 +207,7 @@ export class AdminService {
       sub: admin.id,
       role: admin.role,
       email: admin.email,
-      typ: "admin"
+      typ: "admin",
     });
 
     await this.audit.log({
@@ -133,7 +215,7 @@ export class AdminService {
       action: "ADMIN_LOGIN",
       description: "Admin logged in",
       ip: args.ip,
-      userAgent: args.userAgent
+      userAgent: args.userAgent,
     });
 
     return {
@@ -142,8 +224,8 @@ export class AdminService {
         id: admin.id,
         email: admin.email,
         fullName: admin.fullName,
-        role: admin.role
-      }
+        role: admin.role,
+      },
     };
   }
 }
