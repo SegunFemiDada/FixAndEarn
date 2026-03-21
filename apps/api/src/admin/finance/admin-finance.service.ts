@@ -1,10 +1,8 @@
-//path: apps/api/src/admin/finance/admin-finance.service.ts
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { NotificationType } from "@prisma/client";
 import { AdminAuditService } from "../audit/admin-audit.service";
 import { AdminFinanceRepo } from "./admin-finance.repo";
 import { NotificationsService } from "../../modules/notifications/notifications.service";
-
 
 @Injectable()
 export class AdminFinanceService {
@@ -20,6 +18,12 @@ export class AdminFinanceService {
 
   async getOne(id: string) {
     const rec = await this.repo.getWithdrawal(id);
+    if (!rec) throw new NotFoundException("WITHDRAWAL_NOT_FOUND");
+    return rec;
+  }
+
+  async getEarningsTrace(id: string) {
+    const rec = await this.repo.getWithdrawalEarningsTrace(id);
     if (!rec) throw new NotFoundException("WITHDRAWAL_NOT_FOUND");
     return rec;
   }
