@@ -163,6 +163,111 @@ export class AdminService {
     return this.repo.listAdmins();
   }
 
+  async getOwn2faStatus(adminId: string) {
+    const admin = await this.repo.findById(adminId);
+    if (!admin) throw new NotFoundException("ADMIN_NOT_FOUND");
+
+    return {
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        fullName: admin.fullName,
+        role: admin.role,
+        isActive: admin.isActive,
+        is2faEnabled: admin.is2faEnabled,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt,
+      },
+      policy: {
+        enforced: true,
+        backupCodesSupported: false,
+      },
+    };
+  }
+
+  async verifyOwn2fa(args: {
+    adminId: string;
+    totp: string;
+    ip?: string;
+    userAgent?: string;
+  }) {
+    const admin = await this.repo.findById(args.adminId);
+    if (!admin) throw new NotFoundException("ADMIN_NOT_FOUND");
+    if (!admin.isActive) throw new UnauthorizedException("ADMIN_INACTIVE");
+    if (!admin.is2faEnabled) throw new BadRequestException("ADMIN_2FA_DISABLED");
+
+    const code = args.totp.trim();
+    const secret = this.crypto.decryptAes256Gcm(admin.totpSecretEncrypted, admin.totpSecretIv);
+    const totpOk = authenticator.check(code, secret);
+
+    if (!totpOk) {
+      await this.audit.log({
+        actorAdminId: admin.id,
+        action: "ADMIN_2FA_VERIFY_FAILED",
+        description: "Admin 2FA verification test failed",
+        ip: args.ip,
+        userAgent: args.userAgent,
+      });
+
+      throw new UnauthorizedException("INVALID_TOTP");
+    }
+
+    await this.audit.log({
+      actorAdminId: admin.id,
+      action: "ADMIN_2FA_VERIFY_SUCCESS",
+      description: "Admin 2FA verification test succeeded",
+      ip: args.ip,
+      userAgent: args.userAgent,
+    });
+
+    return {
+      ok: true,
+      verified: true,
+    };
+  }
+
+  async rotateOwn2fa(args: {
+    adminId: string;
+    reason?: string;
+    ip?: string;
+    userAgent?: string;
+  }): Promise<{
+    ok: true;
+    totpSecret: string;
+    totpProvisioningUri: string;
+  }> {
+    const admin = await this.repo.findById(args.adminId);
+    if (!admin) throw new NotFoundException("ADMIN_NOT_FOUND");
+    if (!admin.isActive) throw new UnauthorizedException("ADMIN_INACTIVE");
+
+    const totpSecret = authenticator.generateSecret();
+    const totpProvisioningUri = authenticator.keyuri(admin.email, this.getTotpIssuer(), totpSecret);
+    const enc = this.crypto.encryptAes256Gcm(totpSecret);
+
+    await this.repo.updateAdmin(admin.id, {
+      totpSecretEncrypted: enc.ciphertextB64,
+      totpSecretIv: enc.ivB64,
+      is2faEnabled: true,
+    });
+
+    await this.audit.log({
+      actorAdminId: admin.id,
+      action: "ADMIN_2FA_ROTATE_SELF",
+      description: "Admin rotated own TOTP secret",
+      ip: args.ip,
+      userAgent: args.userAgent,
+      metadata: {
+        reason: args.reason?.trim() || null,
+      },
+    });
+
+    return {
+      ok: true,
+      totpSecret,
+      totpProvisioningUri,
+    };
+  }
+
   async deactivateAdmin(args: {
     actorAdminId: string;
     targetAdminId: string;

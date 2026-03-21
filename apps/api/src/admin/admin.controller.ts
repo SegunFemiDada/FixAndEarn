@@ -7,6 +7,8 @@ import { AdminRoles } from "./auth/admin-roles.decorator";
 import { AdminRole } from "@prisma/client";
 import { CreateAdminDto } from "./dto/create-admin.dto";
 import { AdminAccountActionDto } from "./dto/admin-account-action.dto";
+import { Admin2faVerifyDto } from "./dto/admin-2fa-verify.dto";
+import { Admin2faRotateDto } from "./dto/admin-2fa-rotate.dto";
 
 @ApiTags("admin")
 @Controller("admin")
@@ -46,6 +48,58 @@ export class AdminController {
   @Get("me")
   async me(@Req() req: any) {
     return { admin: req.user };
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(
+    AdminRole.SUPER_ADMIN,
+    AdminRole.SECURITY_OFFICER,
+    AdminRole.SUPPORT_OFFICER,
+    AdminRole.FINANCE_OFFICER,
+    AdminRole.VERIFICATION_OFFICER
+  )
+  @Get("2fa/status")
+  async own2faStatus(@Req() req: any) {
+    return this.admins.getOwn2faStatus(req.user.adminId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(
+    AdminRole.SUPER_ADMIN,
+    AdminRole.SECURITY_OFFICER,
+    AdminRole.SUPPORT_OFFICER,
+    AdminRole.FINANCE_OFFICER,
+    AdminRole.VERIFICATION_OFFICER
+  )
+  @Post("2fa/verify")
+  async verifyOwn2fa(@Req() req: any, @Body() body: Admin2faVerifyDto) {
+    return this.admins.verifyOwn2fa({
+      adminId: req.user.adminId,
+      totp: body.totp,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(
+    AdminRole.SUPER_ADMIN,
+    AdminRole.SECURITY_OFFICER,
+    AdminRole.SUPPORT_OFFICER,
+    AdminRole.FINANCE_OFFICER,
+    AdminRole.VERIFICATION_OFFICER
+  )
+  @Post("2fa/rotate")
+  async rotateOwn2fa(@Req() req: any, @Body() body: Admin2faRotateDto) {
+    return this.admins.rotateOwn2fa({
+      adminId: req.user.adminId,
+      reason: body.reason,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
   }
 
   @ApiBearerAuth()
