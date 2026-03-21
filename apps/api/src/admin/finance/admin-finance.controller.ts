@@ -1,4 +1,3 @@
-//path: apps/api/src/admin/finance/admin-finance.controller.ts
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
@@ -36,6 +35,11 @@ export class AdminFinanceController {
   @Get("withdrawals/:id")
   async getWithdrawal(@Param("id") id: string) {
     return this.svc.getOne(id);
+  }
+
+  @Get("withdrawals/:id/earnings-trace")
+  async getWithdrawalEarningsTrace(@Param("id") id: string) {
+    return this.svc.getEarningsTrace(id);
   }
 
   @Post("withdrawals/:id/approve")
