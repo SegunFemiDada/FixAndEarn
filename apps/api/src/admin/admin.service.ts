@@ -1,4 +1,3 @@
-//path: apps/api/src/admin/admin.service.ts
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { AdminRepo } from "./admin.repo";
@@ -70,10 +69,36 @@ export class AdminService {
     const email = args.email.trim().toLowerCase();
     const admin = await this.repo.findByEmail(email);
 
-    if (!admin || !admin.isActive) throw new UnauthorizedException("INVALID_CREDENTIALS");
+    if (!admin) {
+      throw new UnauthorizedException("INVALID_CREDENTIALS");
+    }
+
+    if (!admin.isActive) {
+      await this.audit.log({
+        actorAdminId: admin.id,
+        action: "ADMIN_LOGIN_BLOCKED_INACTIVE",
+        description: "Blocked admin login attempt for inactive admin account",
+        ip: args.ip,
+        userAgent: args.userAgent,
+        metadata: { email }
+      });
+
+      throw new UnauthorizedException("INVALID_CREDENTIALS");
+    }
 
     const ok = await argon2.verify(admin.passwordHash, args.password);
-    if (!ok) throw new UnauthorizedException("INVALID_CREDENTIALS");
+    if (!ok) {
+      await this.audit.log({
+        actorAdminId: admin.id,
+        action: "ADMIN_LOGIN_FAILED_PASSWORD",
+        description: "Failed admin login due to invalid password",
+        ip: args.ip,
+        userAgent: args.userAgent,
+        metadata: { email }
+      });
+
+      throw new UnauthorizedException("INVALID_CREDENTIALS");
+    }
 
     if (admin.is2faEnabled) {
       const secret = this.crypto.decryptAes256Gcm(
@@ -81,7 +106,19 @@ export class AdminService {
         admin.totpSecretIv
       );
       const totpOk = authenticator.check(args.totp, secret);
-      if (!totpOk) throw new UnauthorizedException("INVALID_TOTP");
+
+      if (!totpOk) {
+        await this.audit.log({
+          actorAdminId: admin.id,
+          action: "ADMIN_LOGIN_FAILED_TOTP",
+          description: "Failed admin login due to invalid TOTP",
+          ip: args.ip,
+          userAgent: args.userAgent,
+          metadata: { email }
+        });
+
+        throw new UnauthorizedException("INVALID_TOTP");
+      }
     }
 
     const token = await this.jwt.signAsync({
