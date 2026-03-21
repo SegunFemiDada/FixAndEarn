@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -29,6 +30,21 @@ export class AdminService {
     return this.cfg.get<string>("ADMIN_TOTP_ISSUER", "FixAndEarn Admin");
   }
 
+  async getBootstrapStatus() {
+    const enabled = this.cfg.get<string>("ADMIN_CREATE_BOOTSTRAP_ENABLED", "false") === "true";
+    const totalAdmins = await this.repo.countAdmins();
+    const hasAnyAdmin = totalAdmins > 0;
+    const hasSuperAdmin = (await this.repo.countSuperAdmins()) > 0;
+
+    return {
+      enabled,
+      totalAdmins,
+      hasAnyAdmin,
+      hasSuperAdmin,
+      allowBootstrap: enabled && !hasSuperAdmin,
+    };
+  }
+
   async bootstrapCreateSuperAdmin(args: {
     email: string;
     fullName: string;
@@ -36,6 +52,9 @@ export class AdminService {
   }): Promise<{ ok: true; totpSecret: string; totpProvisioningUri: string }> {
     const enabled = this.cfg.get<string>("ADMIN_CREATE_BOOTSTRAP_ENABLED", "false") === "true";
     if (!enabled) throw new ForbiddenException("BOOTSTRAP_DISABLED");
+
+    const existingSuperAdmins = await this.repo.countSuperAdmins();
+    if (existingSuperAdmins > 0) throw new ForbiddenException("SUPER_ADMIN_ALREADY_EXISTS");
 
     const email = args.email.trim().toLowerCase();
     if (!email.includes("@")) throw new BadRequestException("INVALID_EMAIL");
@@ -142,6 +161,122 @@ export class AdminService {
 
   async listAdmins() {
     return this.repo.listAdmins();
+  }
+
+  async deactivateAdmin(args: {
+    actorAdminId: string;
+    targetAdminId: string;
+    reason?: string;
+  }) {
+    if (args.actorAdminId === args.targetAdminId) {
+      throw new BadRequestException("CANNOT_DEACTIVATE_SELF");
+    }
+
+    const target = await this.repo.findById(args.targetAdminId);
+    if (!target) throw new NotFoundException("ADMIN_NOT_FOUND");
+
+    if (!target.isActive) {
+      return { ok: true, status: "INACTIVE" as const };
+    }
+
+    if (target.role === AdminRole.SUPER_ADMIN) {
+      const activeSuperAdmins = await this.repo.countSuperAdmins({ isActive: true });
+      if (activeSuperAdmins <= 1) {
+        throw new ForbiddenException("CANNOT_DEACTIVATE_LAST_ACTIVE_SUPER_ADMIN");
+      }
+    }
+
+    await this.repo.updateAdmin(args.targetAdminId, {
+      isActive: false,
+    });
+
+    await this.audit.log({
+      actorAdminId: args.actorAdminId,
+      action: "ADMIN_DEACTIVATE",
+      description: "Deactivated admin account",
+      metadata: {
+        targetAdminId: target.id,
+        targetAdminEmail: target.email,
+        targetAdminRole: target.role,
+        reason: args.reason?.trim() || null,
+      },
+    });
+
+    return { ok: true, status: "INACTIVE" as const };
+  }
+
+  async reactivateAdmin(args: {
+    actorAdminId: string;
+    targetAdminId: string;
+    reason?: string;
+  }) {
+    const target = await this.repo.findById(args.targetAdminId);
+    if (!target) throw new NotFoundException("ADMIN_NOT_FOUND");
+
+    if (target.isActive) {
+      return { ok: true, status: "ACTIVE" as const };
+    }
+
+    await this.repo.updateAdmin(args.targetAdminId, {
+      isActive: true,
+    });
+
+    await this.audit.log({
+      actorAdminId: args.actorAdminId,
+      action: "ADMIN_REACTIVATE",
+      description: "Reactivated admin account",
+      metadata: {
+        targetAdminId: target.id,
+        targetAdminEmail: target.email,
+        targetAdminRole: target.role,
+        reason: args.reason?.trim() || null,
+      },
+    });
+
+    return { ok: true, status: "ACTIVE" as const };
+  }
+
+  async rotateAdminTotp(args: {
+    actorAdminId: string;
+    targetAdminId: string;
+    reason?: string;
+  }): Promise<{
+    ok: true;
+    targetAdminId: string;
+    totpSecret: string;
+    totpProvisioningUri: string;
+  }> {
+    const target = await this.repo.findById(args.targetAdminId);
+    if (!target) throw new NotFoundException("ADMIN_NOT_FOUND");
+
+    const totpSecret = authenticator.generateSecret();
+    const totpProvisioningUri = authenticator.keyuri(target.email, this.getTotpIssuer(), totpSecret);
+    const enc = this.crypto.encryptAes256Gcm(totpSecret);
+
+    await this.repo.updateAdmin(args.targetAdminId, {
+      totpSecretEncrypted: enc.ciphertextB64,
+      totpSecretIv: enc.ivB64,
+      is2faEnabled: true,
+    });
+
+    await this.audit.log({
+      actorAdminId: args.actorAdminId,
+      action: "ADMIN_ROTATE_TOTP",
+      description: "Rotated admin TOTP secret",
+      metadata: {
+        targetAdminId: target.id,
+        targetAdminEmail: target.email,
+        targetAdminRole: target.role,
+        reason: args.reason?.trim() || null,
+      },
+    });
+
+    return {
+      ok: true,
+      targetAdminId: target.id,
+      totpSecret,
+      totpProvisioningUri,
+    };
   }
 
   async login(args: {

@@ -30,6 +30,19 @@ export class AdminRepo {
     });
   }
 
+  countAdmins() {
+    return this.prisma.admin.count();
+  }
+
+  countSuperAdmins(args?: { isActive?: boolean }) {
+    return this.prisma.admin.count({
+      where: {
+        role: AdminRole.SUPER_ADMIN,
+        ...(typeof args?.isActive === "boolean" ? { isActive: args.isActive } : {}),
+      },
+    });
+  }
+
   createAdmin(data: {
     email: string;
     fullName: string;
@@ -39,6 +52,13 @@ export class AdminRepo {
     totpSecretIv: string;
   }) {
     return this.prisma.admin.create({ data });
+  }
+
+  updateAdmin(id: string, data: Prisma.AdminUpdateInput) {
+    return this.prisma.admin.update({
+      where: { id },
+      data,
+    });
   }
 
   createAuditLog(data: {

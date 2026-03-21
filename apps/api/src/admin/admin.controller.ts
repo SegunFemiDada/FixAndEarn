@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
 import { AdminJwtAuthGuard } from "./auth/admin-jwt-auth.guard";
@@ -6,11 +6,17 @@ import { AdminRolesGuard } from "./auth/admin-roles.guard";
 import { AdminRoles } from "./auth/admin-roles.decorator";
 import { AdminRole } from "@prisma/client";
 import { CreateAdminDto } from "./dto/create-admin.dto";
+import { AdminAccountActionDto } from "./dto/admin-account-action.dto";
 
 @ApiTags("admin")
 @Controller("admin")
 export class AdminController {
   constructor(private readonly admins: AdminService) {}
+
+  @Get("bootstrap/status")
+  async bootstrapStatus() {
+    return this.admins.getBootstrapStatus();
+  }
 
   @Post("bootstrap/super-admin")
   async bootstrap(@Body() body: { email: string; fullName: string; password: string }) {
@@ -61,6 +67,42 @@ export class AdminController {
       fullName: body.fullName,
       password: body.password,
       role: body.role,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN)
+  @Post("admins/:id/deactivate")
+  async deactivateAdmin(@Req() req: any, @Param("id") id: string, @Body() body: AdminAccountActionDto) {
+    return this.admins.deactivateAdmin({
+      actorAdminId: req.user.adminId,
+      targetAdminId: id,
+      reason: body.reason,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN)
+  @Post("admins/:id/reactivate")
+  async reactivateAdmin(@Req() req: any, @Param("id") id: string, @Body() body: AdminAccountActionDto) {
+    return this.admins.reactivateAdmin({
+      actorAdminId: req.user.adminId,
+      targetAdminId: id,
+      reason: body.reason,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+  @AdminRoles(AdminRole.SUPER_ADMIN)
+  @Post("admins/:id/rotate-totp")
+  async rotateAdminTotp(@Req() req: any, @Param("id") id: string, @Body() body: AdminAccountActionDto) {
+    return this.admins.rotateAdminTotp({
+      actorAdminId: req.user.adminId,
+      targetAdminId: id,
+      reason: body.reason,
     });
   }
 }
