@@ -37,6 +37,9 @@ import { AdminNotificationsRepo } from "./notifications/admin-notifications.repo
 import { AdminSecurityController } from "./security/admin-security.controller";
 import { AdminSecurityService } from "./security/admin-security.service";
 import { AdminSecurityRepo } from "./security/admin-security.repo";
+import { AdminContentController } from "./content/admin-content.controller";
+import { AdminContentService } from "./content/admin-content.service";
+import { AdminContentRepo } from "./content/admin-content.repo";
 
 @Module({
   imports: [
@@ -65,7 +68,8 @@ import { AdminSecurityRepo } from "./security/admin-security.repo";
     AdminAnalyticsController,
     AdminMessagingController,
     AdminNotificationsController,
-    AdminSecurityController
+    AdminSecurityController,
+    AdminContentController
   ],
   providers: [
     CryptoService,
@@ -88,7 +92,9 @@ import { AdminSecurityRepo } from "./security/admin-security.repo";
     AdminNotificationsRepo,
     AdminNotificationsService,
     AdminSecurityRepo,
-    AdminSecurityService
+    AdminSecurityService,
+    AdminContentRepo,
+    AdminContentService
   ],
   exports: [AdminService, AdminAuditService]
 })
