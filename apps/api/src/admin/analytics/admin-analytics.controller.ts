@@ -22,9 +22,6 @@ export class AdminAnalyticsController {
   )
   @Get("overview")
   async overview(@Query() query: GetAdminAnalyticsDto) {
-    return this.svc.getOverview({
-      range: query.range,
-      anchor: query.anchor,
-    });
+    return this.svc.getOverview(query.range ?? "week");
   }
 }

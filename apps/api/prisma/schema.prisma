@@ -647,6 +647,8 @@ enum NotificationType {
   WITHDRAWAL_APPROVED
   WITHDRAWAL_REJECTED
   WITHDRAWAL_PAID
+
+  SYSTEM_ANNOUNCEMENT
 }
 
 model Notification {
