@@ -1,9 +1,8 @@
-//path: apps/api/src/admin/content/admin-content.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 
 @Injectable()
-export class AdminContentRepo {
+export class PublicContentRepo {
   constructor(private readonly prisma: PrismaService) {}
 
   async getMetaValues(keys: string[]) {
@@ -16,13 +15,5 @@ export class AdminContentRepo {
     });
 
     return new Map(rows.map((row) => [row.key, row.value]));
-  }
-
-  async upsertMetaValue(key: string, value: string) {
-    return this.prisma.appMeta.upsert({
-      where: { key },
-      update: { value },
-      create: { key, value },
-    });
   }
 }

@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/content/dto/update-admin-content.dto.ts
 import {
   ArrayMaxSize,
   IsArray,
