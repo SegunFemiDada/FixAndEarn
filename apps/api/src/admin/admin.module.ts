@@ -40,6 +40,9 @@ import { AdminSecurityRepo } from "./security/admin-security.repo";
 import { AdminContentController } from "./content/admin-content.controller";
 import { AdminContentService } from "./content/admin-content.service";
 import { AdminContentRepo } from "./content/admin-content.repo";
+import { PublicContentController } from "./content/public-content.controller";
+import { PublicContentService } from "./content/public-content.service";
+import { PublicContentRepo } from "./content/public-content.repo";
 import { AdminSettingsController } from "./settings/admin-settings.controller";
 import { AdminSettingsService } from "./settings/admin-settings.service";
 import { AdminSettingsRepo } from "./settings/admin-settings.repo";
@@ -57,9 +60,9 @@ import { AdminSettingsRepo } from "./settings/admin-settings.repo";
       inject: [ConfigService],
       useFactory: async (cfg: ConfigService) => ({
         secret: cfg.get<string>("ADMIN_JWT_SECRET", "dev_admin_secret_change_me"),
-        signOptions: { expiresIn: "12h" }
-      })
-    })
+        signOptions: { expiresIn: "12h" },
+      }),
+    }),
   ],
   controllers: [
     AdminController,
@@ -73,7 +76,8 @@ import { AdminSettingsRepo } from "./settings/admin-settings.repo";
     AdminNotificationsController,
     AdminSecurityController,
     AdminContentController,
-    AdminSettingsController
+    PublicContentController,
+    AdminSettingsController,
   ],
   providers: [
     CryptoService,
@@ -99,9 +103,11 @@ import { AdminSettingsRepo } from "./settings/admin-settings.repo";
     AdminSecurityService,
     AdminContentRepo,
     AdminContentService,
+    PublicContentRepo,
+    PublicContentService,
     AdminSettingsRepo,
-    AdminSettingsService
+    AdminSettingsService,
   ],
-  exports: [AdminService, AdminAuditService]
+  exports: [AdminService, AdminAuditService],
 })
 export class AdminModule {}

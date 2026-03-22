@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/content/admin-content.controller.ts
 import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
