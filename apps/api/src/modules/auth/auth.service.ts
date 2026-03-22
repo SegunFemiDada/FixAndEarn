@@ -7,6 +7,7 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
+import * as crypto from "crypto";
 import { UsersService } from "../users/users.service";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { CurrentUserPayload } from "src/common/types/current-user";
@@ -21,34 +22,87 @@ export class AuthService {
   ) {}
 
   async register(input: { email: string; fullName: string; password: string }) {
-    const existing = await this.usersService.findByEmail(input.email.toLowerCase());
+    const email = input.email.trim().toLowerCase();
+    const fullName = input.fullName.trim();
+
+    const existing = await this.usersService.findByEmail(email);
     if (existing) throw new ConflictException("Email already in use.");
 
     const passwordHash = await argon2.hash(input.password);
+
     const user = await this.usersService.createUser({
-      email: input.email.toLowerCase(),
-      fullName: input.fullName,
+      email,
+      fullName,
       passwordHash,
     });
 
-    const token = await this.signAccessToken(user.id);
-    return { user: this.toUserResponse(user), accessToken: token };
+    const verification = await this.createEmailVerificationToken(user.id);
+    const accessToken = await this.signAccessToken(user.id);
+
+    return {
+      user: this.toUserResponse(user),
+      accessToken,
+      verifyEmailUrl: verification.verifyEmailUrl,
+    };
+  }
+
+  async verifyEmail(token: string) {
+    const cleanToken = String(token ?? "").trim();
+    if (!cleanToken) throw new BadRequestException("EMAIL_VERIFICATION_TOKEN_REQUIRED");
+
+    const hash = this.hashToken(cleanToken);
+    const user = await this.usersService.findByVerificationTokenHash(hash);
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid or expired token.");
+    }
+
+    await this.usersService.markEmailVerified(user.id);
+
+    return { ok: true };
+  }
+
+  async resendVerification(email: string) {
+    const cleanEmail = String(email ?? "").trim().toLowerCase();
+    if (!cleanEmail) throw new BadRequestException("EMAIL_REQUIRED");
+
+    const user = await this.usersService.findByEmail(cleanEmail);
+
+    if (!user) {
+      return { ok: true };
+    }
+
+    if (user.emailVerifiedAt) {
+      return { ok: true };
+    }
+
+    const verification = await this.createEmailVerificationToken(user.id);
+
+    return {
+      ok: true,
+      verifyEmailUrl: verification.verifyEmailUrl,
+    };
   }
 
   async login(input: { email: string; password: string }) {
-    const user = await this.usersService.findByEmail(input.email.toLowerCase());
+    const email = input.email.trim().toLowerCase();
+
+    const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException("Invalid credentials.");
 
     const ok = await argon2.verify(user.passwordHash, input.password);
     if (!ok) throw new UnauthorizedException("Invalid credentials.");
 
-    const token = await this.signAccessToken(user.id);
-    return { user: this.toUserResponse(user), accessToken: token };
+    const accessToken = await this.signAccessToken(user.id);
+
+    return {
+      user: this.toUserResponse(user),
+      accessToken,
+    };
   }
 
   async forgotPassword(input: { email: string }) {
     const email = input.email.trim().toLowerCase();
-
     const user = await this.usersService.findByEmail(email);
 
     const baseResponse: {
@@ -75,12 +129,7 @@ export class AuthService {
       return baseResponse;
     }
 
-    const siteUrlRaw = this.config.get<string>("WEB_APP_URL", "").trim();
-    const siteUrl = siteUrlRaw
-      ? siteUrlRaw.endsWith("/")
-        ? siteUrlRaw.slice(0, -1)
-        : siteUrlRaw
-      : "http://localhost:3001";
+    const siteUrl = this.getWebAppUrl();
 
     return {
       ...baseResponse,
@@ -135,6 +184,34 @@ export class AuthService {
     };
   }
 
+  private async createEmailVerificationToken(userId: string) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hash = this.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+    await this.usersService.setEmailVerificationToken(userId, hash, expiresAt);
+
+    return {
+      rawToken,
+      verifyEmailUrl: `${this.getWebAppUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`,
+      expiresAt,
+    };
+  }
+
+  private getWebAppUrl() {
+    const raw =
+      this.config.get<string>("FRONTEND_URL") ||
+      this.config.get<string>("WEB_APP_URL") ||
+      "http://localhost:3001";
+
+    const clean = raw.trim();
+    return clean.endsWith("/") ? clean.slice(0, -1) : clean;
+  }
+
+  private hashToken(token: string) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+  }
+
   private async signAccessToken(userId: string): Promise<string> {
     return this.jwt.signAsync({ sub: userId });
   }
@@ -168,12 +245,16 @@ export class AuthService {
   }
 
   private toUserResponse(user: CurrentUserPayload) {
-    const roles = (user.roles ?? []).map((ur: any) => ur.role.code);
+    const roles = Array.isArray(user.roles)
+      ? user.roles.map((ur: any) => ur?.role?.code).filter(Boolean)
+      : [];
+
     return {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
       roles,
+      emailVerifiedAt: (user as any).emailVerifiedAt ?? null,
     };
   }
 }
