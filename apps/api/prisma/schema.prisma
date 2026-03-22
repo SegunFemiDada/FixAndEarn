@@ -53,22 +53,27 @@ model User {
   adminNotes    String?
   forceReverify Boolean @default(false)
 
-  jobsAssigned   Job[]     @relation("UserJobsAssigned")
-  disputesOpened Dispute[] @relation("DisputesOpened")
-  averageRating  Float     @default(0)
-  totalRatings   Int       @default(0)
+  jobsAssigned              Job[]     @relation("UserJobsAssigned")
+  disputesOpened            Dispute[] @relation("DisputesOpened")
+  averageRating             Float     @default(0)
+  totalRatings              Int       @default(0)
+  emailVerifiedAt           DateTime?
+  emailVerifyTokenHash      String?
+  emailVerifyTokenExpiresAt DateTime?
 
   @@map("users")
 }
 
 model Role {
-  id        String   @id @default(uuid())
-  code      String   @unique
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users UserRole[]
+  id                        String     @id @default(uuid())
+  code                      String     @unique
+  name                      String
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+  emailVerifiedAt           DateTime?
+  emailVerifyTokenHash      String?
+  emailVerifyTokenExpiresAt DateTime?
+  users                     UserRole[]
 
   @@map("roles")
 }

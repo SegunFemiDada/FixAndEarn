@@ -1,4 +1,3 @@
-// Path: /apps/api/src/modules/users/users.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 
@@ -49,5 +48,40 @@ export class UsersRepo {
     });
 
     return this.findById(userId);
+  }
+
+  setEmailVerificationToken(userId: string, hash: string, expiresAt: Date) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerifyTokenHash: hash,
+        emailVerifyTokenExpiresAt: expiresAt
+      },
+      include: this.includeRoles
+    });
+  }
+
+  findByVerificationTokenHash(hash: string) {
+    return this.prisma.user.findFirst({
+      where: {
+        emailVerifyTokenHash: hash,
+        emailVerifyTokenExpiresAt: {
+          gt: new Date()
+        }
+      },
+      include: this.includeRoles
+    });
+  }
+
+  markEmailVerified(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerifiedAt: new Date(),
+        emailVerifyTokenHash: null,
+        emailVerifyTokenExpiresAt: null
+      },
+      include: this.includeRoles
+    });
   }
 }
