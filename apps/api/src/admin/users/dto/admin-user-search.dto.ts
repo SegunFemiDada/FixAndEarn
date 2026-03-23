@@ -23,4 +23,8 @@ export class AdminUserSearchDto {
   @Min(1)
   @Max(100)
   take?: number;
+
+  @IsOptional()
+  @IsIn(["PENDING", "APPROVED", "REJECTED"])
+  verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
 }
