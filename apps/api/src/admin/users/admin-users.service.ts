@@ -32,14 +32,21 @@ const ROLES_NOTES = new Set<AdminRole>([
 export class AdminUsersService {
   constructor(private readonly repo: AdminUsersRepo, private readonly audit: AdminAuditService) {}
 
-  async search(q: { q?: string; role?: "CLIENT" | "FIXER"; skip?: number; take?: number }) {
-    return this.repo.searchUsers({
-      q: q.q,
-      role: q.role,
-      skip: q.skip ?? 0,
-      take: q.take ?? 20
-    });
-  }
+  async search(q: {
+  q?: string;
+  role?: "CLIENT" | "FIXER";
+  verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  skip?: number;
+  take?: number;
+}) {
+  return this.repo.searchUsers({
+    q: q.q,
+    role: q.role,
+    verificationStatus: q.verificationStatus,
+    skip: q.skip ?? 0,
+    take: q.take ?? 20,
+  });
+}
 
   private maskSensitive(user: CurrentUserPayload, adminRole: AdminRole) {
     const out: any = { ...user };

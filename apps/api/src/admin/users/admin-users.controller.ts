@@ -25,7 +25,13 @@ export class AdminUsersController {
   )
   @Get()
   async search(@Query() q: AdminUserSearchDto) {
-    return this.svc.search({ q: q.q, role: q.role, skip: q.skip ?? 0, take: q.take ?? 20 });
+    return this.svc.search({ 
+    q: q.q, 
+    role: q.role, 
+    verificationStatus: q.verificationStatus,
+    skip: q.skip ?? 0, 
+    take: q.take ?? 20 
+  });
   }
 
   @AdminRoles(

@@ -6,7 +6,13 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 export class AdminUsersRepo {
   constructor(private readonly prisma: PrismaService) {}
 
-  async searchUsers(args: { q?: string; role?: "CLIENT" | "FIXER"; skip: number; take: number }) {
+      async searchUsers(args: {
+      q?: string;
+      role?: "CLIENT" | "FIXER";
+      verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+      skip: number;
+      take: number;
+    }) {
     const where: any = {};
 
     if (args.q?.trim()) {
@@ -22,7 +28,11 @@ export class AdminUsersRepo {
         some: { role: { code: args.role } },
       };
     }
-
+    if (args.verificationStatus) {
+    where.verification = {
+      status: args.verificationStatus,
+    };
+  }
     return this.prisma.user.findMany({
       where,
       orderBy: { createdAt: "desc" },
