@@ -46,6 +46,7 @@ import { PublicContentRepo } from "./content/public-content.repo";
 import { AdminSettingsController } from "./settings/admin-settings.controller";
 import { AdminSettingsService } from "./settings/admin-settings.service";
 import { AdminSettingsRepo } from "./settings/admin-settings.repo";
+import { PaymentsModule } from "src/modules/payments/payments.module";
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AdminSettingsRepo } from "./settings/admin-settings.repo";
     PrismaModule,
     DisputesModule,
     NotificationsModule,
+    PaymentsModule,
     ChatModule,
     PassportModule,
     JwtModule.registerAsync({

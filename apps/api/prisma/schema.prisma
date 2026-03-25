@@ -32,8 +32,8 @@ model User {
 
   wallets     Wallet[]
   bankDetails BankDetails?
-  deposits    DepositIntent[]
   withdrawals WithdrawalRequest[]
+  deposits    Deposit[]
 
   fixerPreferredAvailability AvailabilityStatus @default(UNAVAILABLE)
   fixerAvailabilityUpdatedAt DateTime?
@@ -65,15 +65,12 @@ model User {
 }
 
 model Role {
-  id                        String     @id @default(uuid())
-  code                      String     @unique
-  name                      String
-  createdAt                 DateTime   @default(now())
-  updatedAt                 DateTime   @updatedAt
-  emailVerifiedAt           DateTime?
-  emailVerifyTokenHash      String?
-  emailVerifyTokenExpiresAt DateTime?
-  users                     UserRole[]
+  id        String     @id @default(uuid())
+  code      String     @unique
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  users     UserRole[]
 
   @@map("roles")
 }
@@ -207,30 +204,6 @@ model LedgerEntry {
   @@map("ledger_entries")
 }
 
-enum DepositStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-}
-
-model DepositIntent {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  amountMilliFec Int
-  amountKobo     Int
-
-  paystackRef String        @unique
-  status      DepositStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, createdAt])
-  @@map("deposit_intents")
-}
-
 model BankDetails {
   id     String @id @default(uuid())
   userId String @unique
@@ -265,6 +238,10 @@ model WithdrawalRequest {
 
   amountMilliFec Int
   status         WithdrawalStatus @default(PENDING)
+
+  paystackTransferReference String?
+  paystackTransferCode      String?
+  payoutMode                String?
 
   reviewedBy String?
   reviewNote String?
@@ -716,4 +693,24 @@ model Dispute {
 
   @@index([status])
   @@map("disputes")
+}
+
+enum DepositStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+model Deposit {
+  id             String        @id @default(uuid())
+  userId         String
+  reference      String        @unique
+  amountMilliFec Int
+  status         DepositStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reference])
 }

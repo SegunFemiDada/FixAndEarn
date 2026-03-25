@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/finance/admin-finance.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { Prisma, WalletRole } from "@prisma/client";
@@ -7,57 +8,65 @@ export class AdminFinanceRepo {
   constructor(private readonly prisma: PrismaService) {}
 
   listWithdrawals(status: any, skip: number, take: number) {
-    return this.prisma.withdrawalRequest.findMany({
-      where: status ? { status } : undefined,
-      orderBy: { createdAt: "asc" },
-      skip,
-      take,
-      include: {
-        user: { select: { id: true, email: true, fullName: true, isActive: true } },
+  return this.prisma.withdrawalRequest.findMany({
+    where: status ? { status } : undefined,
+    orderBy: { createdAt: "desc" }, // FIXED (latest first)
+    skip,
+    take,
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          isActive: true,
+          
+        },
       },
-    });
-  }
+    },
+  });
+}
 
   async getWithdrawal(id: string) {
-    const row = await this.prisma.withdrawalRequest.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            fullName: true,
-            isActive: true,
-            bankDetails: true,
-          },
-        },
-      },
-    });
-
-    if (!row) return null;
-
-    const wallet = await this.prisma.wallet.findUnique({
-      where: {
-        userId_role: {
-          userId: row.userId,
-          role: WalletRole.FIXER,
-        },
-      },
-      select: {
-        id: true,
-        role: true,
-        balanceMilliFec: true,
-      },
-    });
-
-    return {
-      ...row,
+  const row = await this.prisma.withdrawalRequest.findUnique({
+    where: { id },
+    include: {
       user: {
-        ...row.user,
-        wallet,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          isActive: true,
+          bankDetails: true,
+        },
       },
-    };
-  }
+    },
+  });
+
+  if (!row) return null;
+
+  const wallet = await this.prisma.wallet.findUnique({
+    where: {
+      userId_role: {
+        userId: row.userId,
+        role: WalletRole.FIXER,
+      },
+    },
+    select: {
+      id: true,
+      role: true,
+      balanceMilliFec: true,
+    },
+  });
+
+  return {
+    ...row, // ✅ includes payoutMode already
+    user: {
+      ...row.user,
+      wallet,
+    },
+  };
+}
 
   async getWithdrawalEarningsTrace(withdrawalId: string) {
     const withdrawal = await this.prisma.withdrawalRequest.findUnique({
@@ -490,7 +499,7 @@ export class AdminFinanceRepo {
     });
   }
 
-  async markPaid(args: { withdrawalId: string; adminId: string; note?: string | null }) {
+  async markpaid(args: { withdrawalId: string; adminId: string; note?: string | null }) {
     const { withdrawalId, adminId, note } = args;
 
     return this.prisma.$transaction(async (tx) => {

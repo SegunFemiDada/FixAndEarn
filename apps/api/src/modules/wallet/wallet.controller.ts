@@ -1,4 +1,6 @@
-// Path: apps/api/src/modules/wallet/wallet.controller.ts
+//path: apps/api/src/modules/wallet/wallet.controller.ts
+"use client";
+
 import {
   BadRequestException,
   Body,
@@ -16,7 +18,7 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
 import { CryptoService } from "../../common/crypto/crypto.service";
-import { PAYSTACK_PROVIDER } from "../payments/payments.module";
+import { PAYSTACK_PROVIDER } from "../payments/payments.constants";
 import { PaystackProvider } from "../payments/paystack/paystack.provider";
 import { LedgerService } from "./ledger.service";
 import { WalletService } from "./wallet.service";
@@ -45,6 +47,10 @@ export class WalletController {
     @Inject(PAYSTACK_PROVIDER) private readonly paystack: PaystackProvider
   ) {}
 
+  // ==========================
+  // Helpers
+  // ==========================
+
   private async getUserRoleCodes(userId: string): Promise<Array<"CLIENT" | "FIXER">> {
     const rows = await this.prisma.userRole.findMany({
       where: { userId },
@@ -56,35 +62,31 @@ export class WalletController {
       .filter((code): code is "CLIENT" | "FIXER" => code === "CLIENT" || code === "FIXER");
   }
 
-  private async resolveBalanceRole(
-    userId: string,
-    requestedRole?: string
-  ): Promise<WalletRole> {
+  private async resolveBalanceRole(userId: string, requestedRole?: string): Promise<WalletRole> {
     const roles = await this.getUserRoleCodes(userId);
 
     if (requestedRole) {
-      const normalized = String(requestedRole).trim().toUpperCase();
+      const normalized = requestedRole.trim().toUpperCase();
       if (normalized !== "CLIENT" && normalized !== "FIXER") {
         throw new BadRequestException("INVALID_WALLET_ROLE");
       }
-      if (!roles.includes(normalized)) {
+      if (!roles.includes(normalized as any)) {
         throw new BadRequestException("ROLE_NOT_ASSIGNED_TO_USER");
       }
       return normalized === "FIXER" ? WalletRole.FIXER : WalletRole.CLIENT;
     }
 
-    if (roles.length === 1 && roles[0] === "FIXER") {
-      return WalletRole.FIXER;
-    }
-
-    return WalletRole.CLIENT;
+    return roles.length === 1 && roles[0] === "FIXER"
+      ? WalletRole.FIXER
+      : WalletRole.CLIENT;
   }
 
+  // ==========================
+  // Balance
+  // ==========================
+
   @Get("balance")
-  async balance(
-    @CurrentUser() user: { userId: string },
-    @Query("role") role?: string
-  ) {
+  async balance(@CurrentUser() user: { userId: string }, @Query("role") role?: string) {
     const walletRole = await this.resolveBalanceRole(user.userId, role);
     const wallet = await this.walletService.getOrCreateWallet(user.userId, walletRole);
 
@@ -99,117 +101,132 @@ export class WalletController {
   @Roles("FIXER")
   async withdrawableBalance(@CurrentUser() user: { userId: string }) {
     const wallet = await this.walletService.getOrCreateWallet(user.userId, WalletRole.FIXER);
-    const lockedEscrowMilliFec = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
+    const locked = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
 
-    const withdrawableBalanceMilliFec = Math.max(0, wallet.balanceMilliFec - lockedEscrowMilliFec);
+    const available = Math.max(0, wallet.balanceMilliFec - locked);
 
     return {
       role: WalletRole.FIXER,
-      withdrawableBalanceMilliFec,
-      withdrawableBalanceFec: withdrawableBalanceMilliFec / 1000,
+      withdrawableBalanceMilliFec: available,
+      withdrawableBalanceFec: available / 1000,
     };
   }
+
+  // ==========================
+  // Deposit
+  // ==========================
 
   @Post("deposits/initiate")
   @Roles("CLIENT")
   async initiateDeposit(@CurrentUser() user: { userId: string }, @Body() dto: InitiateDepositDto) {
-    const dbUser = await this.prisma.user.findUnique({ where: { id: user.userId } });
-    if (!dbUser) return { error: "User not found" };
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: user.userId },
+      select: { email: true },
+    });
 
-    const succeededDeposits = await this.prisma.depositIntent.count({
+    if (!dbUser) throw new BadRequestException("USER_NOT_FOUND");
+
+    const succeeded = await this.prisma.deposit.count({
       where: { userId: user.userId, status: "SUCCEEDED" },
     });
 
-    if (succeededDeposits === 0) {
-      if (dto.amountMilliFec < 1000) return { error: "First deposit min is 1.0 FEC (1000 milliFEC)." };
-      if (dto.amountMilliFec > 2000) return { error: "First deposit max is 2.0 FEC (2000 milliFEC)." };
+    // First deposit limits
+    if (succeeded === 0) {
+      if (dto.amountMilliFec < 1000) {
+        throw new BadRequestException("FIRST_DEPOSIT_MIN_1000");
+      }
+      if (dto.amountMilliFec > 2000) {
+        throw new BadRequestException("FIRST_DEPOSIT_MAX_2000");
+      }
     }
 
-    const baseNaira = dto.amountMilliFec;
-    const clientFeeNaira = Math.ceil(baseNaira * 0.015);
-    const platformAbsorbedExtraNaira = baseNaira > 2500 ? 100 : 0;
+    const base = dto.amountMilliFec;
+    const fee = Math.ceil(base * 0.015);
+    const absorbed = base > 2500 ? 100 : 0;
 
-    const clientChargeNaira = baseNaira + clientFeeNaira;
-    const amountKobo = clientChargeNaira * 100;
+    const chargeKobo = (base + fee) * 100;
 
-    const paystackRef = `ps_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const reference = `ps_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-    await this.prisma.depositIntent.create({
+    await this.prisma.deposit.create({
       data: {
         userId: user.userId,
-        amountMilliFec: dto.amountMilliFec,
-        amountKobo,
-        paystackRef,
+        amountMilliFec: base,
+        reference,
         status: "PENDING",
       },
     });
 
     const init = await this.paystack.initializeTransaction({
       email: dbUser.email,
-      amountKobo,
-      reference: paystackRef,
-      metadata: { baseNaira, clientFeeNaira, platformAbsorbedExtraNaira },
+      amountKobo: chargeKobo,
+      reference,
+      metadata: { base, fee, absorbed },
     });
 
     return {
-      paystackRef: init.reference,
+      reference: init.reference,
       authorizationUrl: init.authorizationUrl,
-      amountMilliFec: dto.amountMilliFec,
-      amountKobo,
-      fee: { clientFeeNaira, platformAbsorbedExtraNaira },
+      amountMilliFec: base,
+      fee: { clientFeeNaira: fee, platformAbsorbedExtraNaira: absorbed },
     };
   }
+
+  // ==========================
+  // Webhook (Simulated)
+  // ==========================
 
   @Public()
   @Post("deposits/webhook-simulate")
   async webhookSimulate(@Body() dto: WebhookSimulateDto) {
-    const intent = await this.prisma.depositIntent.findUnique({
-      where: { paystackRef: dto.paystackRef },
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { reference: dto.reference },
     });
 
-    if (!intent) return { error: "Deposit intent not found" };
-    if (intent.status !== "PENDING") return { ok: true, status: intent.status };
+    if (!deposit) throw new BadRequestException("DEPOSIT_NOT_FOUND");
+    if (deposit.status !== "PENDING") return { ok: true, status: deposit.status };
 
     if (dto.status === "failed") {
-      await this.prisma.depositIntent.update({
-        where: { paystackRef: dto.paystackRef },
+      await this.prisma.deposit.update({
+        where: { reference: dto.reference },
         data: { status: "FAILED" },
       });
       return { ok: true, status: "FAILED" };
     }
 
-    await this.prisma.depositIntent.update({
-      where: { paystackRef: dto.paystackRef },
+    await this.prisma.deposit.update({
+      where: { reference: dto.reference },
       data: { status: "SUCCEEDED" },
     });
 
     await this.ledgerService.addEntry({
-      userId: intent.userId,
+      userId: deposit.userId,
       role: WalletRole.CLIENT,
       type: "DEPOSIT",
       direction: "CREDIT",
-      amountMilliFec: intent.amountMilliFec,
-      idempotencyKey: `deposit:${intent.paystackRef}`,
-      reference: intent.paystackRef,
-      metadata: { amountKobo: intent.amountKobo },
+      amountMilliFec: deposit.amountMilliFec,
+      idempotencyKey: `deposit:${deposit.reference}`,
+      reference: deposit.reference,
     });
 
-    try {
-      await this.notifications.create({
-        userId: intent.userId,
-        type: NotificationType.DEPOSIT_SUCCEEDED,
-        title: "Deposit received",
-        body: `Your wallet has been credited with ${(intent.amountMilliFec / 1000).toFixed(2)} FEC.`,
-        idempotencyKey: `notif:deposit_succeeded:${intent.paystackRef}`,
-        data: {
-          paystackRef: intent.paystackRef,
-          amountMilliFec: intent.amountMilliFec,
-        },
-      });
-    } catch {}
+    await this.notifications.create({
+      userId: deposit.userId,
+      type: NotificationType.DEPOSIT_SUCCEEDED,
+      title: "Deposit received",
+      body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
+      idempotencyKey: `notif:deposit:${deposit.reference}`,
+      data: {
+        reference: deposit.reference,
+        amountMilliFec: deposit.amountMilliFec,
+      },
+    });
 
     return { ok: true, status: "SUCCEEDED" };
   }
+
+  // ==========================
+  // Bank Details
+  // ==========================
 
   @Get("bank-details")
   @Roles("FIXER")
@@ -233,7 +250,7 @@ export class WalletController {
       bankName: bank.bankName,
       accountName: bank.accountName,
       accountNumber: bank.accountNumber,
-      updatedAt: bank.updatedAt ? bank.updatedAt.toISOString() : null,
+      updatedAt: bank.updatedAt?.toISOString() ?? null,
     };
   }
 
@@ -242,58 +259,42 @@ export class WalletController {
   async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
     const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
 
-    const bankCode = dto.bankCode?.trim();
-    if (!bankCode) throw new BadRequestException("BANK_CODE_REQUIRED");
-
-    const existing = await this.prisma.bankDetails.findUnique({
-      where: { userId: user.userId },
-    });
-
-    try {
-      await this.paystack.resolveAccountNumber(dto.accountNumber, bankCode);
-    } catch {}
-
-    const shouldCreateRecipient =
-      !existing?.paystackRecipientCode ||
-      existing.bankName !== dto.bankName ||
-      existing.accountNumber !== dto.accountNumber ||
-      existing.accountName !== dto.accountName ||
-      existing.bankCode !== bankCode;
-
-    let recipientCode = existing?.paystackRecipientCode ?? null;
-
-    if (shouldCreateRecipient) {
-      const recipient = await this.paystack.createTransferRecipient({
-        name: dto.accountName,
-        accountNumber: dto.accountNumber,
-        bankCode,
-      });
-      recipientCode = recipient.recipientCode;
+    if (!dto.bankCode?.trim()) {
+      throw new BadRequestException("BANK_CODE_REQUIRED");
     }
 
-    const record = await this.prisma.bankDetails.upsert({
-      where: { userId: user.userId },
-      update: {
-        bankName: dto.bankName,
-        accountName: dto.accountName,
-        accountNumber: dto.accountNumber,
-        bankCode,
-        bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64,
-        paystackRecipientCode: recipientCode,
-      },
-      create: {
-        userId: user.userId,
-        bankName: dto.bankName,
-        accountName: dto.accountName,
-        accountNumber: dto.accountNumber,
-        bankCode,
-        bvnEncrypted: encrypted.ciphertextB64,
-        bvnIv: encrypted.ivB64,
-        paystackRecipientCode: recipientCode,
-      },
+    let recipientCode: string | null = null;
+
+    const recipient = await this.paystack.createTransferRecipient({
+      name: dto.accountName,
+      accountNumber: dto.accountNumber,
+      bankCode: dto.bankCode,
     });
 
+    recipientCode = recipient.recipientCode;
+
+    const record = await this.prisma.bankDetails.upsert({
+  where: { userId: user.userId },
+  update: {
+    bankName: dto.bankName,
+    accountName: dto.accountName,
+    accountNumber: dto.accountNumber,
+    bankCode: dto.bankCode,
+    bvnEncrypted: encrypted.ciphertextB64,
+    bvnIv: encrypted.ivB64,
+    paystackRecipientCode: recipientCode,
+  },
+  create: {
+    userId: user.userId,
+    bankName: dto.bankName,
+    accountName: dto.accountName,
+    accountNumber: dto.accountNumber,
+    bankCode: dto.bankCode,
+    bvnEncrypted: encrypted.ciphertextB64,
+    bvnIv: encrypted.ivB64,
+    paystackRecipientCode: recipientCode,
+  },
+});
     return {
       ok: true,
       bankName: record.bankName,
@@ -303,29 +304,24 @@ export class WalletController {
     };
   }
 
+  // ==========================
+  // History
+  // ==========================
+
   @Get("deposits/history")
   @Roles("CLIENT")
   async depositHistory(@CurrentUser() user: { userId: string }): Promise<WalletHistoryResponse> {
-    const rows = await this.prisma.depositIntent.findMany({
+    const rows = await this.prisma.deposit.findMany({
       where: { userId: user.userId },
       orderBy: { createdAt: "desc" },
       take: 50,
-      select: {
-        id: true,
-        amountMilliFec: true,
-        amountKobo: true,
-        paystackRef: true,
-        status: true,
-        createdAt: true,
-      },
     });
 
     return {
       items: rows.map((r) => ({
         id: r.id,
         amountMilliFec: r.amountMilliFec,
-        amountKobo: r.amountKobo,
-        paystackRef: r.paystackRef,
+        reference: r.reference,
         status: r.status,
         createdAt: r.createdAt.toISOString(),
       })),
@@ -344,6 +340,10 @@ export class WalletController {
     return { items };
   }
 
+  // ==========================
+  // Withdrawals
+  // ==========================
+
   @Post("withdrawals/request")
   @Roles("FIXER")
   async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
@@ -352,17 +352,22 @@ export class WalletController {
     const bank = await this.prisma.bankDetails.findUnique({
       where: { userId: user.userId },
     });
-    if (!bank) return { error: "Bank details required before requesting withdrawal." };
 
-    const lockedEscrowMilliFec = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
-    const withdrawableBalanceMilliFec = Math.max(0, wallet.balanceMilliFec - lockedEscrowMilliFec);
+    if (!bank) throw new BadRequestException("BANK_DETAILS_REQUIRED");
 
-    if (dto.amountMilliFec > withdrawableBalanceMilliFec) {
-      return { error: "Insufficient withdrawable balance." };
+    const locked = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
+    const available = Math.max(0, wallet.balanceMilliFec - locked);
+
+    if (dto.amountMilliFec > available) {
+      throw new BadRequestException("INSUFFICIENT_BALANCE");
     }
 
     const req = await this.prisma.withdrawalRequest.create({
-      data: { userId: user.userId, amountMilliFec: dto.amountMilliFec, status: "PENDING" },
+      data: {
+        userId: user.userId,
+        amountMilliFec: dto.amountMilliFec,
+        status: "PENDING",
+      },
     });
 
     await this.ledgerService.addEntry({
@@ -371,23 +376,18 @@ export class WalletController {
       type: "WITHDRAWAL_REQUEST",
       direction: "DEBIT",
       amountMilliFec: dto.amountMilliFec,
-      idempotencyKey: `withdraw_req:${req.id}`,
+      idempotencyKey: `withdraw:${req.id}`,
       reference: req.id,
     });
 
-    try {
-      await this.notifications.create({
-        userId: user.userId,
-        type: NotificationType.WITHDRAWAL_REQUESTED,
-        title: "Withdrawal requested",
-        body: `Your withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC has been submitted.`,
-        idempotencyKey: `notif:withdrawal_requested:${req.id}`,
-        data: {
-          withdrawalId: req.id,
-          amountMilliFec: dto.amountMilliFec,
-        },
-      });
-    } catch {}
+    await this.notifications.create({
+      userId: user.userId,
+      type: NotificationType.WITHDRAWAL_REQUESTED,
+      title: "Withdrawal requested",
+      body: `Withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC submitted.`,
+      idempotencyKey: `notif:withdraw:${req.id}`,
+      data: { withdrawalId: req.id },
+    });
 
     return { ok: true, requestId: req.id, status: req.status };
   }

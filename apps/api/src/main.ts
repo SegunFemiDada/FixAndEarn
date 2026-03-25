@@ -1,4 +1,3 @@
-//path: apps/api/src/main.ts
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -9,7 +8,10 @@ import * as express from "express";
 import * as path from "path";
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule, {
+    cors: true,
+    rawBody: true,
+  });
 
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 

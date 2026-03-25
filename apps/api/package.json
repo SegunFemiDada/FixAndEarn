@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "FixAndEarn API",
   "prisma": {
-    "seed": "ts-node ./prisma/seed.js"
+    "seed": "ts-node prisma/seed.js"
   },
   "scripts": {
     "dev": "nest start --watch",
@@ -29,6 +29,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.22",
     "@nestjs/platform-socket.io": "10.4.22",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/websockets": "10.4.22",
     "@prisma/client": "^5.22.0",
