@@ -9,13 +9,10 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { EscrowLockService } from "./escrow-lock.service";
 import { WithdrawalReversalService } from "./withdrawal-reversal.service";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { PlatformWalletService } from "./platform-wallet.service";
 
 @Module({
-  imports: [
-    forwardRef(() => PaymentsModule), // 🔥 FIX
-    AuthModule,
-    NotificationsModule,
-  ],
+  imports: [forwardRef(() => PaymentsModule), AuthModule, NotificationsModule],
   providers: [
     WalletService,
     LedgerService,
@@ -23,11 +20,14 @@ import { NotificationsModule } from "../notifications/notifications.module";
     PrismaService,
     EscrowLockService,
     WithdrawalReversalService,
+    PlatformWalletService,
   ],
   exports: [
     WalletService,
     LedgerService,
     WithdrawalReversalService,
+    EscrowLockService,
+    PlatformWalletService,
   ],
   controllers: [WalletController],
 })
