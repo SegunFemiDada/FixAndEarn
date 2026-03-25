@@ -18,34 +18,58 @@ export class AdminAnalyticsRepo {
     const now = new Date();
 
     if (range === "all") {
-      return { from: null, to: now, label: "All time" };
+      return {
+        from: null,
+        to: now,
+        label: "All time",
+      };
     }
 
     const from = new Date(now);
 
     if (range === "day") {
       from.setHours(0, 0, 0, 0);
-      return { from, to: now, label: "Today" };
+      return {
+        from,
+        to: now,
+        label: "Today",
+      };
     }
 
     if (range === "week") {
       from.setDate(now.getDate() - 6);
       from.setHours(0, 0, 0, 0);
-      return { from, to: now, label: "Last 7 days" };
+      return {
+        from,
+        to: now,
+        label: "Last 7 days",
+      };
     }
 
     if (range === "month") {
       from.setDate(1);
       from.setHours(0, 0, 0, 0);
-      return { from, to: now, label: "This month" };
+      return {
+        from,
+        to: now,
+        label: "This month",
+      };
     }
 
     from.setMonth(0, 1);
     from.setHours(0, 0, 0, 0);
-    return { from, to: now, label: "This year" };
+
+    return {
+      from,
+      to: now,
+      label: "This year",
+    };
   }
 
-  private buildCreatedAtWhere(from: Date | null, to: Date): Prisma.DateTimeFilter | undefined {
+  private buildCreatedAtWhere(
+    from: Date | null,
+    to: Date
+  ): Prisma.DateTimeFilter | undefined {
     if (!from) return undefined;
     return { gte: from, lte: to };
   }
@@ -72,21 +96,37 @@ export class AdminAnalyticsRepo {
       this.prisma.user.count(),
 
       this.prisma.user.count({
-        where: { roles: { some: { role: { code: "FIXER" } } } },
+        where: {
+          roles: {
+            some: {
+              role: { code: "FIXER" },
+            },
+          },
+        },
       }),
 
       this.prisma.user.count({
-        where: { roles: { some: { role: { code: "CLIENT" } } } },
+        where: {
+          roles: {
+            some: {
+              role: { code: "CLIENT" },
+            },
+          },
+        },
       }),
 
       this.prisma.user.findMany({
         select: {
           id: true,
-          roles: { select: { roleId: true } },
+          roles: {
+            select: { roleId: true },
+          },
         },
       }),
 
-      this.prisma.user.count({ where: { isActive: true } }),
+      this.prisma.user.count({
+        where: { isActive: true },
+      }),
 
       this.prisma.job.count({
         where: createdAtWhere ? { createdAt: createdAtWhere } : undefined,
@@ -136,20 +176,16 @@ export class AdminAnalyticsRepo {
         },
       }),
 
-      this.prisma.ledgerEntry.aggregate({
+      this.prisma.platformLedgerEntry.aggregate({
         _sum: { amountMilliFec: true },
         where: {
-          type: "FEE",
-          direction: "DEBIT",
-          metadata: {
-            path: ["kind"],
-            equals: "JOB_POSTING_FEE",
-          },
+          type: "JOB_POSTING_FEE",
+          direction: "CREDIT",
           ...(createdAtWhere ? { createdAt: createdAtWhere } : {}),
         },
       }),
 
-      this.prisma.ledgerEntry.aggregate({
+      this.prisma.platformLedgerEntry.aggregate({
         _sum: { amountMilliFec: true },
         where: {
           type: "COMMISSION",
@@ -205,12 +241,17 @@ export class AdminAnalyticsRepo {
     const to = period.to;
     const from = period.from ?? new Date(to.getFullYear() - 5, 0, 1);
 
-    const buckets: Array<{ label: string; from: Date; to: Date }> = [];
+    const buckets: Array<{
+      label: string;
+      from: Date;
+      to: Date;
+    }> = [];
 
     if (range === "day") {
-      for (let h = 0; h < 24; h++) {
+      for (let h = 0; h < 24; h += 1) {
         const start = new Date(from);
         start.setHours(h, 0, 0, 0);
+
         const end = new Date(start);
         end.setHours(h + 1);
 
@@ -221,10 +262,11 @@ export class AdminAnalyticsRepo {
         });
       }
     } else if (range === "week") {
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 7; i += 1) {
         const start = new Date(from);
         start.setDate(from.getDate() + i);
         start.setHours(0, 0, 0, 0);
+
         const end = new Date(start);
         end.setDate(start.getDate() + 1);
 
@@ -237,7 +279,7 @@ export class AdminAnalyticsRepo {
     } else if (range === "month") {
       const days = new Date(to.getFullYear(), to.getMonth() + 1, 0).getDate();
 
-      for (let d = 1; d <= days; d++) {
+      for (let d = 1; d <= days; d += 1) {
         const start = new Date(to.getFullYear(), to.getMonth(), d);
         const end = new Date(to.getFullYear(), to.getMonth(), d + 1);
 
@@ -248,7 +290,7 @@ export class AdminAnalyticsRepo {
         });
       }
     } else {
-      for (let y = from.getFullYear(); y <= to.getFullYear(); y++) {
+      for (let y = from.getFullYear(); y <= to.getFullYear(); y += 1) {
         const start = new Date(y, 0, 1);
         const end = new Date(y + 1, 0, 1);
 
@@ -264,14 +306,18 @@ export class AdminAnalyticsRepo {
       buckets.map(async (b) => {
         const [jobsPosted, jobsCompleted, deposits, withdrawals] = await Promise.all([
           this.prisma.job.count({
-            where: { createdAt: { gte: b.from, lt: b.to } },
+            where: {
+              createdAt: { gte: b.from, lt: b.to },
+            },
           }),
+
           this.prisma.job.count({
             where: {
               status: JobStatus.COMPLETED,
               completedApprovedAt: { gte: b.from, lt: b.to },
             },
           }),
+
           this.prisma.$queryRaw<{ sum: number | null }[]>`
             SELECT COALESCE(SUM("amountMilliFec"), 0) AS sum
             FROM "Deposit"
@@ -279,6 +325,7 @@ export class AdminAnalyticsRepo {
               AND "createdAt" >= ${b.from}
               AND "createdAt" < ${b.to}
           `,
+
           this.prisma.withdrawalRequest.aggregate({
             _sum: { amountMilliFec: true },
             where: {
