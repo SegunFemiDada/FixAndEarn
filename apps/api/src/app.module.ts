@@ -19,12 +19,14 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { DisputesModule } from "./modules/disputes/disputes.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
+import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"]
+      envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
+      
     }),
     PrismaModule,
     HealthModule,
@@ -41,7 +43,8 @@ import { ProfilesModule } from "./modules/profiles/profiles.module";
     NotificationsModule,
     DisputesModule,
     ProfilesModule,
-    RatingsModule
+    RatingsModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [
     {

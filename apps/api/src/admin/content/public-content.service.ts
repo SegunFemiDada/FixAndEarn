@@ -62,7 +62,7 @@ export class PublicContentService {
     const meta = await this.repo.getMetaValues([META_KEYS.userAgreement]);
 
     return {
-      title: "User Agreement",
+      title: "Terms of Service",
       content: meta.get(META_KEYS.userAgreement) ?? "",
     };
   }

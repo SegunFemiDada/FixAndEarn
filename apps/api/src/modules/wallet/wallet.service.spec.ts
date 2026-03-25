@@ -61,7 +61,7 @@ describe("Wallet + Ledger", () => {
       where: { user: { email: { in: emails } } },
     });
 
-    await prisma.depositIntent.deleteMany({
+    await prisma.deposit.deleteMany({
       where: { user: { email: { in: emails } } },
     });
 

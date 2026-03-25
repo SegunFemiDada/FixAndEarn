@@ -1,3 +1,4 @@
+// Path: apps/api/src/modules/payments/paystack/paystack.provider.ts
 export type PaystackInitRequest = {
   email: string;
   amountKobo: number;
@@ -13,39 +14,54 @@ export type PaystackInitResponse = {
 export type PaystackCreateRecipientRequest = {
   name: string;
   accountNumber: string;
-  bankCode: string; // in stub we won't validate this
+  bankCode: string;
 };
 
 export type PaystackCreateRecipientResponse = {
   recipientCode: string;
 };
 
-export interface PaystackProvider {
-  initializeTransaction(req: PaystackInitRequest): Promise<PaystackInitResponse>;
-
-  // ✅ Milestone 1
-  createTransferRecipient(
-    req: PaystackCreateRecipientRequest
-  ): Promise<PaystackCreateRecipientResponse>;
-}
 export type PaystackResolveAccountResponse = {
   accountName: string;
   accountNumber: string;
 };
+
+export type PaystackInitiateTransferRequest = {
+  recipientCode: string;
+  amountKobo: number;
+  reference: string;
+  reason?: string;
+};
+
+export type PaystackInitiateTransferResponse = {
+  transferCode: string;
+  transferId?: string | null;
+};
+
+export type PaystackFetchTransferResponse = {
+  reference: string;
+  transferCode?: string | null;
+  status: string;
+  raw?: unknown;
+};
+
 export interface PaystackProvider {
   initializeTransaction(req: PaystackInitRequest): Promise<PaystackInitResponse>;
 
-  resolveAccountNumber(accountNumber: string, bankCode: string): Promise<PaystackResolveAccountResponse>;
+  verifyWebhookSignature(rawBody: Buffer, signature?: string): boolean;
 
-  createTransferRecipient(req: PaystackCreateRecipientRequest): Promise<PaystackCreateRecipientResponse>;
+  resolveAccountNumber(
+    accountNumber: string,
+    bankCode: string
+  ): Promise<PaystackResolveAccountResponse>;
 
-  initiateTransfer(req: {
-    recipientCode: string;
-    amountKobo: number;
-    reference: string;
-    reason?: string;
-  }): Promise<{
-    transferCode: string;
-    transferId?: string | null;
-  }>;
+  createTransferRecipient(
+    req: PaystackCreateRecipientRequest
+  ): Promise<PaystackCreateRecipientResponse>;
+
+  initiateTransfer(
+    req: PaystackInitiateTransferRequest
+  ): Promise<PaystackInitiateTransferResponse>;
+
+  fetchTransfer(reference: string): Promise<PaystackFetchTransferResponse>;
 }
