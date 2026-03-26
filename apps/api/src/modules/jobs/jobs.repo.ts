@@ -408,30 +408,35 @@ export class JobsRepo {
 
       const escrowUserId = await this.ensureEscrowUserId(tx);
 
-      const escrowWallet = await tx.wallet.findUnique({
-        where: {
-          userId_role: {
-            userId: escrowUserId,
-            role: WalletRole.SYSTEM,
-          },
-        },
-      });
-      if (!escrowWallet) throw new Error("ESCROW_WALLET_MISSING");
-      if (escrowWallet.balanceMilliFec < gross) {
-        throw new Error("ESCROW_INSUFFICIENT_BALANCE");
-      }
+const escrowWallet = await tx.wallet.findUnique({
+  where: {
+    userId_role: {
+      userId: escrowUserId,
+      role: WalletRole.SYSTEM,
+    },
+  },
+});
+if (!escrowWallet) throw new Error("ESCROW_WALLET_MISSING");
+if (escrowWallet.balanceMilliFec < gross) {
+  throw new Error("ESCROW_INSUFFICIENT_BALANCE");
+}
 
-      const fixerWallet = await tx.wallet.findUnique({
-        where: {
-          userId_role: {
-            userId: fixerId,
-            role: WalletRole.FIXER,
-          },
-        },
-      });
-      if (!fixerWallet) throw new Error("FIXER_WALLET_MISSING");
+const fixerWallet = await tx.wallet.upsert({
+  where: {
+    userId_role: {
+      userId: fixerId,
+      role: WalletRole.FIXER,
+    },
+  },
+  update: {},
+  create: {
+    userId: fixerId,
+    role: WalletRole.FIXER,
+    balanceMilliFec: 0,
+  },
+});
 
-      const platformWallet = await this.ensurePlatformWallet(tx);
+const platformWallet = await this.ensurePlatformWallet(tx);
 
       await tx.ledgerEntry.create({
         data: {

@@ -32,4 +32,15 @@ export class UsersService {
   markEmailVerified(userId: string) {
     return this.usersRepo.markEmailVerified(userId);
   }
+
+  discoverFixers(args: {
+    skill?: string;
+    state?: string;
+    city?: string;
+    minRating?: number;
+    skip?: number;
+    take?: number;
+  }) {
+    return this.usersRepo.discoverFixers(args);
+  }
 }

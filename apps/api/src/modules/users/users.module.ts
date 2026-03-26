@@ -1,10 +1,11 @@
-// Path: /apps/api/src/modules/users/users.module.ts
 import { Module } from "@nestjs/common";
+import { UsersController } from "./users.controller";
 import { UsersRepo } from "./users.repo";
 import { UsersService } from "./users.service";
 
 @Module({
+  controllers: [UsersController],
   providers: [UsersRepo, UsersService],
-  exports: [UsersService]
+  exports: [UsersService],
 })
 export class UsersModule {}

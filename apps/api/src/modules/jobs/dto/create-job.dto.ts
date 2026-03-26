@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/jobs/dto/create-job.dto.ts
 import { Type } from "class-transformer";
 import { IsInt, IsOptional, IsString, Min, MinLength } from "class-validator";
 

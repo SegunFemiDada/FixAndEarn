@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/jobs/dto/reject-completion.dto.ts
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
 export class RejectCompletionDto {
