@@ -1,4 +1,4 @@
-//path: apps/api/src/modules/jobs/jobs.controller.ts
+// Path: apps/api/src/modules/jobs/jobs.controller.ts
 import {
   BadRequestException,
   Body,
@@ -11,24 +11,25 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
-} from "@nestjs/common";import { FileFieldsInterceptor } from "@nestjs/platform-express";import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+} from "@nestjs/common";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
-import { JobsService } from "./jobs.service";
-import { CreateJobDto } from "./dto/create-job.dto";
-import { UpdateJobDto } from "./dto/update-job.dto";
-import { ApplyJobDto } from "./dto/apply-job.dto";
-import { ListJobsQuery } from "./dto/list-jobs.query";
-import { RequestCompletionDto } from "./dto/request-completion.dto";
-import { ApproveCompletionDto } from "./dto/approve-completion.dto";
-import { RejectCompletionDto } from "./dto/reject-completion.dto";
-import { ListMyJobsQuery } from "./dto/list-my-jobs.query";
-import { ListMyApplicationsQuery } from "./dto/list-my-applications.query";
-import { ListJobApplicationsQuery } from "./dto/list-job-applications.query";
 import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
-
-
+import { JobsService } from "./jobs.service";
+import { ApplyJobDto } from "./dto/apply-job.dto";
+import { ApproveCompletionDto } from "./dto/approve-completion.dto";
+import { CreateJobDto } from "./dto/create-job.dto";
+import { ListJobApplicationsQuery } from "./dto/list-job-applications.query";
+import { ListJobsQuery } from "./dto/list-jobs.query";
+import { ListMyApplicationsQuery } from "./dto/list-my-applications.query";
+import { ListMyJobsQuery } from "./dto/list-my-jobs.query";
+import { RejectCompletionDto } from "./dto/reject-completion.dto";
+import { RequestCompletionDto } from "./dto/request-completion.dto";
+import { UpdateJobDto } from "./dto/update-job.dto";
+import { UrgentDirectHireDto } from "./dto/urgent-direct-hire.dto";
 
 @ApiTags("jobs")
 @ApiBearerAuth()
@@ -36,11 +37,10 @@ import { LocalStorageProvider } from "../../common/storage/local-storage.provide
 @Controller("jobs")
 export class JobsController {
   constructor(
-  private readonly jobsService: JobsService,
-  private readonly storage: LocalStorageProvider
-) {}
+    private readonly jobsService: JobsService,
+    private readonly storage: LocalStorageProvider
+  ) {}
 
-  // Marketplace list (OPEN jobs only)
   @Get()
   async list(@Query() q: ListJobsQuery) {
     return this.jobsService.listJobs({
@@ -50,37 +50,43 @@ export class JobsController {
       minPriceMilliFec: q.minPriceMilliFec,
       maxPriceMilliFec: q.maxPriceMilliFec,
       skip: q.skip ?? 0,
-      take: q.take ?? 20
+      take: q.take ?? 20,
     });
   }
-// CLIENT dashboard: my jobs (all statuses)
-@Get("mine")
-@Roles("CLIENT")
-async mine(@CurrentUser() user: { userId: string }, @Query() q: ListMyJobsQuery) {
-  return this.jobsService.listMyJobs({
-    clientId: user.userId,
-    status: q.status,
-    skip: q.skip ?? 0,
-    take: q.take ?? 20
-  });
-}
 
-// FIXER dashboard: my applications (includes job)
-@Get("applications/mine")
-@Roles("FIXER")
-async myApplications(@CurrentUser() user: { userId: string }, @Query() q: ListMyApplicationsQuery) {
-  return this.jobsService.listMyApplications({
-    fixerId: user.userId,
-    skip: q.skip ?? 0,
-    take: q.take ?? 20
-  });
-}
+  @Get("mine")
+  @Roles("CLIENT")
+  async mine(
+    @CurrentUser() user: { userId: string },
+    @Query() q: ListMyJobsQuery
+  ) {
+    return this.jobsService.listMyJobs({
+      clientId: user.userId,
+      status: q.status,
+      skip: q.skip ?? 0,
+      take: q.take ?? 20,
+    });
+  }
+
+  @Get("applications/mine")
+  @Roles("FIXER")
+  async myApplications(
+    @CurrentUser() user: { userId: string },
+    @Query() q: ListMyApplicationsQuery
+  ) {
+    return this.jobsService.listMyApplications({
+      fixerId: user.userId,
+      skip: q.skip ?? 0,
+      take: q.take ?? 20,
+    });
+  }
 
   @Get(":id")
   async get(@Param("id") id: string) {
     return this.jobsService.getJob(id);
   }
- @Get(":id/applications")
+
+  @Get(":id/applications")
   @Roles("CLIENT")
   async applications(
     @CurrentUser() user: { userId: string },
@@ -91,81 +97,102 @@ async myApplications(@CurrentUser() user: { userId: string }, @Query() q: ListMy
       jobId: id,
       clientId: user.userId,
       skip: q.skip ?? 0,
-      take: q.take ?? 20
+      take: q.take ?? 20,
     });
   }
-  // Only verified CLIENT can create
- @Post()
-@Roles("CLIENT")
-@UseInterceptors(
-  FileFieldsInterceptor([
-    { name: "images", maxCount: 5 },
-  ])
-)
-async create(
-  @CurrentUser() user: { userId: string },
-  @Body() dto: CreateJobDto,
-  @UploadedFiles()
-  files: {
-    images?: Express.Multer.File[];
-  }
-) {
-  const rawImages = files?.images ?? [];
 
-  const allowedImages = rawImages.filter((f) => f.mimetype?.startsWith("image/"));
-  if (allowedImages.length !== rawImages.length) {
-    throw new BadRequestException("Only image files are allowed for job images.");
-  }
-
-  for (const f of allowedImages) {
-    if ((f.size ?? 0) > 2 * 1024 * 1024) {
-      throw new BadRequestException("Each job image must be 2MB or less.");
+  @Post()
+  @Roles("CLIENT")
+  @UseInterceptors(
+    FileFieldsInterceptor([{ name: "images", maxCount: 5 }])
+  )
+  async create(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: CreateJobDto,
+    @UploadedFiles()
+    files: {
+      images?: Express.Multer.File[];
     }
+  ) {
+    const rawImages = files?.images ?? [];
+
+    const allowedImages = rawImages.filter((f) =>
+      f.mimetype?.startsWith("image/")
+    );
+
+    if (allowedImages.length !== rawImages.length) {
+      throw new BadRequestException(
+        "Only image files are allowed for job images."
+      );
+    }
+
+    for (const f of allowedImages) {
+      if ((f.size ?? 0) > 2 * 1024 * 1024) {
+        throw new BadRequestException("Each job image must be 2MB or less.");
+      }
+    }
+
+    const imagePaths = await Promise.all(
+      allowedImages.map((f) => this.storage.save(f, "jobs"))
+    );
+
+    return this.jobsService.createJob({
+      clientId: user.userId,
+      skillCategory: dto.skillCategory,
+      state: dto.state,
+      city: dto.city,
+      lga: dto.lga,
+      area: dto.area,
+      priceMilliFec: Number(dto.priceMilliFec),
+      imagePaths,
+    });
   }
 
-  const imagePaths = await Promise.all(
-    allowedImages.map((f) => this.storage.save(f, "jobs"))
-  );
+  @Post("urgent-direct-hire")
+  @Roles("CLIENT")
+  async urgentDirectHire(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: UrgentDirectHireDto
+  ) {
+    return this.jobsService.urgentDirectHire({
+      clientId: user.userId,
+      fixerId: dto.fixerId,
+      skillCategory: dto.skillCategory,
+      state: dto.state,
+      city: dto.city,
+      lga: dto.lga,
+      area: dto.area,
+    });
+  }
 
-  return this.jobsService.createJob({
-    clientId: user.userId,
-    skillCategory: dto.skillCategory,
-    state: dto.state,
-    city: dto.city,
-    lga: dto.lga,
-    area: dto.area,
-    priceMilliFec: Number(dto.priceMilliFec),
-    imagePaths,
-  });
-}
-
-  // Client can edit until a fixer applies
   @Patch(":id")
   @Roles("CLIENT")
-  async update(@CurrentUser() user: { userId: string }, @Param("id") id: string, @Body() dto: UpdateJobDto) {
+  async update(
+    @CurrentUser() user: { userId: string },
+    @Param("id") id: string,
+    @Body() dto: UpdateJobDto
+  ) {
     return this.jobsService.updateJob({
       jobId: id,
       clientId: user.userId,
-      patch: dto
+      patch: dto,
     });
   }
 
-  // Fixer applies (job interest)
   @Post(":id/apply")
   @Roles("FIXER")
-  async apply(@CurrentUser() user: { userId: string }, @Param("id") id: string, @Body() dto: ApplyJobDto) {
+  async apply(
+    @CurrentUser() user: { userId: string },
+    @Param("id") id: string,
+    @Body() dto: ApplyJobDto
+  ) {
     return this.jobsService.applyToJob({
       jobId: id,
       fixerId: user.userId,
-      note: dto.note
+      note: dto.note,
     });
   }
 
-  // ==========================
-  // Milestone G: Completion flow
-  // ==========================
-
-  // Fixer requests completion (job must be IN_PROGRESS)
   @Post(":id/completion/request")
   @Roles("FIXER")
   async requestCompletion(
@@ -176,11 +203,10 @@ async create(
     return this.jobsService.requestCompletion({
       jobId: id,
       fixerId: user.userId,
-      note: dto.note
+      note: dto.note,
     });
   }
 
-  // Client approves completion + pays + rates (ledger-only)
   @Post(":id/completion/approve")
   @Roles("CLIENT")
   async approveCompletion(
@@ -192,10 +218,10 @@ async create(
       jobId: id,
       clientId: user.userId,
       rating: dto.rating,
-      comment: dto.comment
+      comment: dto.comment,
     });
   }
-    // Client rejects completion request (no payout)
+
   @Post(":id/completion/reject")
   @Roles("CLIENT")
   async rejectCompletion(
@@ -206,8 +232,7 @@ async create(
     return this.jobsService.rejectCompletion({
       jobId: id,
       clientId: user.userId,
-      reason: dto.reason
+      reason: dto.reason,
     });
   }
-
 }
