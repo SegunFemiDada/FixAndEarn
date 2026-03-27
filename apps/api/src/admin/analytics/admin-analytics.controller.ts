@@ -1,3 +1,4 @@
+// Path: apps/api/src/admin/analytics/admin-analytics.controller.ts
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
