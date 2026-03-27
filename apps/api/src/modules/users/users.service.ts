@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/users/users.service.ts
 import { Injectable } from "@nestjs/common";
 import { AppRoleCode, UsersRepo } from "./users.repo";
 
