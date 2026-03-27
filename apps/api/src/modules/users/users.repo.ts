@@ -38,8 +38,12 @@ export class UsersRepo {
   }
 
   async ensureUserRole(userId: string, roleCode: AppRoleCode) {
-    const role = await this.prisma.role.findUnique({ where: { code: roleCode } });
-    if (!role) throw new Error(`Role not found: ${roleCode}`);
+    const role = await this.prisma.role.findUnique({
+      where: { code: roleCode },
+    });
+    if (!role) {
+      throw new Error(`Role not found: ${roleCode}`);
+    }
 
     await this.prisma.userRole.upsert({
       where: { userId_roleId: { userId, roleId: role.id } },
@@ -85,7 +89,7 @@ export class UsersRepo {
     });
   }
 
-  discoverFixers(args: {
+  async discoverFixers(args: {
     skill?: string;
     state?: string;
     city?: string;
@@ -101,7 +105,7 @@ export class UsersRepo {
         ? args.minRating
         : undefined;
 
-    return this.prisma.user.findMany({
+    const rows = await this.prisma.user.findMany({
       where: {
         isActive: true,
         averageRating: minRating != null ? { gte: minRating } : undefined,
@@ -161,7 +165,44 @@ export class UsersRepo {
             status: true,
           },
         },
+        jobsAssigned: {
+          where: {
+            status: "IN_PROGRESS",
+          },
+          select: {
+            id: true,
+          },
+          take: 1,
+        },
       },
+    });
+
+    return rows.map((row) => {
+      const preferred =
+        row.fixerPreferredAvailability === "AVAILABLE"
+          ? "AVAILABLE"
+          : "UNAVAILABLE";
+
+      const effective =
+        Array.isArray(row.jobsAssigned) && row.jobsAssigned.length > 0
+          ? "BUSY"
+          : preferred;
+
+      return {
+        id: row.id,
+        fullName: row.fullName,
+        averageRating: row.averageRating,
+        totalRatings: row.totalRatings,
+        fixerPreferredAvailability: row.fixerPreferredAvailability,
+        fixerAvailabilityUpdatedAt: row.fixerAvailabilityUpdatedAt,
+        effectiveAvailability: effective,
+        availability: {
+          preferred,
+          effective,
+          updatedAt: row.fixerAvailabilityUpdatedAt ?? null,
+        },
+        verification: row.verification,
+      };
     });
   }
 }
