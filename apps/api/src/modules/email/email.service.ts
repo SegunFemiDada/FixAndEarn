@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/email/email.service.ts
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
@@ -43,6 +44,18 @@ export class EmailService {
 
     await this.send(to, subject, html);
   }
+  async sendResetPasswordEmail(to: string, resetUrl: string): Promise<void> {
+  const subject = "Reset your password - FixAndEarn";
+  const html = `
+    <h1>FixAndEarn</h1>
+    <p>We received a request to reset your password.</p>
+    <p>Click the link below to set a new password:</p>
+    <a href="${resetUrl}">${resetUrl}</a>
+    <p>This link expires in 15 minutes.</p>
+    <p>If you did not request this, please ignore this email.</p>
+  `;
+  await this.send(to, subject, html);
+}
 
  private async send(to: string, subject: string, html: string): Promise<void> {
   if (!this.transporter) {
