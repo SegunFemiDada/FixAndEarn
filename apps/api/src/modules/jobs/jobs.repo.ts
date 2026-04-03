@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/jobs/jobs.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { Prisma, WalletRole } from "@prisma/client";
@@ -55,53 +56,53 @@ export class JobsRepo {
     return this.prisma.jobApplication.count({ where: { jobId } });
   }
 
-  listOpenJobs(query: {
-    skill?: string;
-    state?: string;
-    city?: string;
-    minPriceMilliFec?: number;
-    maxPriceMilliFec?: number;
-    take: number;
-    skip: number;
-  }) {
-    const where: Prisma.JobWhereInput = { status: "OPEN" };
+listOpenJobs(query: {
+  skill?: string;
+  state?: string;
+  city?: string;
+  minPriceMilliFec?: number;
+  maxPriceMilliFec?: number;
+  take: number;
+  skip: number;
+}) {
+  const where: Prisma.JobWhereInput = { status: "OPEN" };
 
-    if (query.skill) {
-      where.skillCategory = { contains: query.skill, mode: "insensitive" };
-    }
-    if (query.state) {
-      where.state = { equals: query.state, mode: "insensitive" };
-    }
-    if (query.city) {
-      where.city = { equals: query.city, mode: "insensitive" };
-    }
-
-    if (
-      typeof query.minPriceMilliFec === "number" ||
-      typeof query.maxPriceMilliFec === "number"
-    ) {
-      where.priceMilliFec = {};
-      if (typeof query.minPriceMilliFec === "number") {
-        (where.priceMilliFec as any).gte = query.minPriceMilliFec;
-      }
-      if (typeof query.maxPriceMilliFec === "number") {
-        (where.priceMilliFec as any).lte = query.maxPriceMilliFec;
-      }
-    }
-
-    return this.prisma.job.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: query.skip,
-      take: query.take,
-      include: {
-        images: {
-          orderBy: { sortOrder: "asc" },
-          take: 1,
-        },
-      },
-    });
+  if (query.skill) {
+    where.skillCategory = { contains: query.skill, mode: "insensitive" };
   }
+  if (query.state) {
+    where.state = { contains: query.state, mode: "insensitive" }; // ✅ changed from equals
+  }
+  if (query.city) {
+    where.city = { contains: query.city, mode: "insensitive" };   // ✅ changed from equals
+  }
+
+  if (
+    typeof query.minPriceMilliFec === "number" ||
+    typeof query.maxPriceMilliFec === "number"
+  ) {
+    where.priceMilliFec = {};
+    if (typeof query.minPriceMilliFec === "number") {
+      (where.priceMilliFec as any).gte = query.minPriceMilliFec;
+    }
+    if (typeof query.maxPriceMilliFec === "number") {
+      (where.priceMilliFec as any).lte = query.maxPriceMilliFec;
+    }
+  }
+
+  return this.prisma.job.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: query.skip,
+    take: query.take,
+    include: {
+      images: {
+        orderBy: { sortOrder: "asc" },
+        take: 1,
+      },
+    },
+  });
+}
 
   findApplication(jobId: string, fixerId: string) {
     return this.prisma.jobApplication.findUnique({

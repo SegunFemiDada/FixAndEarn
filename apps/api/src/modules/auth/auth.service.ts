@@ -87,59 +87,67 @@ export class AuthService {
     };
   }
 
-  async login(input: { email: string; password: string }) {
-    const email = input.email.trim().toLowerCase();
+ async login(input: { email: string; password: string }) {
+  const email = input.email.trim().toLowerCase();
 
-    const user = await this.usersService.findByEmail(email);
-    if (!user) throw new UnauthorizedException("Invalid credentials.");
+  const user = await this.usersService.findByEmail(email);
+  if (!user) throw new UnauthorizedException("Invalid credentials.");
 
-    const ok = await argon2.verify(user.passwordHash, input.password);
-    if (!ok) throw new UnauthorizedException("Invalid credentials.");
-
-    const accessToken = await this.signAccessToken(user.id);
-
-    return {
-      user: this.toUserResponse(user),
-      accessToken,
-    };
+  // Add this check
+  if (!user.emailVerifiedAt) {
+    throw new UnauthorizedException("EMAIL_NOT_VERIFIED");
   }
 
-  async forgotPassword(input: { email: string }) {
-    const email = input.email.trim().toLowerCase();
-    const user = await this.usersService.findByEmail(email);
+  const ok = await argon2.verify(user.passwordHash, input.password);
+  if (!ok) throw new UnauthorizedException("Invalid credentials.");
 
-    const baseResponse: {
-      ok: true;
-      message: string;
-      resetToken?: string;
-      resetUrl?: string;
-    } = {
-      ok: true,
-      message:
-        "If an account exists for that email, password reset instructions have been generated.",
-    };
+  const accessToken = await this.signAccessToken(user.id);
 
-    if (!user) {
-      return baseResponse;
-    }
+  return {
+    user: this.toUserResponse(user),
+    accessToken,
+  };
+}
 
-    const resetToken = await this.signResetToken(user.id);
+async forgotPassword(input: { email: string }) {
+  const email = input.email.trim().toLowerCase();
+  const user = await this.usersService.findByEmail(email);
 
-    const allowTokenInResponse =
-      this.config.get<string>("AUTH_RETURN_RESET_TOKEN_IN_RESPONSE", "false") === "true";
+  const baseResponse: {
+    ok: true;
+    message: string;
+    resetToken?: string;
+    resetUrl?: string;
+  } = {
+    ok: true,
+    message:
+      "If an account exists for that email, password reset instructions have been sent.",
+  };
 
-    if (!allowTokenInResponse) {
-      return baseResponse;
-    }
+  if (!user) {
+    return baseResponse;
+  }
 
-    const siteUrl = this.getWebAppUrl();
+  const resetToken = await this.signResetToken(user.id);
+  const siteUrl = this.getWebAppUrl();
+  const resetUrl = `${siteUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
 
+  // Send the reset email
+  await this.email.sendResetPasswordEmail(user.email, resetUrl);
+
+  const allowTokenInResponse =
+    this.config.get<string>("AUTH_RETURN_RESET_TOKEN_IN_RESPONSE", "false") === "true";
+
+  if (allowTokenInResponse) {
     return {
       ...baseResponse,
       resetToken,
-      resetUrl: `${siteUrl}/reset-password?token=${encodeURIComponent(resetToken)}`,
+      resetUrl,
     };
   }
+
+  return baseResponse;
+}
 
   async resetPassword(input: { token: string; password: string }) {
     const token = input.token.trim();
