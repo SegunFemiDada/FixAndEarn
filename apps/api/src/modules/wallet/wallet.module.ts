@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/wallet/wallet.module.ts
 import { Module, forwardRef } from "@nestjs/common";
 import { WalletService } from "./wallet.service";
 import { LedgerService } from "./ledger.service";

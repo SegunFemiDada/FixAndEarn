@@ -9,16 +9,18 @@ import { PAYSTACK_PROVIDER } from "./payments.constants";
 import { PaystackHttpProvider } from "./paystack/paystack.http.provider";
 import { ReconciliationService } from "./reconciliation.service";
 import { ScheduleModule } from "@nestjs/schedule";
+import { PaystackWebhookController } from "./paystack/paystack.webhook.controller";
+import { AdminModule } from "../../admin/admin.module";
 
 @Module({
   imports: [
     PrismaModule,
     NotificationsModule,
     ScheduleModule,
-
+    forwardRef(() => AdminModule),
     forwardRef(() => WalletModule),
   ],
-  controllers: [PaymentsController],
+  controllers: [PaymentsController, PaystackWebhookController], // ✅ removed AdminFinanceService
   providers: [
     PaymentsService,
     ReconciliationService,
@@ -27,6 +29,6 @@ import { ScheduleModule } from "@nestjs/schedule";
       useClass: PaystackHttpProvider,
     },
   ],
-  exports: [PAYSTACK_PROVIDER],
+  exports: [PAYSTACK_PROVIDER, PaymentsService], // ✅ added PaymentsService
 })
 export class PaymentsModule {}

@@ -227,8 +227,10 @@ model BankDetails {
 enum WithdrawalStatus {
   PENDING
   APPROVED
-  REJECTED
+  PROCESSING
   PAID
+  FAILED
+  REJECTED
 }
 
 model WithdrawalRequest {
@@ -239,9 +241,13 @@ model WithdrawalRequest {
   amountMilliFec Int
   status         WithdrawalStatus @default(PENDING)
 
-  paystackTransferReference String?
+  paystackTransferReference String? @unique
   paystackTransferCode      String?
-  payoutMode                String?
+  paystackTransferStatus    String?
+
+  payoutMode String?
+
+  failureReason String?
 
   reviewedBy String?
   reviewNote String?

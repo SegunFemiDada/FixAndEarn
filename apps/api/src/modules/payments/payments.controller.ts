@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/payments/payments.controller.ts
 import {
   Body,
   Controller,

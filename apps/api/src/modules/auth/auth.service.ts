@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/auth/auth.service.ts
 import {
   BadRequestException,
   ConflictException,
@@ -11,6 +12,7 @@ import * as crypto from "crypto";
 import { UsersService } from "../users/users.service";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { CurrentUserPayload } from "src/common/types/current-user";
+import { EmailService } from "../email/email.service";
 
 @Injectable()
 export class AuthService {
@@ -18,7 +20,8 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly email: EmailService
   ) {}
 
   async register(input: { email: string; fullName: string; password: string }) {
@@ -36,7 +39,7 @@ export class AuthService {
       passwordHash,
     });
 
-    const verification = await this.createEmailVerificationToken(user.id);
+    const verification = await this.createEmailVerificationToken(user.id, user.email);
     const accessToken = await this.signAccessToken(user.id);
 
     return {
@@ -76,7 +79,7 @@ export class AuthService {
       return { ok: true };
     }
 
-    const verification = await this.createEmailVerificationToken(user.id);
+    const verification = await this.createEmailVerificationToken(user.id, user.email);
 
     return {
       ok: true,
@@ -184,19 +187,24 @@ export class AuthService {
     };
   }
 
-  private async createEmailVerificationToken(userId: string) {
-    const rawToken = crypto.randomBytes(32).toString("hex");
-    const hash = this.hashToken(rawToken);
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  private async createEmailVerificationToken(userId: string, email: string) {
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const hash = this.hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
 
-    await this.usersService.setEmailVerificationToken(userId, hash, expiresAt);
+  await this.usersService.setEmailVerificationToken(userId, hash, expiresAt);
 
-    return {
-      rawToken,
-      verifyEmailUrl: `${this.getWebAppUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`,
-      expiresAt,
-    };
-  }
+  const verifyUrl = `${this.getWebAppUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
+  
+  // Send email
+  await this.email.sendVerificationEmail(email, verifyUrl);
+
+  return {
+    rawToken,
+    verifyEmailUrl: verifyUrl,
+    expiresAt,
+  };
+}
 
   private getWebAppUrl() {
     const raw =
