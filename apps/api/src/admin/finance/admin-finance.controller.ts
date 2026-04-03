@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/finance/admin-finance.controller.ts
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";

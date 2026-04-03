@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/payments/payments.service.ts
 import {
   BadRequestException,
   Inject,
@@ -11,6 +12,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { LedgerService } from "../wallet/ledger.service";
 import { PAYSTACK_PROVIDER } from "./payments.constants";
 import { PaystackProvider } from "./paystack/paystack.provider";
+import { ModuleRef } from "@nestjs/core";
 
 @Injectable()
 export class PaymentsService {
@@ -19,7 +21,8 @@ export class PaymentsService {
     private readonly paystack: PaystackProvider,
     private readonly prisma: PrismaService,
     private readonly ledgerService: LedgerService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly moduleRef: ModuleRef
   ) {}
 
   async initializeDeposit(userId: string, amountMilliFec: number) {
@@ -55,6 +58,69 @@ export class PaymentsService {
       metadata: { userId },
     });
   }
+  // 🔥 Add this inside PaymentsService class
+
+async initiateWithdrawalPayout(args: { withdrawalId: string }) {
+  const { withdrawalId } = args;
+
+  // You already have Paystack provider wired via PAYSTACK_PROVIDER
+  // So call it here
+
+  const withdrawal = await this.prisma.withdrawalRequest.findUnique({
+    where: { id: withdrawalId },
+    include: {
+      user: {
+        include: {
+          bankDetails: true,
+        },
+      },
+    },
+  });
+
+  if (!withdrawal) {
+    throw new Error("WITHDRAWAL_NOT_FOUND");
+  }
+
+  const bank = withdrawal.user.bankDetails;
+
+  if (!bank?.paystackRecipientCode) {
+    throw new Error("BANK_DETAILS_INCOMPLETE");
+  }
+
+  const amountKobo = Math.round((withdrawal.amountMilliFec / 1000) * 100);
+
+  if (amountKobo <= 0) {
+    throw new Error("INVALID_AMOUNT");
+  }
+
+  const reference = `WDR_${withdrawal.id}`;
+
+  // 👇 this assumes your provider has a transfer method
+  await this.paystack.initiateTransfer({
+  amountKobo,
+  recipientCode: bank.paystackRecipientCode,
+  reference,
+  reason: "Withdrawal payout",
+});
+
+  return { ok: true, reference };
+}
+// 🔥 Add this too
+
+async handlePaystackTransferSuccess(reference: string) {
+  // Lazy import style to avoid circular injection hell
+  // We’ll resolve AdminFinanceService at runtime
+
+  const adminFinance = this.moduleRef.get("AdminFinanceService", {
+    strict: false,
+  });
+
+  if (!adminFinance) {
+    throw new Error("ADMIN_FINANCE_SERVICE_NOT_AVAILABLE");
+  }
+
+  await adminFinance.handlePaystackSuccess(reference);
+}
 
   async handleTransferWebhook(event: any) {
     const data = event?.data;

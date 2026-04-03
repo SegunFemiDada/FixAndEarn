@@ -50,11 +50,15 @@ export class PaystackHttpProvider implements PaystackProvider {
 
   verifyWebhookSignature(rawBody: Buffer, signature?: string): boolean {
     if (!signature) return false;
-    const computed = createHmac("sha512", this.secretKey).update(rawBody).digest("hex");
+    const computed = createHmac("sha512", this.secretKey)
+      .update(rawBody)
+      .digest("hex");
     return computed === signature;
   }
 
-  async initializeTransaction(req: PaystackInitRequest): Promise<PaystackInitResponse> {
+  async initializeTransaction(
+    req: PaystackInitRequest
+  ): Promise<PaystackInitResponse> {
     const response = await fetch(`${this.baseUrl}/transaction/initialize`, {
       method: "POST",
       headers: this.headers,
@@ -167,8 +171,28 @@ export class PaystackHttpProvider implements PaystackProvider {
     };
   }
 
+  /**
+   * 🔥 Compatibility wrapper
+   * Allows PaymentsService to call `.transfer()` without breaking your existing interface
+   */
+  async transfer(args: {
+    amount: number;
+    recipient: string;
+    reference: string;
+    reason?: string;
+  }) {
+    return this.initiateTransfer({
+      amountKobo: args.amount,
+      recipientCode: args.recipient,
+      reference: args.reference,
+      reason: args.reason,
+    });
+  }
+
   async fetchTransfer(reference: string): Promise<PaystackFetchTransferResponse> {
-    const url = new URL(`${this.baseUrl}/transfer/verify/${encodeURIComponent(reference)}`);
+    const url = new URL(
+      `${this.baseUrl}/transfer/verify/${encodeURIComponent(reference)}`
+    );
 
     const response = await fetch(url.toString(), {
       method: "GET",

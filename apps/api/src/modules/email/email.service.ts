@@ -1,0 +1,71 @@
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as nodemailer from "nodemailer";
+
+@Injectable()
+export class EmailService {
+  private transporter: nodemailer.Transporter | null = null;
+  private readonly logger = new Logger(EmailService.name);
+  private readonly from: string;
+
+  constructor(private config: ConfigService) {
+    this.from = this.config.get<string>("EMAIL_FROM", "noreply@fixandearn.com");
+
+    const host = this.config.get<string>("SMTP_HOST");
+    const port = this.config.get<number>("SMTP_PORT");
+    const user = this.config.get<string>("SMTP_USER");
+    const pass = this.config.get<string>("SMTP_PASS");
+
+    if (host && user && pass && port) {
+      this.transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+      this.logger.log("Email transporter initialized");
+    } else {
+      this.logger.warn(
+        "SMTP credentials not fully configured. Email sending will be simulated."
+      );
+    }
+  }
+
+  async sendVerificationEmail(to: string, verifyUrl: string): Promise<void> {
+    const subject = "Verify your email - FixAndEarn";
+    const html = `
+      <h1>Welcome to FixAndEarn</h1>
+      <p>Please verify your email address by clicking the link below:</p>
+      <a href="${verifyUrl}">${verifyUrl}</a>
+      <p>This link expires in 24 hours.</p>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+
+    await this.send(to, subject, html);
+  }
+
+ private async send(to: string, subject: string, html: string): Promise<void> {
+  if (!this.transporter) {
+    // Log the email content so you can copy the link manually
+    this.logger.warn(`📧 Email not sent (no transporter). Here is the content:`);
+    this.logger.warn(`To: ${to}`);
+    this.logger.warn(`Subject: ${subject}`);
+    this.logger.warn(`Body: ${html}`);
+    this.logger.warn(`You can copy the verification link from the body and open it in your browser.`);
+    return;
+  }
+
+  try {
+    await this.transporter.sendMail({
+      from: this.from,
+      to,
+      subject,
+      html,
+    });
+    this.logger.log(`Email sent: ${subject} to ${to}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    this.logger.error(`Failed to send email: ${message}`);
+  }
+}
+}

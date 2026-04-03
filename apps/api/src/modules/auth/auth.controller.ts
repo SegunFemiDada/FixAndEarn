@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/auth/auth.controller.ts
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";

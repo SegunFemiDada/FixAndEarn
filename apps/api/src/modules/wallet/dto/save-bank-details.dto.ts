@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/wallet/dto/save-bank-details.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
 import { IsString, Length, Matches } from "class-validator";
 
