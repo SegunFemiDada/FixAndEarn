@@ -57,9 +57,8 @@ export class EmailService {
   await this.send(to, subject, html);
 }
 
- private async send(to: string, subject: string, html: string): Promise<void> {
+ public async send(to: string, subject: string, html: string): Promise<void> {
   if (!this.transporter) {
-    // Log the email content so you can copy the link manually
     this.logger.warn(`📧 Email not sent (no transporter). Here is the content:`);
     this.logger.warn(`To: ${to}`);
     this.logger.warn(`Subject: ${subject}`);

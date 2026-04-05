@@ -37,7 +37,7 @@ export class ChatService {
   private assertJobMessagingAllowed(job: any) {
     if (!job) throw new NotFoundException("JOB_NOT_FOUND");
     if (job.status === "CANCELLED" || job.status === "COMPLETED") {
-      throw new ForbiddenException("JOB_NOT_CHATABLE");
+      throw new ForbiddenException("MESSAGING NOT ALLOWED FOR JOB STATUS");
     }
   }
 
