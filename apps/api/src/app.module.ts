@@ -20,6 +20,7 @@ import { DisputesModule } from "./modules/disputes/disputes.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
 import { ScheduleModule } from "@nestjs/schedule";
+import { SupportModule } from "./modules/support/support.module";
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ScheduleModule } from "@nestjs/schedule";
     DisputesModule,
     ProfilesModule,
     RatingsModule,
+    SupportModule,
     ScheduleModule.forRoot(),
   ],
   providers: [
