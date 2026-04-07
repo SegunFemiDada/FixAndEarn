@@ -44,4 +44,7 @@ export class UsersService {
   }) {
     return this.usersRepo.discoverFixers(args);
   }
+  async requestDeletion(userId: string, reason: string) {
+  return this.usersRepo.requestDeletion(userId, reason);
+}
 }

@@ -43,6 +43,8 @@ export class AdminUsersRepo {
         email: true,
         fullName: true,
         isActive: true,
+        phone: true,
+        phoneVerifiedAt: true,
         forceReverify: true,
         createdAt: true,
         updatedAt: true,
@@ -60,7 +62,12 @@ export class AdminUsersRepo {
         email: true,
         fullName: true,
         isActive: true,
+        phone: true,
+        phoneVerifiedAt: true,
         forceReverify: true,
+        deletionRequestStatus: true,
+        deletionRequestedAt: true,
+        deletionRequestReason: true,
         adminNotes: true,
         createdAt: true,
         updatedAt: true,
@@ -94,4 +101,61 @@ export class AdminUsersRepo {
   async updateAdminNotes(userId: string, notes: string | null) {
     return this.prisma.user.update({ where: { id: userId }, data: { adminNotes: notes } });
   }
+  // In admin-users.repo.ts
+async findUserByEmail(email: string) {
+  return this.prisma.user.findUnique({ where: { email }, select: { id: true } });
+}
+
+async updateUser(userId: string, data: any) {
+  return this.prisma.user.update({ where: { id: userId }, data });
+}
+
+async updateVerification(verificationId: string, data: any) {
+  return this.prisma.identityVerification.update({ where: { id: verificationId }, data });
+}
+async getDeletionRequests(status?: "PENDING" | "APPROVED" | "REJECTED") {
+  const where: any = {};
+  if (status) where.deletionRequestStatus = status;
+  return this.prisma.user.findMany({
+    where: {
+      deletionRequestStatus: { not: "NONE" },
+      ...where,
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      deletionRequestedAt: true,
+      deletionRequestReason: true,
+      deletionRequestStatus: true,
+    },
+    orderBy: { deletionRequestedAt: "asc" },
+  });
+}
+
+async anonymiseUser(userId: string, newEmail: string, newName: string) {
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      email: newEmail,
+      fullName: newName,
+      isActive: false,
+      passwordHash: "DELETED",
+      emailVerifiedAt: null,
+      emailVerifyTokenHash: null,
+      emailVerifyTokenExpiresAt: null,
+      withdrawalPinHash: null,
+    },
+  });
+}
+
+async updateDeletionStatus(userId: string, status: "APPROVED" | "REJECTED", resolvedByAdminId?: string, reason?: string) {
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      deletionRequestStatus: status,
+      adminNotes: reason ? `Deletion rejected: ${reason}` : undefined,
+    },
+  });
+}
 }

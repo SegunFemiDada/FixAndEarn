@@ -1,10 +1,14 @@
-// Path: /apps/api/src/modules/wallet/dto/withdraw-request.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, Min } from "class-validator";
+import { IsInt, Min, IsString, MinLength } from "class-validator";
 
 export class WithdrawRequestDto {
-  @ApiProperty({ description: "Amount in milliFEC. Must be <= available balance." })
+  @ApiProperty()
   @IsInt()
   @Min(1)
   amountMilliFec!: number;
+
+  @ApiProperty({ description: "Withdrawal pin (4-6 digits)" })
+  @IsString()
+  @MinLength(4)
+  pin!: string;
 }

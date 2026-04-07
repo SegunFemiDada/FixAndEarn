@@ -34,6 +34,7 @@ model User {
   bankDetails BankDetails?
   withdrawals WithdrawalRequest[]
   deposits    Deposit[]
+  reports     Report[]
 
   fixerPreferredAvailability AvailabilityStatus @default(UNAVAILABLE)
   fixerAvailabilityUpdatedAt DateTime?
@@ -53,15 +54,29 @@ model User {
   adminNotes    String?
   forceReverify Boolean @default(false)
 
-  jobsAssigned              Job[]     @relation("UserJobsAssigned")
-  disputesOpened            Dispute[] @relation("DisputesOpened")
-  averageRating             Float     @default(0)
-  totalRatings              Int       @default(0)
+  jobsAssigned              Job[]                 @relation("UserJobsAssigned")
+  disputesOpened            Dispute[]             @relation("DisputesOpened")
+  averageRating             Float                 @default(0)
+  totalRatings              Int                   @default(0)
   emailVerifiedAt           DateTime?
   emailVerifyTokenHash      String?
   emailVerifyTokenExpiresAt DateTime?
-
+  withdrawalPinHash         String? // argon2 hash, only for FIXER role
+  deletionRequestedAt       DateTime?
+  deletionRequestReason     String?
+  deletionRequestStatus     DeletionRequestStatus @default(NONE)
+  phone                     String?               @unique
+  phoneVerifiedAt           DateTime?
+  phoneVerifyCode           String?
+  phoneVerifyCodeExpiresAt  DateTime?
   @@map("users")
+}
+
+enum DeletionRequestStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model Role {
@@ -348,6 +363,42 @@ model JobApplication {
   @@index([jobId])
   @@index([fixerId])
   @@map("job_applications")
+}
+
+model Report {
+  id         String @id @default(uuid())
+  reporterId String
+  reporter   User   @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  jobId   String? // for CHAT_MESSAGE reports, store the job ID
+  fixerId String? // for CHAT_MESSAGE reports, store the fixer ID
+
+  targetType ReportTargetType
+  targetId   String
+
+  reason      String
+  description String?
+
+  status     ReportStatus @default(PENDING)
+  resolvedBy String?
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([targetType, targetId])
+  @@index([status])
+}
+
+enum ReportTargetType {
+  JOB
+  CHAT_MESSAGE
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
 }
 
 //

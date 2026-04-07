@@ -89,6 +89,77 @@ export class UsersRepo {
     });
   }
 
+ async requestDeletion(userId: string, reason: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletionRequestedAt: new Date(),
+        deletionRequestReason: reason,
+        deletionRequestStatus: "PENDING",
+      },
+    });
+  }
+
+  async findUserByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email }, select: { id: true } });
+  }
+
+  async updateUser(userId: string, data: any) {
+    return this.prisma.user.update({ where: { id: userId }, data });
+  }
+
+  async updateVerification(verificationId: string, data: any) {
+    return this.prisma.identityVerification.update({ where: { id: verificationId }, data });
+  }
+
+  async getDeletionRequests(status?: "PENDING" | "APPROVED" | "REJECTED") {
+    const where: any = {};
+    if (status) where.deletionRequestStatus = status;
+    return this.prisma.user.findMany({
+      where: {
+        deletionRequestStatus: { not: "NONE" },
+        ...where,
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        deletionRequestedAt: true,
+        deletionRequestReason: true,
+        deletionRequestStatus: true,
+      },
+      orderBy: { deletionRequestedAt: "asc" },
+    });
+  }
+
+  async anonymiseUser(userId: string, newEmail: string, newName: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: newEmail,
+        fullName: newName,
+        isActive: false,
+        passwordHash: "DELETED",
+        emailVerifiedAt: null,
+        emailVerifyTokenHash: null,
+        emailVerifyTokenExpiresAt: null,
+        withdrawalPinHash: null,
+      },
+    });
+  }
+
+  async updateDeletionStatus(userId: string, status: "APPROVED" | "REJECTED", resolvedByAdminId?: string, reason?: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletionRequestStatus: status,
+        // Optionally store rejection reason in adminNotes or separate field
+        adminNotes: reason ? `Deletion rejected: ${reason}` : undefined,
+      },
+    });
+  }
+
+
   async discoverFixers(args: {
     skill?: string;
     state?: string;

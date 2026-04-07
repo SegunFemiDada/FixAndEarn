@@ -1,8 +1,11 @@
 //path: apps/api/src/modules/users/users.controller.ts
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { UsersService } from "./users.service";
+import { CurrentUser } from "src/common/auth/current-user.decorator";
+
+
 
 @ApiTags("users")
 @ApiBearerAuth()
@@ -38,5 +41,11 @@ export class UsersController {
       skip: Number.isFinite(parsedSkip) ? parsedSkip : 0,
       take: Number.isFinite(parsedTake) ? parsedTake : 20,
     });
+  }
+  @Post("request-deletion")
+  async requestDeletion(@CurrentUser() user: { userId: string }, @Body() body: { reason: string }) {
+    if (!body.reason?.trim()) throw new BadRequestException("REASON_REQUIRED");
+    await this.usersService.requestDeletion(user.userId, body.reason.trim());
+    return { ok: true };
   }
 }

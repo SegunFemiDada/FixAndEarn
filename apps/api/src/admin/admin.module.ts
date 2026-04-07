@@ -48,12 +48,15 @@ import { AdminSettingsController } from "./settings/admin-settings.controller";
 import { AdminSettingsService } from "./settings/admin-settings.service";
 import { AdminSettingsRepo } from "./settings/admin-settings.repo";
 import { PaymentsModule } from "../modules/payments/payments.module";
+import { AdminReportsController } from "./reports/admin-reports.controller";
+import { ReportsModule } from "../modules/reports/reports.module";
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
     DisputesModule,
     NotificationsModule,
+    ReportsModule,
     forwardRef(() => PaymentsModule), // ✅ FIX
     ChatModule,
     PassportModule,
@@ -80,6 +83,7 @@ import { PaymentsModule } from "../modules/payments/payments.module";
     AdminContentController,
     PublicContentController,
     AdminSettingsController,
+    AdminReportsController,
   ],
   providers: [
     CryptoService,
