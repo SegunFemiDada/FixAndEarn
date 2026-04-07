@@ -31,6 +31,9 @@ import { EscrowLockService } from "./escrow-lock.service";
 import { BankDetailsResponse } from "./dto/bank-details.response";
 import { WalletHistoryResponse } from "./dto/wallet-history.response";
 import { NotificationsService } from "../notifications/notifications.service";
+import * as argon2 from "argon2";
+import { SetWithdrawalPinDto } from "./dto/set-withdrawal-pin.dto";
+import { VerifyWithdrawalPinDto } from "./dto/verify-withdrawal-pin.dto";
 
 @ApiTags("wallet")
 @ApiBearerAuth()
@@ -339,6 +342,57 @@ export class WalletController {
 
     return { items };
   }
+@Post("set-withdrawal-pin")
+@Roles("FIXER")
+async setWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: SetWithdrawalPinDto) {
+  const userRecord = await this.prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { withdrawalPinHash: true },
+  });
+  if (!userRecord) throw new BadRequestException("USER_NOT_FOUND");
+
+  const hasCurrent = !!userRecord.withdrawalPinHash;
+
+  if (hasCurrent) {
+    // Require current pin to change
+    if (!dto.currentPin) throw new BadRequestException("CURRENT_PIN_REQUIRED");
+    const isValid = await argon2.verify(userRecord.withdrawalPinHash!, dto.currentPin);
+    if (!isValid) throw new BadRequestException("INVALID_CURRENT_PIN");
+  }
+
+  const newHash = await argon2.hash(dto.newPin);
+  await this.prisma.user.update({
+    where: { id: user.userId },
+    data: { withdrawalPinHash: newHash },
+  });
+
+  return { ok: true, message: hasCurrent ? "PIN updated" : "PIN set" };
+}
+@Get("withdrawal-pin-status")
+@Roles("FIXER")
+async withdrawalPinStatus(@CurrentUser() user: { userId: string }) {
+  const userRecord = await this.prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { withdrawalPinHash: true },
+  });
+  return { hasPin: !!userRecord?.withdrawalPinHash };
+}
+
+@Post("verify-withdrawal-pin")
+@Roles("FIXER")
+async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: VerifyWithdrawalPinDto) {
+  const userRecord = await this.prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { withdrawalPinHash: true },
+  });
+  if (!userRecord) throw new BadRequestException("USER_NOT_FOUND");
+  if (!userRecord.withdrawalPinHash) throw new BadRequestException("PIN_NOT_SET");
+
+  const isValid = await argon2.verify(userRecord.withdrawalPinHash!, dto.pin);
+  if (!isValid) throw new BadRequestException("INVALID_PIN");
+
+  return { ok: true };
+}
 
   // ==========================
   // Withdrawals
@@ -354,6 +408,13 @@ export class WalletController {
     });
 
     if (!bank) throw new BadRequestException("BANK_DETAILS_REQUIRED");
+    const userRecord = await this.prisma.user.findUnique({
+    where: { id: user.userId },
+    select: { withdrawalPinHash: true },
+  });
+  if (!userRecord?.withdrawalPinHash) throw new BadRequestException("WITHDRAWAL PIN REQUIRED");
+  const pinValid = await argon2.verify(userRecord.withdrawalPinHash, dto.pin);
+  if (!pinValid) throw new BadRequestException("INCORRECT PIN");
 
     const locked = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
     const available = Math.max(0, wallet.balanceMilliFec - locked);

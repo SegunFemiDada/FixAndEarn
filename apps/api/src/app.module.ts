@@ -21,6 +21,9 @@ import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
 import { ScheduleModule } from "@nestjs/schedule";
 import { SupportModule } from "./modules/support/support.module";
+import { ReportsModule } from "./modules/reports/reports.module";
+import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
+
 
 @Module({
   imports: [
@@ -45,6 +48,8 @@ import { SupportModule } from "./modules/support/support.module";
     DisputesModule,
     ProfilesModule,
     RatingsModule,
+    PhoneVerificationModule,
+    ReportsModule,
     SupportModule,
     ScheduleModule.forRoot(),
   ],
