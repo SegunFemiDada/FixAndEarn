@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/profiles/profiles.controller.ts
 import { Controller, Get, NotFoundException, Param, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { PrismaService } from "../../infra/prisma/prisma.service";
@@ -232,6 +233,8 @@ export class ProfilesController {
           id: true,
           email: true,
           fullName: true,
+          phone: true,
+          phoneVerifiedAt: true,
           averageRating: true,
           totalRatings: true,
           fixerPreferredAvailability: true,
@@ -309,6 +312,8 @@ export class ProfilesController {
       id: u.id,
       email: u.email,
       fullName: u.fullName,
+      phone: u.phone ?? null,
+      phoneVerifiedAt: u.phoneVerifiedAt ?? null,
       isVerified,
       avatarPath,
       avatarUrl: toPublicFileUrl(avatarPath),

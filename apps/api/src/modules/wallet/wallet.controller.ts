@@ -257,55 +257,61 @@ export class WalletController {
     };
   }
 
-  @Post("bank-details")
-  @Roles("FIXER")
-  async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
-    const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
+@Post("bank-details")
+@Roles("FIXER")
+async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
+  const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
 
-    if (!dto.bankCode?.trim()) {
-      throw new BadRequestException("BANK_CODE_REQUIRED");
+  let recipientCode: string | null = null;
+
+  const payoutsEnabled = process.env.PAYSTACK_PAYOUTS_ENABLED === "true";
+  if (payoutsEnabled && dto.bankCode) {
+    try {
+      const recipient = await this.paystack.createTransferRecipient({
+        name: dto.accountName,
+        accountNumber: dto.accountNumber,
+        bankCode: dto.bankCode,
+      });
+      recipientCode = recipient.recipientCode;
+    } catch (err) {
+      console.error("Paystack recipient creation failed:", err);
     }
-
-    let recipientCode: string | null = null;
-
-    const recipient = await this.paystack.createTransferRecipient({
-      name: dto.accountName,
-      accountNumber: dto.accountNumber,
-      bankCode: dto.bankCode,
-    });
-
-    recipientCode = recipient.recipientCode;
-
-    const record = await this.prisma.bankDetails.upsert({
-  where: { userId: user.userId },
-  update: {
-    bankName: dto.bankName,
-    accountName: dto.accountName,
-    accountNumber: dto.accountNumber,
-    bankCode: dto.bankCode,
-    bvnEncrypted: encrypted.ciphertextB64,
-    bvnIv: encrypted.ivB64,
-    paystackRecipientCode: recipientCode,
-  },
-  create: {
-    userId: user.userId,
-    bankName: dto.bankName,
-    accountName: dto.accountName,
-    accountNumber: dto.accountNumber,
-    bankCode: dto.bankCode,
-    bvnEncrypted: encrypted.ciphertextB64,
-    bvnIv: encrypted.ivB64,
-    paystackRecipientCode: recipientCode,
-  },
-});
-    return {
-      ok: true,
-      bankName: record.bankName,
-      accountName: record.accountName,
-      accountNumber: record.accountNumber,
-      hasRecipientCode: Boolean(record.paystackRecipientCode),
-    };
   }
+
+  // Use dummy bank code if not provided (required by DB)
+  const finalBankCode = dto.bankCode ?? "000000";
+
+  const record = await this.prisma.bankDetails.upsert({
+    where: { userId: user.userId },
+    update: {
+      bankName: dto.bankName,
+      accountName: dto.accountName,
+      accountNumber: dto.accountNumber,
+      bankCode: finalBankCode,
+      bvnEncrypted: encrypted.ciphertextB64,
+      bvnIv: encrypted.ivB64,
+      paystackRecipientCode: recipientCode,
+    },
+    create: {
+      userId: user.userId,
+      bankName: dto.bankName,
+      accountName: dto.accountName,
+      accountNumber: dto.accountNumber,
+      bankCode: finalBankCode,
+      bvnEncrypted: encrypted.ciphertextB64,
+      bvnIv: encrypted.ivB64,
+      paystackRecipientCode: recipientCode,
+    },
+  });
+
+  return {
+    ok: true,
+    bankName: record.bankName,
+    accountName: record.accountName,
+    accountNumber: record.accountNumber,
+    hasRecipientCode: Boolean(record.paystackRecipientCode),
+  };
+}
 
   // ==========================
   // History

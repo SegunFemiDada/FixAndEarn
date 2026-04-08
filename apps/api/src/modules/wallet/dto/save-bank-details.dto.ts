@@ -1,25 +1,29 @@
-//path: apps/api/src/modules/wallet/dto/save-bank-details.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, Length, Matches } from "class-validator";
+import { IsString, MinLength, MaxLength, IsOptional } from "class-validator";
 
 export class SaveBankDetailsDto {
-  @ApiProperty() @IsString() bankName!: string;
-  @ApiProperty() @IsString() accountName!: string;
-
-  @ApiProperty({ description: "Nigerian account number" })
+  @ApiProperty()
   @IsString()
-  @Length(10, 10)
-  @Matches(/^\d+$/, { message: "Digits only" })
+  bankName!: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  bankCode?: string;
+
+  @ApiProperty()
+  @IsString()
+  accountName!: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(10)
+  @MaxLength(10)
   accountNumber!: string;
 
-  @ApiProperty({ description: "BVN (will be encrypted, not stored raw)" })
+  @ApiProperty()
   @IsString()
-  @Length(11, 11)
-  @Matches(/^\d+$/, { message: "Digits only" })
+  @MinLength(11)
+  @MaxLength(11)
   bvn!: string;
-
-  @ApiProperty({ description: "Paystack bank code (e.g. 058)" })
-  @IsString()
-  @Matches(/^\d+$/, { message: "Digits only" })
-  bankCode!: string;
 }
