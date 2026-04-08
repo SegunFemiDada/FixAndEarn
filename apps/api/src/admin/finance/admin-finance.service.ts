@@ -220,7 +220,7 @@ export class AdminFinanceService {
         userId: wr.userId,
         type: NotificationType.WITHDRAWAL_PAID,
         title: "Withdrawal paid",
-        body: `Your withdrawal of ${(wr.amountMilliFec / 1000).toFixed(2)} FEC has been processed manually.`,
+        body: `Your withdrawal of ${(wr.amountMilliFec / 1000).toFixed(2)} FEC has been successfully paid.`,
         idempotencyKey: `notif:withdrawal_paid:${wr.id}`,
       });
     } catch {}
