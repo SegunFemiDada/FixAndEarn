@@ -38,8 +38,17 @@ export class AdminFinanceController {
     return this.svc.getOne(id);
   }
 
+  @Get("withdrawals/:id/earnings-trace")
+  async getWithdrawalEarningsTrace(@Param("id") id: string) {
+    return this.svc.getEarningsTrace(id);
+  }
+
   @Post("withdrawals/:id/approve")
-  async approve(@Req() req: AdminJwtRequest, @Param("id") id: string, @Body() dto: ReviewWithdrawalDto) {
+  async approve(
+    @Req() req: AdminJwtRequest,
+    @Param("id") id: string,
+    @Body() dto: ReviewWithdrawalDto
+  ) {
     return this.svc.approve({
       withdrawalId: id,
       adminId: req.user.adminId,
@@ -48,7 +57,11 @@ export class AdminFinanceController {
   }
 
   @Post("withdrawals/:id/reject")
-  async reject(@Req() req: AdminJwtRequest, @Param("id") id: string, @Body() dto: ReviewWithdrawalDto) {
+  async reject(
+    @Req() req: AdminJwtRequest,
+    @Param("id") id: string,
+    @Body() dto: ReviewWithdrawalDto
+  ) {
     return this.svc.reject({
       withdrawalId: id,
       adminId: req.user.adminId,
@@ -57,7 +70,11 @@ export class AdminFinanceController {
   }
 
   @Post("withdrawals/:id/paid")
-  async paid(@Req() req: AdminJwtRequest, @Param("id") id: string, @Body() dto: ReviewWithdrawalDto) {
+  async paid(
+    @Req() req: AdminJwtRequest,
+    @Param("id") id: string,
+    @Body() dto: ReviewWithdrawalDto
+  ) {
     return this.svc.markPaid({
       withdrawalId: id,
       adminId: req.user.adminId,

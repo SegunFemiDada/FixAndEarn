@@ -5,7 +5,7 @@ import { IsIn, IsString } from "class-validator";
 export class WebhookSimulateDto {
   @ApiProperty()
   @IsString()
-  paystackRef!: string;
+  reference!: string;
 
   @ApiProperty({ enum: ["success", "failed"] })
   @IsIn(["success", "failed"])

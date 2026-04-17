@@ -1,4 +1,4 @@
-// Path: /apps/api/src/modules/users/users.service.ts
+//path: apps/api/src/modules/users/users.service.ts
 import { Injectable } from "@nestjs/common";
 import { AppRoleCode, UsersRepo } from "./users.repo";
 
@@ -21,4 +21,30 @@ export class UsersService {
   createUser(data: { email: string; fullName: string; passwordHash: string }) {
     return this.usersRepo.createUser(data);
   }
+
+  setEmailVerificationToken(userId: string, hash: string, expiresAt: Date) {
+    return this.usersRepo.setEmailVerificationToken(userId, hash, expiresAt);
+  }
+
+  findByVerificationTokenHash(hash: string) {
+    return this.usersRepo.findByVerificationTokenHash(hash);
+  }
+
+  markEmailVerified(userId: string) {
+    return this.usersRepo.markEmailVerified(userId);
+  }
+
+  discoverFixers(args: {
+    skill?: string;
+    state?: string;
+    city?: string;
+    minRating?: number;
+    skip?: number;
+    take?: number;
+  }) {
+    return this.usersRepo.discoverFixers(args);
+  }
+  async requestDeletion(userId: string, reason: string) {
+  return this.usersRepo.requestDeletion(userId, reason);
+}
 }

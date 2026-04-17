@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/wallet/escrow-lock.service.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { JobStatus } from "@prisma/client";

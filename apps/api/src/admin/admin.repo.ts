@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../infra/prisma/prisma.service";
-import { AdminRole } from "@prisma/client";
-import { Prisma } from "@prisma/client";
+import { AdminRole, Prisma } from "@prisma/client";
 
 @Injectable()
 export class AdminRepo {
@@ -15,6 +14,35 @@ export class AdminRepo {
     return this.prisma.admin.findUnique({ where: { id } });
   }
 
+  listAdmins() {
+    return this.prisma.admin.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        is2faEnabled: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  countAdmins() {
+    return this.prisma.admin.count();
+  }
+
+  countSuperAdmins(args?: { isActive?: boolean }) {
+    return this.prisma.admin.count({
+      where: {
+        role: AdminRole.SUPER_ADMIN,
+        ...(typeof args?.isActive === "boolean" ? { isActive: args.isActive } : {}),
+      },
+    });
+  }
+
   createAdmin(data: {
     email: string;
     fullName: string;
@@ -24,6 +52,13 @@ export class AdminRepo {
     totpSecretIv: string;
   }) {
     return this.prisma.admin.create({ data });
+  }
+
+  updateAdmin(id: string, data: Prisma.AdminUpdateInput) {
+    return this.prisma.admin.update({
+      where: { id },
+      data,
+    });
   }
 
   createAuditLog(data: {
@@ -41,8 +76,8 @@ export class AdminRepo {
         description: data.description,
         ip: data.ip ?? null,
         userAgent: data.userAgent ?? null,
-        metadata: data.metadata ?? undefined
-      }
+        metadata: data.metadata ?? undefined,
+      },
     });
   }
 }

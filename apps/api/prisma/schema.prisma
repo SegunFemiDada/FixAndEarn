@@ -28,24 +28,20 @@ model User {
 
   roles UserRole[]
 
-  // Identity verification (one per person/account)
   verification IdentityVerification?
 
-  // Wallet + finance
-  wallet      Wallet?
+  wallets     Wallet[]
   bankDetails BankDetails?
-  deposits    DepositIntent[]
   withdrawals WithdrawalRequest[]
+  deposits    Deposit[]
+  reports     Report[]
 
-  // Fixer availability (preferred status; effective BUSY is derived from jobs)
   fixerPreferredAvailability AvailabilityStatus @default(UNAVAILABLE)
   fixerAvailabilityUpdatedAt DateTime?
 
-  // Jobs
   jobsPosted      Job[]            @relation("UserJobsPosted")
   jobApplications JobApplication[] @relation("UserJobApplications")
 
-  // Milestone F relations
   conversationsAsFixer      Conversation[]         @relation("ConversationFixer")
   chatAgreements            ChatAgreement[]
   chatMessagesSent          ChatMessage[]          @relation("ChatMessageSender")
@@ -55,28 +51,41 @@ model User {
 
   notifications Notification[]
 
-  // Admin controls
   adminNotes    String?
   forceReverify Boolean @default(false)
 
-  // Assigned jobs (when negotiation AGREED)
-  jobsAssigned     Job[]     @relation("UserJobsAssigned")
-  disputesOpened   Dispute[] @relation("DisputesOpened")
-  disputesResolved Dispute[] @relation("DisputesResolved")
-  averageRating    Float     @default(0)
-  totalRatings     Int       @default(0)
-
+  jobsAssigned              Job[]                 @relation("UserJobsAssigned")
+  disputesOpened            Dispute[]             @relation("DisputesOpened")
+  averageRating             Float                 @default(0)
+  totalRatings              Int                   @default(0)
+  emailVerifiedAt           DateTime?
+  emailVerifyTokenHash      String?
+  emailVerifyTokenExpiresAt DateTime?
+  withdrawalPinHash         String? // argon2 hash, only for FIXER role
+  deletionRequestedAt       DateTime?
+  deletionRequestReason     String?
+  deletionRequestStatus     DeletionRequestStatus @default(NONE)
+  phone                     String?               @unique
+  phoneVerifiedAt           DateTime?
+  phoneVerifyCode           String?
+  phoneVerifyCodeExpiresAt  DateTime?
   @@map("users")
 }
 
-model Role {
-  id        String   @id @default(uuid())
-  code      String   @unique
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum DeletionRequestStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
 
-  users UserRole[]
+model Role {
+  id        String     @id @default(uuid())
+  code      String     @unique
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  users     UserRole[]
 
   @@map("roles")
 }
@@ -165,10 +174,17 @@ enum LedgerEntryDirection {
   DEBIT
 }
 
+enum WalletRole {
+  CLIENT
+  FIXER
+  SYSTEM
+}
+
 model Wallet {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String     @id @default(uuid())
+  userId String
+  role   WalletRole @default(CLIENT)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // 1 milliFEC = ₦1
   balanceMilliFec Int @default(0)
@@ -178,6 +194,8 @@ model Wallet {
 
   entries LedgerEntry[]
 
+  @@unique([userId, role])
+  @@index([userId])
   @@map("wallets")
 }
 
@@ -199,30 +217,6 @@ model LedgerEntry {
 
   @@index([walletId, createdAt])
   @@map("ledger_entries")
-}
-
-enum DepositStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-}
-
-model DepositIntent {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  amountMilliFec Int
-  amountKobo     Int
-
-  paystackRef String        @unique
-  status      DepositStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, createdAt])
-  @@map("deposit_intents")
 }
 
 model BankDetails {
@@ -248,8 +242,10 @@ model BankDetails {
 enum WithdrawalStatus {
   PENDING
   APPROVED
-  REJECTED
+  PROCESSING
   PAID
+  FAILED
+  REJECTED
 }
 
 model WithdrawalRequest {
@@ -259,6 +255,14 @@ model WithdrawalRequest {
 
   amountMilliFec Int
   status         WithdrawalStatus @default(PENDING)
+
+  paystackTransferReference String? @unique
+  paystackTransferCode      String?
+  paystackTransferStatus    String?
+
+  payoutMode String?
+
+  failureReason String?
 
   reviewedBy String?
   reviewNote String?
@@ -359,6 +363,42 @@ model JobApplication {
   @@index([jobId])
   @@index([fixerId])
   @@map("job_applications")
+}
+
+model Report {
+  id         String @id @default(uuid())
+  reporterId String
+  reporter   User   @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  jobId   String? // for CHAT_MESSAGE reports, store the job ID
+  fixerId String? // for CHAT_MESSAGE reports, store the fixer ID
+
+  targetType ReportTargetType
+  targetId   String
+
+  reason      String
+  description String?
+
+  status     ReportStatus @default(PENDING)
+  resolvedBy String?
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([targetType, targetId])
+  @@index([status])
+}
+
+enum ReportTargetType {
+  JOB
+  CHAT_MESSAGE
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
 }
 
 //
@@ -563,9 +603,10 @@ model Admin {
 
   isActive Boolean @default(true)
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  AdminAuditLog AdminAuditLog[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  AdminAuditLog    AdminAuditLog[]
+  resolvedDisputes Dispute[]
 
   @@map("admins")
 }
@@ -645,6 +686,8 @@ enum NotificationType {
   WITHDRAWAL_APPROVED
   WITHDRAWAL_REJECTED
   WITHDRAWAL_PAID
+
+  SYSTEM_ANNOUNCEMENT
 }
 
 model Notification {
@@ -699,7 +742,7 @@ model Dispute {
 
   resolutionType    DisputeResolutionType?
   resolvedByAdminId String?
-  resolvedByAdmin   User?                  @relation("DisputesResolved", fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
+  resolvedByAdmin   Admin?                 @relation(fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
   resolvedAt        DateTime?
 
   createdAt DateTime @default(now())
@@ -707,4 +750,24 @@ model Dispute {
 
   @@index([status])
   @@map("disputes")
+}
+
+enum DepositStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+model Deposit {
+  id             String        @id @default(uuid())
+  userId         String
+  reference      String        @unique
+  amountMilliFec Int
+  status         DepositStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reference])
 }

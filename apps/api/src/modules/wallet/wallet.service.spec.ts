@@ -5,7 +5,11 @@ import { WalletService } from "./wallet.service";
 import { LedgerService } from "./ledger.service";
 import { PrismaModule } from "../../infra/prisma/prisma.module";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { LedgerEntryDirection, LedgerEntryType } from "@prisma/client";
+import {
+  LedgerEntryDirection,
+  LedgerEntryType,
+  WalletRole,
+} from "@prisma/client";
 
 describe("Wallet + Ledger", () => {
   let _walletService: WalletService;
@@ -22,11 +26,11 @@ describe("Wallet + Ledger", () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"]
+          envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
         }),
-        PrismaModule
+        PrismaModule,
       ],
-      providers: [WalletService, LedgerService]
+      providers: [WalletService, LedgerService],
     }).compile();
 
     _walletService = moduleRef.get(WalletService);
@@ -35,85 +39,89 @@ describe("Wallet + Ledger", () => {
   });
 
   beforeEach(async () => {
-    // Clean prior test users by email prefix
     const emails = ["wallet_test_a@example.com", "wallet_test_b@example.com"];
 
-    // Delete dependent tables first
     await prisma.ledgerEntry.deleteMany({
-      where: { wallet: { user: { email: { in: emails } } } }
+      where: { wallet: { user: { email: { in: emails } } } },
     });
 
     await prisma.wallet.deleteMany({
-      where: { user: { email: { in: emails } } }
+      where: { user: { email: { in: emails } } },
     });
 
     await prisma.userRole.deleteMany({
-      where: { user: { email: { in: emails } } }
+      where: { user: { email: { in: emails } } },
     });
 
     await prisma.identityVerification.deleteMany({
-      where: { user: { email: { in: emails } } }
+      where: { user: { email: { in: emails } } },
     });
 
     await prisma.bankDetails.deleteMany({
-      where: { user: { email: { in: emails } } }
+      where: { user: { email: { in: emails } } },
     });
 
-    await prisma.depositIntent.deleteMany({
-      where: { user: { email: { in: emails } } }
+    await prisma.deposit.deleteMany({
+      where: { user: { email: { in: emails } } },
     });
 
     await prisma.withdrawalRequest.deleteMany({
-      where: { user: { email: { in: emails } } }
+      where: { user: { email: { in: emails } } },
     });
 
     await prisma.user.deleteMany({
-      where: { email: { in: emails } }
+      where: { email: { in: emails } },
     });
 
-    // Create fresh users for each test
     const a = await prisma.user.create({
       data: {
         email: "wallet_test_a@example.com",
         fullName: "Wallet Test A",
-        passwordHash: "x"
-      }
+        passwordHash: "x",
+      },
     });
 
     const b = await prisma.user.create({
       data: {
         email: "wallet_test_b@example.com",
         fullName: "Wallet Test B",
-        passwordHash: "x"
-      }
+        passwordHash: "x",
+      },
     });
 
     userAId = a.id;
     userBId = b.id;
   });
 
-  it("credits and debits correctly in milliFEC", async () => {
+  it("credits and debits correctly in milliFEC on the client wallet", async () => {
     await ledgerService.addEntry({
       userId: userAId,
+      role: WalletRole.CLIENT,
       type: LedgerEntryType.DEPOSIT,
       direction: LedgerEntryDirection.CREDIT,
-      amountMilliFec: 7500, // 7.5 FEC
-      idempotencyKey: `credit-1-${Date.now()}`
+      amountMilliFec: 7500,
+      idempotencyKey: `credit-1-${Date.now()}`,
     });
 
     await ledgerService.addEntry({
       userId: userAId,
+      role: WalletRole.CLIENT,
       type: LedgerEntryType.WITHDRAWAL_REQUEST,
       direction: LedgerEntryDirection.DEBIT,
-      amountMilliFec: 2500, // 2.5 FEC
-      idempotencyKey: `debit-1-${Date.now()}`
+      amountMilliFec: 2500,
+      idempotencyKey: `debit-1-${Date.now()}`,
     });
 
     const wallet = await prisma.wallet.findUnique({
-      where: { userId: userAId }
+      where: {
+        userId_role: {
+          userId: userAId,
+          role: WalletRole.CLIENT,
+        },
+      },
     });
 
-    expect(wallet?.balanceMilliFec).toBe(5000); // 5.0 FEC
+    expect(wallet?.balanceMilliFec).toBe(5000);
   });
 
   it("blocks duplicate ledger entries", async () => {
@@ -121,19 +129,21 @@ describe("Wallet + Ledger", () => {
 
     await ledgerService.addEntry({
       userId: userBId,
+      role: WalletRole.CLIENT,
       type: LedgerEntryType.DEPOSIT,
       direction: LedgerEntryDirection.CREDIT,
       amountMilliFec: 1000,
-      idempotencyKey: dupKey
+      idempotencyKey: dupKey,
     });
 
     await expect(
       ledgerService.addEntry({
         userId: userBId,
+        role: WalletRole.CLIENT,
         type: LedgerEntryType.DEPOSIT,
         direction: LedgerEntryDirection.CREDIT,
         amountMilliFec: 1000,
-        idempotencyKey: dupKey
+        idempotencyKey: dupKey,
       })
     ).rejects.toThrow();
   });

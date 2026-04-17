@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/jobs/dto/list-my-jobs.query.ts
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsInt, IsOptional, IsString, Min } from "class-validator";
 import { Type } from "class-transformer";

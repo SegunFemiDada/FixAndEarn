@@ -13,19 +13,24 @@ import { PaymentsModule } from "./modules/payments/payments.module";
 import { RolesGuard } from "./common/auth/roles.guard";
 import { JobsModule } from "./modules/jobs/jobs.module";
 import { AdminModule } from "./admin/admin.module";
-import { JobCompletionModule } from "./modules/job-completion/job-completion.module";
 import { ChatModule } from "./chat/chat.module";
 import { FixersModule } from "./modules/fixers/fixers.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { DisputesModule } from "./modules/disputes/disputes.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
+import { ScheduleModule } from "@nestjs/schedule";
+import { SupportModule } from "./modules/support/support.module";
+import { ReportsModule } from "./modules/reports/reports.module";
+import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
+
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"]
+      envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
+      
     }),
     PrismaModule,
     HealthModule,
@@ -37,13 +42,17 @@ import { ProfilesModule } from "./modules/profiles/profiles.module";
     WalletModule,
     JobsModule,
     AdminModule,
-    JobCompletionModule,
     ChatModule,
     FixersModule,
     NotificationsModule,
     DisputesModule,
     ProfilesModule,
-    RatingsModule],
+    RatingsModule,
+    PhoneVerificationModule,
+    ReportsModule,
+    SupportModule,
+    ScheduleModule.forRoot(),
+  ],
   providers: [
     {
       provide: APP_GUARD,

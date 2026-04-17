@@ -1,3 +1,4 @@
+// Path: apps/api/src/admin/verification/admin-verification.controller.ts
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";
@@ -34,7 +35,8 @@ export class AdminVerificationController {
       verificationId: id,
       adminId: req.user.adminId,
       action: dto.action,
-      reason: dto.reason
+      reason: dto.reason,
+      reuploadFields: dto.reuploadFields
     });
   }
 }

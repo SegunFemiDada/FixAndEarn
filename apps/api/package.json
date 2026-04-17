@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "description": "FixAndEarn API",
   "prisma": {
-    "seed": "ts-node ./prisma/seed.js"
+    "seed": "ts-node prisma/seed.js"
   },
   "scripts": {
     "dev": "nest start --watch",
@@ -29,6 +29,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.22",
     "@nestjs/platform-socket.io": "10.4.22",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/websockets": "10.4.22",
     "@prisma/client": "^5.22.0",
@@ -36,6 +37,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "dotenv": "^16.6.1",
+    "nodemailer": "^8.0.4",
     "otplib": "^12.0.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -53,6 +55,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/multer": "^2.0.0",
     "@types/node": "^20.19.30",
+    "@types/nodemailer": "^7.0.11",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^7.18.0",

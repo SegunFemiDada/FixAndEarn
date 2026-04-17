@@ -6,12 +6,15 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { NotificationType } from "@prisma/client";
-import { JobsRepo } from "./jobs.repo";
-import { LedgerService } from "../wallet/ledger.service";
-import { WalletService } from "../wallet/wallet.service";
-import { NotificationsService } from "../notifications/notifications.service";
+import { NotificationType, Prisma, WalletRole } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
+import { PrismaService } from "../../infra/prisma/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { LedgerService } from "../wallet/ledger.service";
+import { PlatformWalletService } from "../wallet/platform-wallet.service";
+import { WalletService } from "../wallet/wallet.service";
+import { JobsRepo } from "./jobs.repo";
 
 @Injectable()
 export class JobsService {
@@ -19,11 +22,15 @@ export class JobsService {
     private readonly repo: JobsRepo,
     private readonly ledgerService: LedgerService,
     private readonly walletService: WalletService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly platformWalletService: PlatformWalletService,
+    private readonly prisma: PrismaService
   ) {}
 
   private ensurePositiveInt(n: number, msg: string) {
-    if (!Number.isInteger(n) || n <= 0) throw new BadRequestException(msg);
+    if (!Number.isInteger(n) || n <= 0) {
+      throw new BadRequestException(msg);
+    }
   }
 
   private ensureRating(n: number) {
@@ -34,58 +41,229 @@ export class JobsService {
 
   async assertVerifiedUser(userId: string): Promise<void> {
     const rec = await this.repo.findIdentityVerificationByUserId(userId);
-    if (!rec) throw new ForbiddenException("Verification required.");
+    if (!rec) {
+      throw new ForbiddenException("Verification required.");
+    }
   }
+
   private mapJobImage(image: any) {
-  return {
-    ...image,
-    imageUrl: toPublicFileUrl(image?.imagePath),
-  };
-}
+    return {
+      ...image,
+      imageUrl: toPublicFileUrl(image?.imagePath),
+    };
+  }
 
-private mapJob(job: any) {
-  if (!job) return job;
+  private mapJob(job: any) {
+    if (!job) return job;
 
-  return {
-    ...job,
-    images: Array.isArray(job.images)
-      ? job.images.map((img: any) => this.mapJobImage(img))
-      : [],
-  };
-}
-
-  // ======================================================
-  // Marketplace list (OPEN jobs)
-  // ======================================================
+    return {
+      ...job,
+      images: Array.isArray(job.images)
+        ? job.images.map((img: any) => this.mapJobImage(img))
+        : [],
+    };
+  }
 
   async listJobs(query: {
-  skill?: string;
-  state?: string;
-  city?: string;
-  minPriceMilliFec?: number;
-  maxPriceMilliFec?: number;
-  take: number;
-  skip: number;
-}) {
-  const jobs = await this.repo.listOpenJobs(query);
-  return Array.isArray(jobs) ? jobs.map((job) => this.mapJob(job)) : [];
-}
+    skill?: string;
+    state?: string;
+    city?: string;
+    minPriceMilliFec?: number;
+    maxPriceMilliFec?: number;
+    take: number;
+    skip: number;
+  }) {
+    const jobs = await this.repo.listOpenJobs(query);
+    return Array.isArray(jobs) ? jobs.map((job) => this.mapJob(job)) : [];
+  }
 
-  // ======================================================
-  // Dashboards
-  // ======================================================
-
-  async listMyJobs(args: { clientId: string; status?: string; skip: number; take: number }) {
+  async listMyJobs(args: {
+    clientId: string;
+    status?: string;
+    skip: number;
+    take: number;
+  }) {
     await this.assertVerifiedUser(args.clientId);
     return this.repo.listJobsByClientId(args);
   }
 
-  async listMyApplications(args: { fixerId: string; skip: number; take: number }) {
+  async urgentDirectHire(args: {
+    clientId: string;
+    fixerId: string;
+    skillCategory: string;
+    state: string;
+    city: string;
+    lga?: string;
+    area?: string;
+  }) {
+    const fixerId = args.fixerId?.trim();
+    const skillCategory = args.skillCategory?.trim();
+    const state = args.state?.trim();
+    const city = args.city?.trim();
+    const lga = args.lga?.trim() ?? null;
+    const area = args.area?.trim() ?? null;
+
+    if (!fixerId) {
+      throw new BadRequestException("FIXER_ID_REQUIRED_FOR_URGENT_HIRE");
+    }
+
+    await this.assertVerifiedUser(args.clientId);
+
+    if (!skillCategory) {
+      throw new BadRequestException("SKILL_CATEGORY_REQUIRED");
+    }
+    if (!state) {
+      throw new BadRequestException("STATE_REQUIRED");
+    }
+    if (!city) {
+      throw new BadRequestException("CITY_REQUIRED");
+    }
+
+    const URGENT_FEE_MILLI_FEC = 2000;
+    const nonce = randomUUID();
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const clientWallet = await this.walletService.getOrCreateWallet(
+        args.clientId,
+        WalletRole.CLIENT,
+        tx
+      );
+
+      if (clientWallet.balanceMilliFec < URGENT_FEE_MILLI_FEC) {
+        throw new ForbiddenException("INSUFFICIENT_FUNDS_FOR_URGENT_HIRE");
+      }
+
+      const fixer = await tx.user.findFirst({
+        where: {
+          id: fixerId,
+          isActive: true,
+          roles: {
+            some: {
+              role: {
+                code: "FIXER",
+              },
+            },
+          },
+          verification: {
+            is: {
+              status: "APPROVED",
+            },
+          },
+        },
+        select: { id: true },
+      });
+
+      if (!fixer) {
+        throw new NotFoundException("FIXER_NOT_FOUND_OR_NOT_VERIFIED");
+      }
+
+      await this.ledgerService.addEntry({
+        userId: args.clientId,
+        role: WalletRole.CLIENT,
+        type: "FEE",
+        direction: "DEBIT",
+        amountMilliFec: URGENT_FEE_MILLI_FEC,
+        idempotencyKey: `urgent_hire_fee:${args.clientId}:${fixerId}:${nonce}`,
+        reference: fixerId,
+        metadata: {
+          kind: "URGENT_HIRE_FEE",
+          clientId: args.clientId,
+          fixerId,
+        },
+        prisma: tx,
+      });
+
+      await this.platformWalletService.addEntry({
+        type: "URGENT_HIRE_FEE",
+        direction: "CREDIT",
+        amountMilliFec: URGENT_FEE_MILLI_FEC,
+        idempotencyKey: `platform_urgent_hire_fee:${args.clientId}:${fixerId}:${nonce}`,
+        reference: fixerId,
+        metadata: {
+          kind: "URGENT_HIRE_FEE",
+          clientId: args.clientId,
+          fixerId,
+        },
+        prisma: tx,
+      });
+
+      const job = await tx.job.create({
+        data: {
+          clientId: args.clientId,
+          fixerId,
+          skillCategory,
+          state,
+          city,
+          lga,
+          area,
+          priceMilliFec: 1,
+          status: "OPEN",
+        },
+      });
+
+      await tx.jobApplication.create({
+        data: {
+          jobId: job.id,
+          fixerId,
+          status: "APPLIED",
+        },
+      });
+
+      const conversation = await tx.conversation.upsert({
+        where: {
+          jobId_fixerId: {
+            jobId: job.id,
+            fixerId,
+          },
+        },
+        update: { status: "OPEN" },
+        create: {
+          jobId: job.id,
+          fixerId,
+          status: "OPEN",
+        },
+      });
+
+      try {
+        await this.notifications.create({
+          userId: fixerId,
+          type: NotificationType.SYSTEM_ANNOUNCEMENT,
+          title: "Urgent hire request",
+          body: "A client opened an urgent hire chat with you.",
+          idempotencyKey: `notif:urgent_hire:${job.id}:${fixerId}`,
+          data: {
+            jobId: job.id,
+            conversationId: conversation.id,
+            clientId: args.clientId,
+          },
+          prisma: tx,
+        });
+      } catch {}
+
+      return {
+        ok: true,
+        jobId: job.id,
+        conversationId: conversation.id,
+        feeChargedMilliFec: URGENT_FEE_MILLI_FEC,
+      };
+    });
+  }
+
+  async listMyApplications(args: {
+    fixerId: string;
+    skip: number;
+    take: number;
+  }) {
     await this.assertVerifiedUser(args.fixerId);
     return this.repo.listApplicationsByFixerId(args);
   }
 
-  async listJobApplications(args: { jobId: string; clientId: string; skip: number; take: number }) {
+  async listJobApplications(args: {
+    jobId: string;
+    clientId: string;
+    skip: number;
+    take: number;
+  }) {
     const job = await this.repo.findJobById(args.jobId);
     if (!job) throw new NotFoundException("Job not found.");
 
@@ -102,121 +280,139 @@ private mapJob(job: any) {
     ]);
 
     return {
-  jobId: args.jobId,
-  total,
-  skip,
-  take,
-  applications: rows.map((a: any) => {
-    const fixer = a.fixer;
+      jobId: args.jobId,
+      total,
+      skip,
+      take,
+      applications: rows.map((a: any) => {
+        const fixer = a.fixer;
+        const preferred = fixer?.fixerPreferredAvailability ?? "UNAVAILABLE";
+        const busy =
+          Array.isArray(fixer?.jobsAssigned) && fixer.jobsAssigned.length > 0;
 
-    const preferred = fixer?.fixerPreferredAvailability ?? "UNAVAILABLE";
-    const busy = Array.isArray(fixer?.jobsAssigned) && fixer.jobsAssigned.length > 0;
-
-    return {
-      fixerId: a.fixerId,
-      fixer: fixer
-  ? {
-      id: fixer.id,
-      fullName: fixer.fullName,
-      isVerified: fixer?.verification?.status === "APPROVED",
-      avatarPath:
-        fixer?.verification?.status === "APPROVED"
-          ? fixer.verification?.selfieImagePath ?? null
-          : null,
-      availability: {
-        preferred,
-        effective: busy ? "BUSY" : preferred,
-        updatedAt: fixer.fixerAvailabilityUpdatedAt ?? null,
-      },
-      rating: {
-        average: typeof fixer.averageRating === "number" ? fixer.averageRating : 0,
-        count: typeof fixer.totalRatings === "number" ? fixer.totalRatings : 0,
-      },
-    }
-  : null,
-      note: a.note,
-      status: a.status,
-      createdAt: a.createdAt
+        return {
+          fixerId: a.fixerId,
+          fixer: fixer
+            ? {
+                id: fixer.id,
+                fullName: fixer.fullName,
+                isVerified: fixer?.verification?.status === "APPROVED",
+                avatarPath:
+                  fixer?.verification?.status === "APPROVED"
+                    ? fixer.verification?.selfieImagePath ?? null
+                    : null,
+                availability: {
+                  preferred,
+                  effective: busy ? "BUSY" : preferred,
+                  updatedAt: fixer.fixerAvailabilityUpdatedAt ?? null,
+                },
+                rating: {
+                  average:
+                    typeof fixer.averageRating === "number"
+                      ? fixer.averageRating
+                      : 0,
+                  count:
+                    typeof fixer.totalRatings === "number"
+                      ? fixer.totalRatings
+                      : 0,
+                },
+              }
+            : null,
+          note: a.note,
+          status: a.status,
+          createdAt: a.createdAt,
+        };
+      }),
     };
-  })
-  };
   }
-
-  // ======================================================
-  // Read single job
-  // ======================================================
 
   async getJob(jobId: string) {
-  const job = await this.repo.findJobById(jobId);
-  if (!job) throw new NotFoundException("Job not found.");
-  return this.mapJob(job);
-}
-
-  // ======================================================
-  // Create job (with posting fee + affordability checks)
-  // ======================================================
+    const job = await this.repo.findJobById(jobId);
+    if (!job) throw new NotFoundException("Job not found.");
+    return this.mapJob(job);
+  }
 
   async createJob(args: {
-  clientId: string;
-  skillCategory: string;
-  state: string;
-  city: string;
-  lga?: string;
-  area?: string;
-  priceMilliFec: number;
-  imagePaths?: string[];
-}) {
-  this.ensurePositiveInt(args.priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
-  await this.assertVerifiedUser(args.clientId);
-
-  if (!args.skillCategory || args.skillCategory.trim().length < 2) {
-    throw new BadRequestException("skillCategory is required.");
-  }
-  if (!args.state || !args.city) throw new BadRequestException("state and city are required.");
-
-  const JOB_POST_FEE_MILLI_FEC = 1000;
-
-  const wallet = await this.walletService.getOrCreateWallet(args.clientId);
-  const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
-
-  if (wallet.balanceMilliFec < required) {
-    throw new ForbiddenException(
-      `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(
-        2
-      )} FEC (price + 1.00 FEC posting fee).`
+    clientId: string;
+    skillCategory: string;
+    state: string;
+    city: string;
+    lga?: string;
+    area?: string;
+    priceMilliFec: number;
+    imagePaths?: string[];
+  }) {
+    this.ensurePositiveInt(
+      args.priceMilliFec,
+      "priceMilliFec must be a positive integer (milliFEC)."
     );
+    await this.assertVerifiedUser(args.clientId);
+
+    if (!args.skillCategory || args.skillCategory.trim().length < 2) {
+      throw new BadRequestException("skillCategory is required.");
+    }
+    if (!args.state || !args.city) {
+      throw new BadRequestException("state and city are required.");
+    }
+
+    const JOB_POST_FEE_MILLI_FEC = 1000;
+    const wallet = await this.walletService.getOrCreateWallet(
+      args.clientId,
+      WalletRole.CLIENT
+    );
+    const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
+
+    if (wallet.balanceMilliFec < required) {
+      throw new ForbiddenException(
+        `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(
+          2
+        )} FEC (price + 1.00 FEC posting fee).`
+      );
+    }
+
+    const job = await this.repo.createJob({
+      clientId: args.clientId,
+      skillCategory: args.skillCategory.trim(),
+      state: args.state.trim(),
+      city: args.city.trim(),
+      lga: args.lga?.trim() ?? null,
+      area: args.area?.trim() ?? null,
+      priceMilliFec: args.priceMilliFec,
+    });
+
+    if (Array.isArray(args.imagePaths) && args.imagePaths.length > 0) {
+      await this.repo.createJobImages(job.id, args.imagePaths.slice(0, 5));
+    }
+
+    await this.ledgerService.addEntry({
+      userId: args.clientId,
+      role: WalletRole.CLIENT,
+      type: "FEE",
+      direction: "DEBIT",
+      amountMilliFec: JOB_POST_FEE_MILLI_FEC,
+      idempotencyKey: `job_post_fee:${job.id}`,
+      reference: job.id,
+      metadata: {
+        kind: "JOB_POSTING_FEE",
+        jobId: job.id,
+      },
+    });
+
+    await this.platformWalletService.addEntry({
+      type: "JOB_POSTING_FEE",
+      direction: "CREDIT",
+      amountMilliFec: JOB_POST_FEE_MILLI_FEC,
+      idempotencyKey: `platform_job_post_fee:${job.id}`,
+      reference: job.id,
+      metadata: {
+        kind: "JOB_POSTING_FEE",
+        jobId: job.id,
+        clientId: args.clientId,
+      },
+    });
+
+    return this.repo.findJobById(job.id);
   }
-
-  const job = await this.repo.createJob({
-    clientId: args.clientId,
-    skillCategory: args.skillCategory.trim(),
-    state: args.state.trim(),
-    city: args.city.trim(),
-    lga: args.lga?.trim() ?? null,
-    area: args.area?.trim() ?? null,
-    priceMilliFec: args.priceMilliFec,
-  });
-
-  if (Array.isArray(args.imagePaths) && args.imagePaths.length > 0) {
-    await this.repo.createJobImages(job.id, args.imagePaths.slice(0, 5));
-  }
-
-  await this.ledgerService.addEntry({
-    userId: args.clientId,
-    type: "FEE",
-    direction: "DEBIT",
-    amountMilliFec: JOB_POST_FEE_MILLI_FEC,
-    idempotencyKey: `job_post_fee:${job.id}`,
-    reference: job.id,
-    metadata: { kind: "JOB_POSTING_FEE", jobId: job.id },
-  });
-
-  return this.repo.findJobById(job.id);
-}
-
-  // ======================================================
-  // Update job
-  // ======================================================
 
   async updateJob(args: {
     jobId: string;
@@ -233,38 +429,66 @@ private mapJob(job: any) {
     const job = await this.repo.findJobById(args.jobId);
     if (!job) throw new NotFoundException("Job not found.");
 
-    if (job.clientId !== args.clientId) throw new ForbiddenException("You can only edit your own jobs.");
-    if (job.status !== "OPEN") throw new ForbiddenException("Only OPEN jobs can be edited.");
+    if (job.clientId !== args.clientId) {
+      throw new ForbiddenException("You can only edit your own jobs.");
+    }
+    if (job.status !== "OPEN") {
+      throw new ForbiddenException("Only OPEN jobs can be edited.");
+    }
 
     const appliedCount = await this.repo.countApplications(args.jobId);
-    if (appliedCount > 0) throw new ConflictException("Job cannot be edited after a fixer has applied.");
+    if (appliedCount > 0) {
+      throw new ConflictException(
+        "Job cannot be edited after a fixer has applied."
+      );
+    }
 
     const data: any = {};
-    if (typeof args.patch.skillCategory === "string") data.skillCategory = args.patch.skillCategory.trim();
-    if (typeof args.patch.state === "string") data.state = args.patch.state.trim();
-    if (typeof args.patch.city === "string") data.city = args.patch.city.trim();
-    if (typeof args.patch.lga === "string") data.lga = args.patch.lga.trim();
-    if (typeof args.patch.area === "string") data.area = args.patch.area.trim();
+    if (typeof args.patch.skillCategory === "string") {
+      data.skillCategory = args.patch.skillCategory.trim();
+    }
+    if (typeof args.patch.state === "string") {
+      data.state = args.patch.state.trim();
+    }
+    if (typeof args.patch.city === "string") {
+      data.city = args.patch.city.trim();
+    }
+    if (typeof args.patch.lga === "string") {
+      data.lga = args.patch.lga.trim();
+    }
+    if (typeof args.patch.area === "string") {
+      data.area = args.patch.area.trim();
+    }
 
     if (typeof args.patch.priceMilliFec === "number") {
-      this.ensurePositiveInt(args.patch.priceMilliFec, "priceMilliFec must be a positive integer (milliFEC).");
+      this.ensurePositiveInt(
+        args.patch.priceMilliFec,
+        "priceMilliFec must be a positive integer (milliFEC)."
+      );
       data.priceMilliFec = args.patch.priceMilliFec;
     }
 
-    if (Object.keys(data).length === 0) throw new BadRequestException("No valid fields to update.");
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException("No valid fields to update.");
+    }
+
     return this.repo.updateJob(args.jobId, data);
   }
 
-  // ======================================================
-  // Apply to job
-  // ======================================================
-
-  async applyToJob(args: { jobId: string; fixerId: string; note?: string }) {
+  async applyToJob(args: {
+    jobId: string;
+    fixerId: string;
+    note?: string;
+  }) {
     const job = await this.repo.findJobById(args.jobId);
     if (!job) throw new NotFoundException("Job not found.");
 
-    if (job.status !== "OPEN") throw new ForbiddenException("Job is not open for applications.");
-    if (job.clientId === args.fixerId) throw new ForbiddenException("You cannot apply to your own job.");
+    if (job.status !== "OPEN") {
+      throw new ForbiddenException("Job is not open for applications.");
+    }
+    if (job.clientId === args.fixerId) {
+      throw new ForbiddenException("You cannot apply to your own job.");
+    }
 
     await this.assertVerifiedUser(args.fixerId);
 
@@ -272,7 +496,11 @@ private mapJob(job: any) {
     if (existing && existing.status === "APPLIED") {
       throw new ConflictException("You already applied to this job.");
     }
-    if (existing) throw new ConflictException("You previously interacted with this job application.");
+    if (existing) {
+      throw new ConflictException(
+        "You previously interacted with this job application."
+      );
+    }
 
     const created = await this.repo.createApplication({
       jobId: args.jobId,
@@ -280,7 +508,6 @@ private mapJob(job: any) {
       note: args.note?.trim(),
     });
 
-    // Notify job owner (client)
     try {
       await this.notifications.create({
         userId: job.clientId,
@@ -298,17 +525,25 @@ private mapJob(job: any) {
     return created;
   }
 
-  // ======================================================
-  // Completion + Payment + Commission
-  // ======================================================
-
-  async requestCompletion(args: { jobId: string; fixerId: string; note?: string }) {
+  async requestCompletion(args: {
+    jobId: string;
+    fixerId: string;
+    note?: string;
+  }) {
     const job = await this.repo.findJobById(args.jobId);
     if (!job) throw new NotFoundException("Job not found.");
-    if (job.status !== "IN_PROGRESS") throw new ForbiddenException("Job must be IN_PROGRESS to request completion.");
+    if (job.status !== "IN_PROGRESS") {
+      throw new ForbiddenException(
+        "Job must be IN_PROGRESS to request completion."
+      );
+    }
 
     const agreedFixerId = await this.repo.findAgreedFixerIdForJob(args.jobId);
-    if (agreedFixerId !== args.fixerId) throw new ForbiddenException("Only the assigned fixer can request completion.");
+    if (agreedFixerId !== args.fixerId) {
+      throw new ForbiddenException(
+        "Only the assigned fixer can request completion."
+      );
+    }
 
     const req = await this.repo.upsertCompletionRequest({
       jobId: args.jobId,
@@ -316,7 +551,6 @@ private mapJob(job: any) {
       note: args.note?.trim(),
     });
 
-    // Notify client
     try {
       await this.notifications.create({
         userId: job.clientId,
@@ -334,18 +568,35 @@ private mapJob(job: any) {
     return req;
   }
 
-  async approveCompletion(args: { jobId: string; clientId: string; rating: number; comment?: string }) {
+  async approveCompletion(args: {
+    jobId: string;
+    clientId: string;
+    rating: number;
+    comment?: string;
+  }) {
     this.ensureRating(args.rating);
 
     const job = await this.repo.findJobById(args.jobId);
     if (!job) throw new NotFoundException("Job not found.");
-    if (job.clientId !== args.clientId) throw new ForbiddenException("You can only approve your own job.");
-    if (job.status !== "IN_PROGRESS") throw new ForbiddenException("Job must be IN_PROGRESS to approve completion.");
+    if (job.clientId !== args.clientId) {
+      throw new ForbiddenException("You can only approve your own job.");
+    }
+    if (job.status !== "IN_PROGRESS") {
+      throw new ForbiddenException(
+        "Job must be IN_PROGRESS to approve completion."
+      );
+    }
 
     const completion = await this.repo.findCompletionRequest(args.jobId);
-    if (!completion) throw new BadRequestException("No completion request found for this job.");
-    if (completion.status === "APPROVED") return { ok: true, status: "ALREADY_APPROVED" };
-    if (completion.status !== "PENDING") throw new BadRequestException("Invalid completion request status.");
+    if (!completion) {
+      throw new BadRequestException("No completion request found for this job.");
+    }
+    if (completion.status === "APPROVED") {
+      return { ok: true, status: "ALREADY_APPROVED" };
+    }
+    if (completion.status !== "PENDING") {
+      throw new BadRequestException("Invalid completion request status.");
+    }
 
     const res = await this.repo.approveCompletionAndPay({
       jobId: args.jobId,
@@ -354,9 +605,9 @@ private mapJob(job: any) {
       comment: args.comment?.trim(),
     });
 
-    // Notify fixer
     try {
-      const fixerId = (res as any)?.fixerId ?? (job as any)?.fixerId ?? completion.fixerId;
+      const fixerId =
+        (res as any)?.fixerId ?? (job as any)?.fixerId ?? completion.fixerId;
       if (fixerId) {
         await this.notifications.create({
           userId: fixerId,
@@ -376,17 +627,35 @@ private mapJob(job: any) {
     return res;
   }
 
-  async rejectCompletion(args: { jobId: string; clientId: string; reason?: string }) {
+  async rejectCompletion(args: {
+    jobId: string;
+    clientId: string;
+    reason?: string;
+  }) {
     const job = await this.repo.findJobById(args.jobId);
     if (!job) throw new NotFoundException("Job not found.");
-    if (job.clientId !== args.clientId) throw new ForbiddenException("You can only review your own job.");
-    if (job.status !== "IN_PROGRESS") throw new ForbiddenException("Job must be IN_PROGRESS to reject completion.");
+    if (job.clientId !== args.clientId) {
+      throw new ForbiddenException("You can only review your own job.");
+    }
+    if (job.status !== "IN_PROGRESS") {
+      throw new ForbiddenException(
+        "Job must be IN_PROGRESS to reject completion."
+      );
+    }
 
     const completion = await this.repo.findCompletionRequest(args.jobId);
-    if (!completion) throw new BadRequestException("No completion request found for this job.");
-    if (completion.status === "APPROVED") throw new ConflictException("Completion already approved.");
-    if (completion.status === "REJECTED") return { ok: true, status: "ALREADY_REJECTED" };
-    if (completion.status !== "PENDING") throw new BadRequestException("Invalid completion request status.");
+    if (!completion) {
+      throw new BadRequestException("No completion request found for this job.");
+    }
+    if (completion.status === "APPROVED") {
+      throw new ConflictException("Completion already approved.");
+    }
+    if (completion.status === "REJECTED") {
+      return { ok: true, status: "ALREADY_REJECTED" };
+    }
+    if (completion.status !== "PENDING") {
+      throw new BadRequestException("Invalid completion request status.");
+    }
 
     const res = await this.repo.rejectCompletionRequest({
       jobId: args.jobId,
@@ -394,7 +663,6 @@ private mapJob(job: any) {
       reason: args.reason?.trim(),
     });
 
-    // Notify fixer
     try {
       const fixerId = completion.fixerId ?? (job as any)?.fixerId;
       if (fixerId) {

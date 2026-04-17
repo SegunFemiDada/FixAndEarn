@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/moderation/chat-moderation.service.ts
 import { Injectable } from '@nestjs/common';
 
 export type ModerationHit = {

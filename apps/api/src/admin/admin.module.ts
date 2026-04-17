@@ -1,4 +1,5 @@
-import { Module } from "@nestjs/common";
+//path: apps/api/src/admin/admin.module.ts
+import { Module, forwardRef } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PassportModule } from "@nestjs/passport";
@@ -24,22 +25,49 @@ import { AdminExportsRepo } from "./exports/admin-exports.repo";
 import { DisputesModule } from "../modules/disputes/disputes.module";
 import { AdminDisputesController } from "../modules/disputes/admin-disputes.controller";
 import { NotificationsModule } from "../modules/notifications/notifications.module";
-
+import { ChatModule } from "../chat/chat.module";
+import { AdminAnalyticsController } from "./analytics/admin-analytics.controller";
+import { AdminAnalyticsService } from "./analytics/admin-analytics.service";
+import { AdminAnalyticsRepo } from "./analytics/admin-analytics.repo";
+import { AdminMessagingController } from "./messaging/admin-messaging.controller";
+import { AdminMessagingService } from "./messaging/admin-messaging.service";
+import { AdminMessagingRepo } from "./messaging/admin-messaging.repo";
+import { AdminNotificationsController } from "./notifications/admin-notifications.controller";
+import { AdminNotificationsService } from "./notifications/admin-notifications.service";
+import { AdminNotificationsRepo } from "./notifications/admin-notifications.repo";
+import { AdminSecurityController } from "./security/admin-security.controller";
+import { AdminSecurityService } from "./security/admin-security.service";
+import { AdminSecurityRepo } from "./security/admin-security.repo";
+import { AdminContentController } from "./content/admin-content.controller";
+import { AdminContentService } from "./content/admin-content.service";
+import { AdminContentRepo } from "./content/admin-content.repo";
+import { PublicContentController } from "./content/public-content.controller";
+import { PublicContentService } from "./content/public-content.service";
+import { PublicContentRepo } from "./content/public-content.repo";
+import { AdminSettingsController } from "./settings/admin-settings.controller";
+import { AdminSettingsService } from "./settings/admin-settings.service";
+import { AdminSettingsRepo } from "./settings/admin-settings.repo";
+import { PaymentsModule } from "../modules/payments/payments.module";
+import { AdminReportsController } from "./reports/admin-reports.controller";
+import { ReportsModule } from "../modules/reports/reports.module";
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
     DisputesModule,
     NotificationsModule,
+    ReportsModule,
+    forwardRef(() => PaymentsModule), // ✅ FIX
+    ChatModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (cfg: ConfigService) => ({
         secret: cfg.get<string>("ADMIN_JWT_SECRET", "dev_admin_secret_change_me"),
-        signOptions: { expiresIn: "12h" }
-      })
-    })
+        signOptions: { expiresIn: "12h" },
+      }),
+    }),
   ],
   controllers: [
     AdminController,
@@ -47,7 +75,15 @@ import { NotificationsModule } from "../modules/notifications/notifications.modu
     AdminFinanceController,
     AdminUsersController,
     AdminExportsController,
-    AdminDisputesController
+    AdminDisputesController,
+    AdminAnalyticsController,
+    AdminMessagingController,
+    AdminNotificationsController,
+    AdminSecurityController,
+    AdminContentController,
+    PublicContentController,
+    AdminSettingsController,
+    AdminReportsController,
   ],
   providers: [
     CryptoService,
@@ -62,8 +98,22 @@ import { NotificationsModule } from "../modules/notifications/notifications.modu
     AdminUsersRepo,
     AdminUsersService,
     AdminExportsRepo,
-    AdminExportsService
+    AdminExportsService,
+    AdminAnalyticsRepo,
+    AdminAnalyticsService,
+    AdminMessagingRepo,
+    AdminMessagingService,
+    AdminNotificationsRepo,
+    AdminNotificationsService,
+    AdminSecurityRepo,
+    AdminSecurityService,
+    AdminContentRepo,
+    AdminContentService,
+    PublicContentRepo,
+    PublicContentService,
+    AdminSettingsRepo,
+    AdminSettingsService,
   ],
-  exports: [AdminService, AdminAuditService]
+  exports: [AdminService, AdminAuditService, AdminFinanceService], 
 })
 export class AdminModule {}

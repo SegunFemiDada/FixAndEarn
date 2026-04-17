@@ -9,7 +9,10 @@ import * as express from "express";
 import * as path from "path";
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule, {
+    cors: true,
+    rawBody: true,
+  });
 
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
@@ -20,6 +23,13 @@ async function bootstrap(): Promise<void> {
       transform: true,
     })
   );
+app.use(
+  express.json({
+    verify: (req: any, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>("API_PORT", 3000);

@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/auth/admin-jwt-auth.guard.ts
 import { AuthGuard } from "@nestjs/passport";
 import { Injectable } from "@nestjs/common";
 

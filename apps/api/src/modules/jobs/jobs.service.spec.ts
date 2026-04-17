@@ -1,10 +1,12 @@
-// Path: /apps/api/src/modules/jobs/jobs.service.spec.ts
+// Path: apps/api/src/modules/jobs/jobs.service.spec.ts
 import { Test } from "@nestjs/testing";
 import { JobsService } from "./jobs.service";
 import { JobsRepo } from "./jobs.repo";
 import { LedgerService } from "../wallet/ledger.service";
 import { WalletService } from "../wallet/wallet.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { PlatformWalletService } from "../wallet/platform-wallet.service";
+import { PrismaService } from "../../infra/prisma/prisma.service";
 
 describe("JobsService", () => {
   let service: JobsService;
@@ -58,10 +60,21 @@ describe("JobsService", () => {
           create: jest.fn(),
         },
       },
+      {
+      provide: PlatformWalletService,
+      useValue: {
+        addEntry: jest.fn(),
+      }
+    },
+    {
+      provide: PrismaService,
+      useValue: {},
+    },
       ],
     }).compile();
 
     service = moduleRef.get(JobsService);
+    
     repo = moduleRef.get(JobsRepo);
     _walletService = moduleRef.get(WalletService);
     _ledgerService = moduleRef.get(LedgerService);

@@ -1,5 +1,5 @@
-// Path: /apps/api/src/modules/wallet/wallet.module.ts
-import { Module } from "@nestjs/common";
+//path: apps/api/src/modules/wallet/wallet.module.ts
+import { Module, forwardRef } from "@nestjs/common";
 import { WalletService } from "./wallet.service";
 import { LedgerService } from "./ledger.service";
 import { WalletController } from "./wallet.controller";
@@ -10,13 +10,26 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { EscrowLockService } from "./escrow-lock.service";
 import { WithdrawalReversalService } from "./withdrawal-reversal.service";
 import { NotificationsModule } from "../notifications/notifications.module";
-
-
+import { PlatformWalletService } from "./platform-wallet.service";
 
 @Module({
-  imports: [PaymentsModule, AuthModule, NotificationsModule],
-  providers: [WalletService, LedgerService, CryptoService, PrismaService, EscrowLockService, WithdrawalReversalService],
-  exports: [WalletService, LedgerService, WithdrawalReversalService],
-  controllers: [WalletController]
+  imports: [forwardRef(() => PaymentsModule), AuthModule, NotificationsModule],
+  providers: [
+    WalletService,
+    LedgerService,
+    CryptoService,
+    PrismaService,
+    EscrowLockService,
+    WithdrawalReversalService,
+    PlatformWalletService,
+  ],
+  exports: [
+    WalletService,
+    LedgerService,
+    WithdrawalReversalService,
+    EscrowLockService,
+    PlatformWalletService,
+  ],
+  controllers: [WalletController],
 })
 export class WalletModule {}
