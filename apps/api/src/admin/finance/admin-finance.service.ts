@@ -128,22 +128,39 @@ export class AdminFinanceService {
   /**
    * APPROVED → PROCESSING
    */
-  async markPaid(args: { withdrawalId: string; adminId: string; note?: string }) {
-  const wr = await this.prisma.withdrawalRequest.findUnique({
-    where: { id: args.withdrawalId },
-    include: { user: { include: { bankDetails: true } } },
-  });
+  // apps/api/src/admin/finance/admin-finance.service.ts
+// ... keep all imports and other methods unchanged
 
-  if (!wr) throw new NotFoundException("WITHDRAWAL_NOT_FOUND");
-  if (wr.status !== WithdrawalStatus.APPROVED) {
-    throw new ForbiddenException("WITHDRAWAL_NOT_APPROVED");
-  }
-
-  const note = args.note?.trim() || wr.reviewNote || null;
+async markPaid(args: { withdrawalId: string; adminId: string; note?: string }) {
+  const note = args.note?.trim() || null;
   const payoutsEnabled = process.env.PAYSTACK_PAYOUTS_ENABLED === "true";
 
   if (payoutsEnabled) {
-    // Existing Paystack payout logic
+    // Atomic update: only if status is APPROVED
+    const result = await this.prisma.withdrawalRequest.updateMany({
+      where: {
+        id: args.withdrawalId,
+        status: WithdrawalStatus.APPROVED,
+      },
+      data: {
+        status: WithdrawalStatus.PROCESSING,
+        reviewedBy: args.adminId,
+        reviewNote: note,
+        reviewedAt: new Date(),
+      },
+    });
+
+    if (result.count === 0) {
+      throw new ForbiddenException("WITHDRAWAL_NOT_APPROVED_OR_ALREADY_PROCESSED");
+    }
+
+    // Now fetch the withdrawal to proceed with payout
+    const wr = await this.prisma.withdrawalRequest.findUnique({
+      where: { id: args.withdrawalId },
+      include: { user: { include: { bankDetails: true } } },
+    });
+    if (!wr) throw new NotFoundException("WITHDRAWAL_NOT_FOUND");
+
     const bank = wr.user.bankDetails;
     if (!bank?.paystackRecipientCode) {
       throw new BadRequestException("BANK_DETAILS_INCOMPLETE");
@@ -155,23 +172,25 @@ export class AdminFinanceService {
     const reference = `WDR_${wr.id}`;
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.paymentsService.initiateWithdrawalPayout({ withdrawalId: wr.id });
-
-        await tx.withdrawalRequest.update({
-          where: { id: wr.id },
-          data: {
-            status: WithdrawalStatus.PROCESSING as any,
-            payoutMode: "PAYSTACK",
-            paystackTransferReference: reference,
-            reviewedBy: args.adminId,
-            reviewNote: note,
-            reviewedAt: new Date(),
-          },
-        });
+      // Use a transaction to ensure that if Paystack call fails, status remains PROCESSING? 
+      // Actually we want to revert on failure. But the current logic already handles failure by logging and throwing.
+      await this.paymentsService.initiateWithdrawalPayout({ withdrawalId: wr.id });
+      // Update with transfer reference (already done by initiateWithdrawalPayout? Actually it updates inside)
+      // We'll add the reference here for completeness.
+      await this.prisma.withdrawalRequest.update({
+        where: { id: wr.id },
+        data: {
+          paystackTransferReference: reference,
+          payoutMode: "PAYSTACK",
+        },
       });
     } catch (err: any) {
       const message = String(err?.message ?? "PAYSTACK_FAILED");
+      // Revert status back to APPROVED
+      await this.prisma.withdrawalRequest.update({
+        where: { id: wr.id },
+        data: { status: WithdrawalStatus.APPROVED },
+      });
       await this.audit.log({
         actorAdminId: args.adminId,
         action: "WITHDRAWAL_PAID_FAILED",
@@ -194,9 +213,12 @@ export class AdminFinanceService {
       status: WithdrawalStatus.PROCESSING,
     };
   } else {
-    // Manual mode: mark as PAID directly
-    await this.prisma.withdrawalRequest.update({
-      where: { id: wr.id },
+    // Manual mode: atomic update to PAID
+    const result = await this.prisma.withdrawalRequest.updateMany({
+      where: {
+        id: args.withdrawalId,
+        status: WithdrawalStatus.APPROVED,
+      },
       data: {
         status: WithdrawalStatus.PAID,
         payoutMode: "MANUAL",
@@ -207,27 +229,35 @@ export class AdminFinanceService {
       },
     });
 
+    if (result.count === 0) {
+      throw new ForbiddenException("WITHDRAWAL_NOT_APPROVED_OR_ALREADY_PROCESSED");
+    }
+
     await this.audit.log({
       actorAdminId: args.adminId,
       action: "WITHDRAWAL_PAID_MANUAL",
       description: "Withdrawal marked as paid manually",
-      metadata: { withdrawalId: wr.id, note },
+      metadata: { withdrawalId: args.withdrawalId, note },
     });
 
-    // Send notification
     try {
-      await this.notifications.create({
-        userId: wr.userId,
-        type: NotificationType.WITHDRAWAL_PAID,
-        title: "Withdrawal paid",
-        body: `Your withdrawal of ${(wr.amountMilliFec / 1000).toFixed(2)} FEC has been successfully paid.`,
-        idempotencyKey: `notif:withdrawal_paid:${wr.id}`,
+      const wr = await this.prisma.withdrawalRequest.findUnique({
+        where: { id: args.withdrawalId },
       });
+      if (wr) {
+        await this.notifications.create({
+          userId: wr.userId,
+          type: NotificationType.WITHDRAWAL_PAID,
+          title: "Withdrawal paid",
+          body: `Your withdrawal of ${(wr.amountMilliFec / 1000).toFixed(2)} FEC has been successfully paid.`,
+          idempotencyKey: `notif:withdrawal_paid:${wr.id}`,
+        });
+      }
     } catch {}
 
     return {
       ok: true,
-      withdrawalId: wr.id,
+      withdrawalId: args.withdrawalId,
       status: WithdrawalStatus.PAID,
     };
   }

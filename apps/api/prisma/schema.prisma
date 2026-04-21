@@ -275,6 +275,14 @@ model WithdrawalRequest {
   @@index([userId, createdAt])
   @@map("withdrawal_requests")
 }
+model WebhookEvent {
+  id          String   @id @default(uuid())
+  reference   String   @unique
+  eventType   String
+  processedAt DateTime @default(now())
+
+  @@index([reference])
+}
 
 enum JobStatus {
   OPEN

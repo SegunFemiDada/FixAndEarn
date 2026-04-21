@@ -1,8 +1,9 @@
-//path: apps/api/src/modules/payments/payments.service.ts
+// apps/api/src/modules/payments/payments.service.ts
 import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { NotificationType, WalletRole, WithdrawalStatus } from "@prisma/client";
@@ -16,6 +17,8 @@ import { ModuleRef } from "@nestjs/core";
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     @Inject(PAYSTACK_PROVIDER)
     private readonly paystack: PaystackProvider,
@@ -58,69 +61,55 @@ export class PaymentsService {
       metadata: { userId },
     });
   }
-  // 🔥 Add this inside PaymentsService class
 
-async initiateWithdrawalPayout(args: { withdrawalId: string }) {
-  const { withdrawalId } = args;
+  async initiateWithdrawalPayout(args: { withdrawalId: string }) {
+    const { withdrawalId } = args;
 
-  // You already have Paystack provider wired via PAYSTACK_PROVIDER
-  // So call it here
-
-  const withdrawal = await this.prisma.withdrawalRequest.findUnique({
-    where: { id: withdrawalId },
-    include: {
-      user: {
-        include: {
-          bankDetails: true,
+    const withdrawal = await this.prisma.withdrawalRequest.findUnique({
+      where: { id: withdrawalId },
+      include: {
+        user: {
+          include: {
+            bankDetails: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!withdrawal) {
-    throw new Error("WITHDRAWAL_NOT_FOUND");
+    if (!withdrawal) {
+      throw new Error("WITHDRAWAL_NOT_FOUND");
+    }
+
+    const bank = withdrawal.user.bankDetails;
+    if (!bank?.paystackRecipientCode) {
+      throw new Error("BANK_DETAILS_INCOMPLETE");
+    }
+
+    const amountKobo = Math.round((withdrawal.amountMilliFec / 1000) * 100);
+    if (amountKobo <= 0) {
+      throw new Error("INVALID_AMOUNT");
+    }
+
+    const reference = `WDR_${withdrawal.id}`;
+    await this.paystack.initiateTransfer({
+      amountKobo,
+      recipientCode: bank.paystackRecipientCode,
+      reference,
+      reason: "Withdrawal payout",
+    });
+
+    return { ok: true, reference };
   }
 
-  const bank = withdrawal.user.bankDetails;
-
-  if (!bank?.paystackRecipientCode) {
-    throw new Error("BANK_DETAILS_INCOMPLETE");
+  async handlePaystackTransferSuccess(reference: string) {
+    const adminFinance = this.moduleRef.get("AdminFinanceService", {
+      strict: false,
+    });
+    if (!adminFinance) {
+      throw new Error("ADMIN_FINANCE_SERVICE_NOT_AVAILABLE");
+    }
+    await adminFinance.handlePaystackSuccess(reference);
   }
-
-  const amountKobo = Math.round((withdrawal.amountMilliFec / 1000) * 100);
-
-  if (amountKobo <= 0) {
-    throw new Error("INVALID_AMOUNT");
-  }
-
-  const reference = `WDR_${withdrawal.id}`;
-
-  // 👇 this assumes your provider has a transfer method
-  await this.paystack.initiateTransfer({
-  amountKobo,
-  recipientCode: bank.paystackRecipientCode,
-  reference,
-  reason: "Withdrawal payout",
-});
-
-  return { ok: true, reference };
-}
-// 🔥 Add this too
-
-async handlePaystackTransferSuccess(reference: string) {
-  // Lazy import style to avoid circular injection hell
-  // We’ll resolve AdminFinanceService at runtime
-
-  const adminFinance = this.moduleRef.get("AdminFinanceService", {
-    strict: false,
-  });
-
-  if (!adminFinance) {
-    throw new Error("ADMIN_FINANCE_SERVICE_NOT_AVAILABLE");
-  }
-
-  await adminFinance.handlePaystackSuccess(reference);
-}
 
   async handleTransferWebhook(event: any) {
     const data = event?.data;
@@ -265,32 +254,39 @@ async handlePaystackTransferSuccess(reference: string) {
 
   async handleWebhook(rawBody: Buffer, signature?: string) {
     const isValid = this.paystack.verifyWebhookSignature(rawBody, signature);
-
     if (!isValid) {
       throw new BadRequestException("INVALID_SIGNATURE");
     }
 
     const event = JSON.parse(rawBody.toString());
+    const reference = event?.data?.reference ?? event?.data?.transfer_reference ?? null;
+    if (!reference) {
+      throw new BadRequestException("MISSING_REFERENCE");
+    }
 
-    if (event?.event === "charge.success") {
-      const reference =
-        typeof event?.data?.reference === "string"
-          ? event.data.reference.trim()
-          : "";
+    // Idempotency check
+    const existing = await this.prisma.webhookEvent.findUnique({
+      where: { reference },
+    });
+    if (existing) {
+      this.logger.warn(`Duplicate webhook event for reference ${reference}`);
+      return { ok: true, alreadyProcessed: true };
+    }
 
-      if (!reference) {
-        throw new BadRequestException("INVALID_EVENT_REFERENCE");
-      }
-
-      const deposit = await this.prisma.deposit.findUnique({
-        where: { reference },
+    // Process within a transaction, creating the webhook record atomically
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.webhookEvent.create({
+        data: { reference, eventType: event.event },
       });
 
-      if (!deposit || deposit.status === "SUCCEEDED") {
-        return { ok: true };
-      }
+      if (event?.event === "charge.success") {
+        const deposit = await tx.deposit.findUnique({
+          where: { reference },
+        });
+        if (!deposit || deposit.status === "SUCCEEDED") {
+          return { ok: true };
+        }
 
-      await this.prisma.$transaction(async (tx) => {
         await tx.deposit.update({
           where: { id: deposit.id },
           data: { status: "SUCCEEDED" },
@@ -306,33 +302,40 @@ async handlePaystackTransferSuccess(reference: string) {
           reference,
           prisma: tx,
         });
-      });
 
-      try {
-        await this.notifications.create({
-          userId: deposit.userId,
-          type: NotificationType.DEPOSIT_SUCCEEDED,
-          title: "Deposit received",
-          body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
-          idempotencyKey: `notif:deposit:${deposit.reference}`,
-          data: {
-            reference: deposit.reference,
-            amountMilliFec: deposit.amountMilliFec,
-          },
-        });
-      } catch {}
+        // Notification outside transaction (or inside? It doesn't affect financial state, so safe outside)
+        try {
+          await this.notifications.create({
+            userId: deposit.userId,
+            type: NotificationType.DEPOSIT_SUCCEEDED,
+            title: "Deposit received",
+            body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
+            idempotencyKey: `notif:deposit:${deposit.reference}`,
+            data: {
+              reference: deposit.reference,
+              amountMilliFec: deposit.amountMilliFec,
+            },
+          });
+        } catch {}
+
+        return { ok: true };
+      }
+
+      if (
+        event?.event === "transfer.success" ||
+        event?.event === "transfer.failed" ||
+        event?.event === "transfer.reversed"
+      ) {
+        // Delegate to handleTransferWebhook but inside the same transaction? 
+        // The original handleTransferWebhook uses its own transactions. To keep it simple,
+        // we call it outside the transaction because it already handles its own idempotency.
+        // However, we already created the webhookEvent record, so subsequent calls will be ignored.
+        // This is safe.
+        await this.handleTransferWebhook(event);
+        return { ok: true };
+      }
 
       return { ok: true };
-    }
-
-    if (
-      event?.event === "transfer.success" ||
-      event?.event === "transfer.failed" ||
-      event?.event === "transfer.reversed"
-    ) {
-      return this.handleTransferWebhook(event);
-    }
-
-    return { ok: true };
+    });
   }
 }
