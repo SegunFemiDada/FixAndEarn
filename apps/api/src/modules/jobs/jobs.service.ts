@@ -108,6 +108,10 @@ export class JobsService {
     }
 
     await this.assertVerifiedUser(args.clientId);
+    // Prevent hiring yourself
+    if (args.fixerId === args.clientId) {
+      throw new BadRequestException("YOU_CANNOT_HIRE_YOURSELF");
+    }
 
     if (!skillCategory) {
       throw new BadRequestException("SKILL_CATEGORY_REQUIRED");
