@@ -23,6 +23,10 @@ async function bootstrap(): Promise<void> {
       transform: true,
     })
   );
+  // app.enableCors({
+  // origin: ["https://fixandearn.com"],
+  // credentials: true,
+  // });
 app.use(
   express.json({
     verify: (req: any, res, buf) => {

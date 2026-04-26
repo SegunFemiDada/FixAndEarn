@@ -2,6 +2,9 @@
   "name": "fixandearn",
   "private": true,
   "packageManager": "pnpm@9.15.4",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "dev:api": "pnpm -C apps/api dev",
     "build:api": "pnpm -C apps/api build",
