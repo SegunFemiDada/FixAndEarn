@@ -1,0 +1,243 @@
+// Path: apps/web/src/app/app/jobs/[jobid]/applications/page.tsx
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useJobApplications } from "@/lib/jobs/applications-queries";
+import { getActiveRole, getStoredRoles, getToken, type Role } from "@/lib/auth/session";
+import { decodeJwtUserId } from "@/lib/auth/jwt";
+import { useJobDetail } from "@/lib/jobs/queries";
+
+function roleForUi(roles: Role[], active: Role | null): Role | null {
+  if (active && roles.includes(active)) return active;
+  if (roles.length === 1) return roles[0];
+  return null;
+}
+
+function renderAxiosError(err: unknown): string {
+  if (!err || typeof err !== "object") return "Unknown error";
+  const e = err as { message?: unknown; response?: { data?: any } };
+  const msg = (e.response?.data as any)?.message;
+  if (Array.isArray(msg)) return msg.join(", ");
+  if (msg) return String(msg);
+  if (e.response?.data) return JSON.stringify(e.response.data, null, 2);
+  if (e.message) return String(e.message);
+  return "Unknown error";
+}
+
+export default function JobApplicantsPage() {
+  const params = useParams<{ jobid: string }>();
+  const jobId = params?.jobid;
+
+  const [mounted, setMounted] = useState(false);
+  const [uiRole, setUiRole] = useState<Role | null>(null);
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+
+    const roles = getStoredRoles();
+    const activeRole = getActiveRole();
+    setUiRole(roleForUi(roles, activeRole));
+
+    setMyUserId(decodeJwtUserId(getToken()));
+  }, []);
+
+  const { data: jobDetail } = useJobDetail(jobId ?? "", {
+    enabled: !!jobId,
+  });
+
+  const isCompleted = jobDetail?.status === "COMPLETED";
+
+  const canFetch = mounted && !!jobId && uiRole === "CLIENT";
+
+  const { data, isLoading, isError, error } = useJobApplications(jobId ?? "", {
+    skip: 0,
+    take: 50,
+    enabled: canFetch,
+  });
+
+  const apps = useMemo(
+    () => (Array.isArray(data?.applications) ? data.applications : []),
+    [data]
+  );
+
+  if (!jobId) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-6">
+        <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          Invalid job id in URL.
+        </div>
+      </div>
+    );
+  }
+
+  if (!mounted) return null;
+
+  // FIXER view
+  if (uiRole === "FIXER") {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={`/app/jobs/${jobId}`}
+            className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
+          >
+            ← Back to job
+          </Link>
+          <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Role: FIXER</div>
+        </div>
+
+        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Applicants</div>
+          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            You can&apos;t view other applicants. You can only open your own conversation for this job.
+          </div>
+
+          <div className="mt-3">
+            {isCompleted ? (
+              <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                This job is completed. Chat is closed.
+              </div>
+            ) : myUserId ? (
+              <Link
+                href={`/app/jobs/${jobId}/chats/${myUserId}`}
+                className="inline-flex items-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
+              >
+                Open my chat
+              </Link>
+            ) : (
+              <div className="rounded-xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
+                Could not read your user id from JWT. Re-login.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Tip</div>
+          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            You can also use{" "}
+            <Link className="underline text-[#5B8FCC] dark:text-[#7AAEE0]" href="/app/chats">
+              My Chats
+            </Link>{" "}
+            to see chats across all jobs.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (uiRole !== "CLIENT") {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={`/app/jobs/${jobId}`}
+            className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
+          >
+            ← Back to job
+          </Link>
+          <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            {uiRole ? `Role: ${uiRole}` : "No active role"}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Applicants</div>
+          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Switch to CLIENT or FIXER to continue.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CLIENT view
+  return (
+    <div className="mx-auto max-w-2xl space-y-4 px-4 py-6">
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href={`/app/jobs/${jobId}`}
+          className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
+        >
+          ← Back to job
+        </Link>
+        <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Role: CLIENT</div>
+      </div>
+
+      <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Applicants</div>
+        <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+          View fixers who applied to this job. Contact is chat-only.
+        </div>
+      </div>
+
+      {isLoading && (
+        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          Loading applicants…
+        </div>
+      )}
+
+      {isError && (
+        <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          <div className="font-semibold">Failed to load applicants</div>
+          <pre className="mt-2 whitespace-pre-wrap">{renderAxiosError(error)}</pre>
+        </div>
+      )}
+
+      {!isLoading && !isError && apps.length === 0 && (
+        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">No applicants yet</div>
+          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            When a fixer applies, they will appear here.
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-3">
+        {apps.map((a: any) => {
+          const fixerId = a?.fixerId;
+          const fixer = a?.fixer;
+
+          return (
+            <div
+              key={`${jobId}:${fixerId}`}
+              className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                  <div className="truncate font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    {fixer?.fullName ?? `Fixer ${fixerId}`}
+                  </div>
+                </div>
+
+                {isCompleted ? (
+                  <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Chat closed
+                  </div>
+                ) : fixerId ? (
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/app/jobs/${jobId}/chats/${fixerId}`}
+                      className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
+                    >
+                      Open chat
+                    </Link>
+                    <Link
+                      className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
+                      href={`/app/fixers/${fixerId}`}
+                    >
+                      View profile
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

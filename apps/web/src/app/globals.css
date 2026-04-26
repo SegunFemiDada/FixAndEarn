@@ -1,0 +1,118 @@
+/* Path: apps/web/src/app/globals.css */
+@import "tailwindcss";
+
+:root {
+  /* New design system colors */
+  --color-bg-gradient-start: #C8DCF0;
+  --color-bg-gradient-end: #D6E4F7;
+  --color-card-bg: #ffffff;
+  --color-primary: #5B8FCC;
+  --color-primary-hover: #4A7DBB;
+  --color-heading: #1A2B4A;
+  --color-body: #6B7C99;
+  --color-border: #C5D5EE;
+  --color-input-bg: #F4F8FF;
+  --color-tag-bg: #EAF0FB;
+  --color-button-secondary-bg: #D4E3F7;
+  --color-error: #D9534F;
+  --color-success: #2E7D32;
+  --color-warning: #F5A623;
+  --color-star: #F5A623;
+  --color-placeholder: #9BAEC8;
+  --color-disabled-text: #9BAEC8;
+  --color-disabled-bg: #EAF0FB;
+
+  /* Dark mode equivalents */
+  --color-dark-bg: #111827;
+  --color-dark-card-bg: #1E2A3A;
+  --color-dark-primary: #7AAEE0;
+  --color-dark-heading: #E8F0FA;
+  --color-dark-body: #8FA0BC;
+  --color-dark-border: #2D3F55;
+  --color-dark-input-bg: #16202E;
+  --color-dark-tag-bg: #16202E;
+  --color-dark-error: #f87171;
+  --color-dark-success: #4ade80;
+  --color-dark-warning: #fbbf24;
+  --color-dark-placeholder: #4A6080;
+  --color-dark-disabled-text: #4A6080;
+  --color-dark-disabled-bg: #1E2A3A;
+
+  /* Keep legacy variables for compatibility */
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Gradient background utility (applied in layout/page if needed) */
+.bg-design-gradient {
+  background: linear-gradient(to bottom right, var(--color-bg-gradient-start), var(--color-bg-gradient-end));
+}
+
+.dark .bg-design-gradient {
+  background: var(--color-dark-bg);
+}
+
+/* Custom scrollbar for admin sidebar */
+.admin-sidebar-scroll {
+  scrollbar-width: thin;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Prose overrides for content pages */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  color: inherit;
+}
+
+.prose a {
+  color: #2563eb; /* blue-600 */
+}
+
+.dark .prose a {
+  color: #60a5fa; /* blue-400 */
+}
