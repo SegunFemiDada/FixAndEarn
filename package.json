@@ -18,6 +18,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "next": "^15.4.1",
     "paystack": "^2.0.1"
   }
 }
