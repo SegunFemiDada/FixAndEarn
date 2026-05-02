@@ -9,4 +9,10 @@ RUN pnpm install
 
 COPY . .
 
+# IMPORTANT: Generate the Prisma client during the build
+RUN npx prisma generate --schema=apps/api/schema.prisma
+
 EXPOSE 3000
+
+# Tell Docker how to start your app
+CMD ["pnpm", "start"]
