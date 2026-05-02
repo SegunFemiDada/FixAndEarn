@@ -11,7 +11,8 @@
     "test:api": "pnpm -C apps/api test",
     "test:api:cov": "pnpm -C apps/api test:cov",
     "test:api:e2e": "pnpm -C apps/api test:e2e",
-    "lint:api": "pnpm -C apps/api lint"
+    "lint:api": "pnpm -C apps/api lint",
+    "start": "pnpm -C apps/api start"
   },
   "devDependencies": {
     "@types/paystack": "^2.0.5",
