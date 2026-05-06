@@ -1,7 +1,6 @@
 {
   "name": "fixandearn",
   "private": true,
-  "packageManager": "pnpm@9.15.4",
   "workspaces": [
     "apps/*"
   ],
@@ -23,5 +22,5 @@
     "next": "^15.4.1",
     "paystack": "^2.0.1"
   }
-  
+
 }
