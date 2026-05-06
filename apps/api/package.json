@@ -28,6 +28,7 @@
     "@nestjs/core": "^10.4.22",
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
+    "jsonwebtoken": "^9.0.2",
     "@nestjs/platform-express": "^10.4.22",
     "@nestjs/platform-socket.io": "10.4.22",
     "@nestjs/schedule": "^6.1.1",
