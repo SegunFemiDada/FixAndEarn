@@ -11,6 +11,7 @@
     "start:dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
+    "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --max-warnings=0",
     "test": "jest --config ./jest.config.cjs",
     "test:cov": "jest --config ./jest.config.cjs --coverage",
