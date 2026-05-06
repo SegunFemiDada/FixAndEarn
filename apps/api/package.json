@@ -7,9 +7,9 @@
     "seed": "ts-node prisma/seed.js"
   },
   "scripts": {
+    "build": "prisma generate && nest build",
     "dev": "nest start --watch",
     "start:dev": "nest start --watch",
-    "build": "nest build",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" --max-warnings=0",
