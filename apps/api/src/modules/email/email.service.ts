@@ -1,4 +1,4 @@
-//path: apps/api/src/modules/email/email.service.ts
+// apps/api/src/modules/email/email.service.ts
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
@@ -44,40 +44,45 @@ export class EmailService {
 
     await this.send(to, subject, html);
   }
-  async sendResetPasswordEmail(to: string, resetUrl: string): Promise<void> {
-  const subject = "Reset your password - FixAndEarn";
-  const html = `
-    <h1>FixAndEarn</h1>
-    <p>We received a request to reset your password.</p>
-    <p>Click the link below to set a new password:</p>
-    <a href="${resetUrl}">${resetUrl}</a>
-    <p>This link expires in 15 minutes.</p>
-    <p>If you did not request this, please ignore this email.</p>
-  `;
-  await this.send(to, subject, html);
-}
 
- public async send(to: string, subject: string, html: string): Promise<void> {
-  if (!this.transporter) {
-    this.logger.warn(`📧 Email not sent (no transporter). Here is the content:`);
+  async sendResetPasswordEmail(to: string, resetUrl: string): Promise<void> {
+    const subject = "Reset your password - FixAndEarn";
+    const html = `
+      <h1>FixAndEarn</h1>
+      <p>We received a request to reset your password.</p>
+      <p>Click the link below to set a new password:</p>
+      <a href="${resetUrl}">${resetUrl}</a>
+      <p>This link expires in 15 minutes.</p>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+    await this.send(to, subject, html);
+  }
+
+  public async send(to: string, subject: string, html: string): Promise<void> {
+    // Always log the email content to console (for Railway logs)
+    this.logger.warn(`📧 Email content (attempting to send):`);
     this.logger.warn(`To: ${to}`);
     this.logger.warn(`Subject: ${subject}`);
     this.logger.warn(`Body: ${html}`);
     this.logger.warn(`You can copy the verification link from the body and open it in your browser.`);
-    return;
-  }
 
-  try {
-    await this.transporter.sendMail({
-      from: this.from,
-      to,
-      subject,
-      html,
-    });
-    this.logger.log(`Email sent: ${subject} to ${to}`);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    this.logger.error(`Failed to send email: ${message}`);
+    if (!this.transporter) {
+      this.logger.warn(`No SMTP transporter configured. Email not sent.`);
+      return;
+    }
+
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject,
+        html,
+      });
+      this.logger.log(`Email sent successfully: ${subject} to ${to}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to send email: ${message}`);
+      // Do not rethrow – content is already logged, so user can still verify manually.
+    }
   }
-}
 }
