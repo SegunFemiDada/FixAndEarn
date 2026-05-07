@@ -23,10 +23,11 @@ async function bootstrap(): Promise<void> {
       transform: true,
     })
   );
-  // app.enableCors({
-  // origin: ["https://fixandearn.com"],
-  // credentials: true,
-  // });
+app.enableCors({
+  origin: ['https://fixandearn.vercel.app', 'https://your-custom-domain.com'], // add your frontend URLs
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+});
 app.use(
   express.json({
     verify: (req: any, res, buf) => {
