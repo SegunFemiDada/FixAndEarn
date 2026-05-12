@@ -1,5 +1,7 @@
 // Path: /apps/api/src/app.module.ts
 import { Module } from "@nestjs/common";
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
 import { PrismaModule } from "./infra/prisma/prisma.module";
@@ -31,6 +33,10 @@ import { PhoneVerificationModule } from "./modules/phone-verification/phone-veri
       isGlobal: true,
       envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
       
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
     }),
     PrismaModule,
     HealthModule,
