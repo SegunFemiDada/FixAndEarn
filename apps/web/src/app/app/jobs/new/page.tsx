@@ -228,7 +228,7 @@ export default function NewJobPage() {
                 </p>
               )}
               <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                1 FEC = 1000 milliFEC
+                1 FEC = 1000 Naira
               </p>
             </div>
 
