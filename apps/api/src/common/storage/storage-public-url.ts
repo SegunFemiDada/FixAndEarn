@@ -1,3 +1,4 @@
+// apps/api/src/common/storage/storage-public-url.ts
 export function toPublicFileUrl(pathOrKey: string | null | undefined): string | null {
   if (!pathOrKey) return null;
 
@@ -5,10 +6,7 @@ export function toPublicFileUrl(pathOrKey: string | null | undefined): string | 
     return pathOrKey;
   }
 
-  const baseUrl =
-    process.env.PUBLIC_ASSET_BASE_URL ||
-    process.env.APP_BASE_URL ||
-    `http://localhost:${process.env.API_PORT || 3000}`;
+  const baseUrl = process.env.API_BASE_URL || process.env.PUBLIC_ASSET_BASE_URL || `http://localhost:${process.env.API_PORT || 3000}`;
 
   if (pathOrKey.startsWith("/")) {
     return `${baseUrl}${pathOrKey}`;
