@@ -35,7 +35,7 @@ import { PhoneVerificationModule } from "./modules/phone-verification/phone-veri
       
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
     PrismaModule,
