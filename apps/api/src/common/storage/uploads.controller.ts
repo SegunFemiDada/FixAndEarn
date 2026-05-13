@@ -8,11 +8,15 @@ import { join } from 'path';
 export class UploadsController {
   @Get('*')
   async getFile(@Param('0') filePath: string, @Res() res: Response) {
-    // Prevent directory traversal attacks
-    const safePath = join(process.cwd(), 'uploads', filePath);
-    if (!safePath.startsWith(join(process.cwd(), 'uploads'))) {
+    // Resolve to the absolute uploads directory (assuming dist is in apps/api/dist)
+    const uploadsDir = join(__dirname, '..', 'uploads');
+    const safePath = join(uploadsDir, filePath);
+    
+    // Basic security: ensure the resolved path stays inside uploadsDir
+    if (!safePath.startsWith(uploadsDir)) {
       throw new NotFoundException();
     }
+    
     try {
       await stat(safePath);
       const stream = createReadStream(safePath);
