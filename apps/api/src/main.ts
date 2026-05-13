@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
   const uploadsPath = path.join(process.cwd(), 'apps/api/uploads');
   app.use('/uploads', express.static(uploadsPath));
 
-  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+  app.use("/uploads", express.static(path.join(process.cwd(), "apps/api/uploads")));
 
   app.useGlobalPipes(
     new ValidationPipe({
