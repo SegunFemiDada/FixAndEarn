@@ -3,7 +3,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { clearAdminSession, getAdminToken, getStoredAdminIdentity } from "@/lib/admin/session";
+import {
+  clearAdminSession,
+  getAdminToken,
+  getStoredAdminIdentity,
+} from "@/lib/admin/session";
 import { extractApiErrorMessage, useAdminLogin } from "@/lib/admin/queries";
 
 export default function AdminLoginPage() {
@@ -15,20 +19,42 @@ export default function AdminLoginPage() {
   const [password, setPassword] = React.useState("");
   const [totp, setTotp] = React.useState("");
 
+  // ── Track session reactively so the UI re-evaluates after login ──────────
+  // The original code read getAdminToken() once at render time. After the
+  // mutation writes the token, this state is updated so the redirect and
+  // "session exists" block respond immediately — no manual refresh needed.
+  const [sessionToken, setSessionToken] = React.useState<string | null>(null);
+  const [sessionIdentity, setSessionIdentity] = React.useState<ReturnType<
+    typeof getStoredAdminIdentity
+  > | null>(null);
+
+  // Read from storage only after hydration (avoids SSR mismatch)
   React.useEffect(() => {
     setMounted(true);
+    setSessionToken(getAdminToken());
+    setSessionIdentity(getStoredAdminIdentity());
   }, []);
 
-  const existingToken = mounted ? getAdminToken() : null;
-  const existingIdentity = mounted ? getStoredAdminIdentity() : null;
-
+  // ── Redirect if a valid session already exists ───────────────────────────
+  // Runs whenever sessionToken changes — including immediately after login
+  // writes the token and we call refreshSession() below.
   React.useEffect(() => {
     if (!mounted) return;
-    if (existingToken) {
+    if (sessionToken) {
       router.replace("/admin");
     }
-  }, [existingToken, mounted, router]);
+  }, [sessionToken, mounted, router]);
 
+  // ── Re-read session from storage (called after successful login) ─────────
+  // This is the key fix: we wait for the mutation's onSuccess (which means
+  // the token is already written to storage) and THEN read it back into state,
+  // which triggers the useEffect above to fire the redirect reliably.
+  const refreshSession = React.useCallback(() => {
+    setSessionToken(getAdminToken());
+    setSessionIdentity(getStoredAdminIdentity());
+  }, []);
+
+  // ── Submit handler ───────────────────────────────────────────────────────
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -40,23 +66,35 @@ export default function AdminLoginPage() {
       },
       {
         onSuccess: () => {
-          router.replace("/admin");
+          // The mutation's own onSuccess in queries.ts has already written
+          // the token to storage by the time this callback runs.
+          // Refreshing local state triggers the redirect effect above.
+          refreshSession();
         },
       }
     );
   }
 
+  // ── Clear session ────────────────────────────────────────────────────────
   function handleClearSession() {
     clearAdminSession();
+    setSessionToken(null);
+    setSessionIdentity(null);
     setEmail("");
     setPassword("");
     setTotp("");
   }
 
+  // ── Derive disabled state for the submit button ──────────────────────────
+  const isSubmitDisabled =
+    login.isPending || !email.trim() || !password || !totp.trim();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6 flex items-center justify-center">
       <div className="mx-auto w-full max-w-md">
         <div className="rounded-3xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+
+          {/* Header */}
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
               FixAndEarn Admin
@@ -69,14 +107,15 @@ export default function AdminLoginPage() {
             </p>
           </div>
 
-          {existingToken ? (
+          {/* Existing session notice — now driven by reactive state */}
+          {sessionToken ? (
             <div className="mt-4 rounded-2xl border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 p-4">
               <p className="text-sm font-medium text-[#2E7D32] dark:text-green-200">
                 Admin session already exists.
               </p>
-              {existingIdentity ? (
+              {sessionIdentity ? (
                 <p className="mt-1 text-sm text-[#2E7D32] dark:text-green-200">
-                  {existingIdentity.fullName} · {existingIdentity.role}
+                  {sessionIdentity.fullName} · {sessionIdentity.role}
                 </p>
               ) : null}
               <div className="mt-3 flex gap-2">
@@ -98,9 +137,13 @@ export default function AdminLoginPage() {
             </div>
           ) : null}
 
+          {/* Login form */}
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="admin-email" className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+              <label
+                htmlFor="admin-email"
+                className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+              >
                 Email
               </label>
               <input
@@ -116,7 +159,10 @@ export default function AdminLoginPage() {
             </div>
 
             <div>
-              <label htmlFor="admin-password" className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+              <label
+                htmlFor="admin-password"
+                className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+              >
                 Password
               </label>
               <input
@@ -132,7 +178,10 @@ export default function AdminLoginPage() {
             </div>
 
             <div>
-              <label htmlFor="admin-totp" className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+              <label
+                htmlFor="admin-totp"
+                className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+              >
                 TOTP code
               </label>
               <input
@@ -151,18 +200,20 @@ export default function AdminLoginPage() {
               </p>
             </div>
 
+            {/* Error display */}
             {login.isError && (
               <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-3 text-sm text-[#D9534F] dark:text-red-300">
                 {extractApiErrorMessage(login.error)}
               </div>
             )}
 
+            {/* Submit button */}
             <button
               type="submit"
-              disabled={login.isPending || !email.trim() || !password || !totp.trim()}
+              disabled={isSubmitDisabled}
               className={[
                 "inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                login.isPending || !email.trim() || !password || !totp.trim()
+                isSubmitDisabled
                   ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
                   : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
               ].join(" ")}
@@ -170,6 +221,7 @@ export default function AdminLoginPage() {
               {login.isPending ? "Signing in..." : "Sign in"}
             </button>
           </form>
+
         </div>
       </div>
     </div>
