@@ -8,7 +8,7 @@ export class UploadsController {
   @Get('*')
   async getFile(@Param('0') filePath: string, @Res() res: Response) {
     // Absolute path on Railway: /app/apps/api/uploads
-    const uploadsDir = join(process.cwd(), 'apps/api/uploads');
+    const uploadsDir = join(__dirname, '..', 'uploads');
     const safePath = join(uploadsDir, filePath);
     
     try {
