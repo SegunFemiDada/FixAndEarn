@@ -7,16 +7,18 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import * as express from "express";
 import * as path from "path";
+import { join } from "path";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     cors: true,
     rawBody: true,
   });
-  const uploadsPath = path.join(process.cwd(), 'apps/api/uploads');
-  app.use('/uploads', express.static(uploadsPath));
+  const uploadsPath = join(process.cwd(), 'apps/api/uploads');
+console.log('Serving static files from:', uploadsPath);
+app.use('/uploads', express.static(uploadsPath));
 
-  app.use("/uploads", express.static(path.join(process.cwd(), "apps/api/uploads")));
+  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
   app.useGlobalPipes(
     new ValidationPipe({
