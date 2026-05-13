@@ -25,6 +25,8 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { SupportModule } from "./modules/support/support.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
+import { UploadsController } from './common/storage/uploads.controller';
+
 
 
 @Module({
@@ -57,6 +59,7 @@ import { PhoneVerificationModule } from "./modules/phone-verification/phone-veri
     PhoneVerificationModule,
     ReportsModule,
     SupportModule,
+    UploadsController,
     ScheduleModule.forRoot(),
   ],
   providers: [
