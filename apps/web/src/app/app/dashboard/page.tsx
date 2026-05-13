@@ -236,10 +236,6 @@ return (
           <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
             Availability
           </div>
-          <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Your status is shown to clients. If you have an active job, the system marks you as{" "}
-            <b className="text-[#1A2B4A] dark:text-[#E8F0FA]">BUSY</b>.
-          </div>
         </div>
 
         <div className="shrink-0 text-right text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
