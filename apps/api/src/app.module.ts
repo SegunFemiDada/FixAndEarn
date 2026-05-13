@@ -34,12 +34,11 @@ import { UploadsController } from './common/storage/uploads.controller';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
-      
     }),
     ServeStaticModule.forRoot({
-  rootPath: join(__dirname, '..', 'uploads'),   // resolves to /app/apps/api/uploads
-  serveRoot: '/uploads',
-}),
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
     PrismaModule,
     HealthModule,
     UsersModule,
@@ -59,9 +58,9 @@ import { UploadsController } from './common/storage/uploads.controller';
     PhoneVerificationModule,
     ReportsModule,
     SupportModule,
-    UploadsController,
     ScheduleModule.forRoot(),
   ],
+  controllers: [UploadsController],  // ✅ added the missing controllers array
   providers: [
     {
       provide: APP_GUARD,
