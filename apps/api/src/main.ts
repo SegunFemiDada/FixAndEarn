@@ -13,6 +13,8 @@ async function bootstrap(): Promise<void> {
     cors: true,
     rawBody: true,
   });
+  const uploadsPath = path.join(process.cwd(), 'apps/api/uploads');
+  app.use('/uploads', express.static(uploadsPath));
 
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
@@ -24,7 +26,7 @@ async function bootstrap(): Promise<void> {
     })
   );
 app.enableCors({
-  origin: ['https://fixandearn.vercel.app', 'https://your-custom-domain.com'], // add your frontend URLs
+  origin: ['https://fixandearn.vercel.app'], // add your frontend URLs
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 });
