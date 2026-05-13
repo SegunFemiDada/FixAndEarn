@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
 import { createReadStream } from 'fs';
-import { stat } from 'fs/promises';
+import { stat, readdir } from 'fs/promises';
 import { join } from 'path';
 
 @Controller('uploads')
@@ -23,6 +23,25 @@ export class UploadsController {
       stream.pipe(res);
     } catch {
       throw new NotFoundException();
+    }
+  }
+
+  // 🔍 Temporary debug endpoint – remove after debugging
+  @Get('debug/list')
+  async listUploads() {
+    const uploadsDir = join(__dirname, '..', 'uploads');
+    try {
+      const files = await readdir(uploadsDir);
+      const selfieDir = join(uploadsDir, 'selfie');
+      let selfieFiles: string[] = [];
+      try {
+        selfieFiles = await readdir(selfieDir);
+      } catch {
+        // selfie directory may not exist
+      }
+      return { baseDir: uploadsDir, files, selfieFiles };
+    } catch (err: any) {
+      return { error: err.message, baseDir: uploadsDir };
     }
   }
 }

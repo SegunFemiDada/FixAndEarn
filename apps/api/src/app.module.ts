@@ -36,7 +36,7 @@ import { UploadsController } from './common/storage/uploads.controller';
       envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'apps/api/uploads'),
+      rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
     PrismaModule,
