@@ -35,15 +35,6 @@ export default function AdminLoginPage() {
     setSessionIdentity(getStoredAdminIdentity());
   }, []);
 
-  // ── Redirect if a valid session already exists ───────────────────────────
-  // Runs whenever sessionToken changes — including immediately after login
-  // writes the token and we call refreshSession() below.
-  React.useEffect(() => {
-    if (!mounted) return;
-    if (sessionToken) {
-      router.replace("/admin");
-    }
-  }, [sessionToken, mounted, router]);
 
   // ── Re-read session from storage (called after successful login) ─────────
   // This is the key fix: we wait for the mutation's onSuccess (which means
@@ -65,11 +56,15 @@ export default function AdminLoginPage() {
         totp: totp.trim(),
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           // The mutation's own onSuccess in queries.ts has already written
           // the token to storage by the time this callback runs.
           // Refreshing local state triggers the redirect effect above.
           refreshSession();
+          await Promise.resolve();
+
+          router.refresh();
+          router.replace("/admin");
         },
       }
     );
