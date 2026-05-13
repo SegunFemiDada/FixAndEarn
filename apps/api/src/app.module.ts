@@ -25,7 +25,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { SupportModule } from "./modules/support/support.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
-import { UploadsController } from './common/storage/uploads.controller';
+import { UploadsModule } from './common/storage/uploads.module';
 
 
 
@@ -35,6 +35,7 @@ import { UploadsController } from './common/storage/uploads.controller';
       isGlobal: true,
       envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
     }),
+    UploadsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
@@ -60,7 +61,6 @@ import { UploadsController } from './common/storage/uploads.controller';
     SupportModule,
     ScheduleModule.forRoot(),
   ],
-  controllers: [UploadsController],  // ✅ added the missing controllers array
   providers: [
     {
       provide: APP_GUARD,

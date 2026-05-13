@@ -1,26 +1,18 @@
+// apps/api/src/common/storage/uploads.controller.ts
 import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
-import { createReadStream } from 'fs';
-import { stat, readdir } from 'fs/promises';
 import { join } from 'path';
 
 @Controller('uploads')
 export class UploadsController {
   @Get('*')
   async getFile(@Param('0') filePath: string, @Res() res: Response) {
-    // Resolve to the absolute uploads directory (assuming dist is in apps/api/dist)
-    const uploadsDir = join(__dirname, '..', 'uploads');
+    // Absolute path on Railway: /app/apps/api/uploads
+    const uploadsDir = join(process.cwd(), 'apps/api/uploads');
     const safePath = join(uploadsDir, filePath);
     
-    // Basic security: ensure the resolved path stays inside uploadsDir
-    if (!safePath.startsWith(uploadsDir)) {
-      throw new NotFoundException();
-    }
-    
     try {
-      await stat(safePath);
-      const stream = createReadStream(safePath);
-      stream.pipe(res);
+      return res.sendFile(safePath);
     } catch {
       throw new NotFoundException();
     }
@@ -29,19 +21,18 @@ export class UploadsController {
   // 🔍 Temporary debug endpoint – remove after debugging
   @Get('debug/list')
   async listUploads() {
-    const uploadsDir = join(__dirname, '..', 'uploads');
+    const fs = require('fs').promises;
+    const baseDir = join(process.cwd(), 'apps/api/uploads');
     try {
-      const files = await readdir(uploadsDir);
-      const selfieDir = join(uploadsDir, 'selfie');
+      const files = await fs.readdir(baseDir);
+      const selfieDir = join(baseDir, 'selfie');
       let selfieFiles: string[] = [];
       try {
-        selfieFiles = await readdir(selfieDir);
-      } catch {
-        // selfie directory may not exist
-      }
-      return { baseDir: uploadsDir, files, selfieFiles };
+        selfieFiles = await fs.readdir(selfieDir);
+      } catch {}
+      return { baseDir, files, selfieFiles };
     } catch (err: any) {
-      return { error: err.message, baseDir: uploadsDir };
+      return { error: err.message, baseDir };
     }
   }
 }
