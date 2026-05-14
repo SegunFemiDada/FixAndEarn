@@ -213,9 +213,9 @@ export default function AdminLayout({
           <button
             type="button"
             onClick={handleLogout}
-            className="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-[#D9534F] dark:text-red-300 bg-red-50 dark:bg-red-950/30 border-2 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 active:bg-red-200 dark:active:bg-red-900/60 active:scale-[0.98] shadow-sm hover:shadow-md transition-all duration-200"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-300 dark:border-red-700 bg-red-100 dark:bg-red-900/40 px-4 py-3 text-sm font-semibold text-red-800 dark:text-red-200 shadow-sm hover:border-red-400 dark:hover:border-red-600 hover:bg-red-200 dark:hover:bg-red-800/60 hover:shadow-md active:scale-[0.97] active:shadow-inner transition-all duration-200"
           >
-            <svg className="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
             </svg>
             Sign out
