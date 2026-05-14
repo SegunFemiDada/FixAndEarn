@@ -141,14 +141,23 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isDisabled}
-              className={[
-                "inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200",
+              className={
                 isDisabled
-                  ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                  : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-              ].join(" ")}
+                  ? "inline-flex w-full items-center justify-center rounded-xl px-4 py-3.5 text-sm font-semibold text-[#9BAEC8] dark:text-[#4A6080] bg-[#EAF0FB] dark:bg-[#1E2A3A] border-2 border-[#C5D5EE] dark:border-[#2D3F55] cursor-not-allowed transition-all duration-200"
+                  : "inline-flex w-full items-center justify-center rounded-xl px-4 py-3.5 text-sm font-semibold text-white bg-[#5B8FCC] hover:bg-[#4A7DBB] active:bg-[#3E6EAA] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] dark:active:bg-[#3E6EAA] shadow-md shadow-[#5B8FCC]/30 hover:shadow-lg hover:shadow-[#5B8FCC]/40 active:shadow-sm transition-all duration-200 border-0"
+              }
             >
-              {login.isPending ? "Logging in..." : "Log in"}
+              {login.isPending ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Logging in...
+                </span>
+              ) : (
+                "Log in"
+              )}
             </button>
           </form>
 
