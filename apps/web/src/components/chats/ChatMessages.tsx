@@ -78,7 +78,7 @@ export default function ChatMessages({
                     : "bg-[#F4F8FF] text-[#1A2B4A] dark:bg-[#16202E] dark:text-[#E8F0FA]"
                 }`}
               >
-                <div className="whitespace-pre-wrap break-words">
+                <div className="whitespace-pre-wrap wrap-break-word">
                   {message.body}
                 </div>
 
