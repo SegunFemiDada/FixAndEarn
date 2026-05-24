@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/chat/useChatSocket.ts
 "use client";
 
 import { useEffect, useRef } from "react";

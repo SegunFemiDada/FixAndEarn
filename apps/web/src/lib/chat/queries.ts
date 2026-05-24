@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/chat/queries.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptAgreement,

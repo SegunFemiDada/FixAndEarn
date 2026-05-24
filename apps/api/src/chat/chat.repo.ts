@@ -178,16 +178,21 @@ export class ChatRepo {
   }
 
   async getConversationByJobFixer(jobId: string, fixerId: string) {
-    return this.prisma.conversation.findUnique({
-      where: { jobId_fixerId: { jobId, fixerId } },
-      include: {
-        job: true,
-        fixer: { select: { id: true, fullName: true, isActive: true } },
-        agreements: true,
-        negotiation: true
-      }
-    });
-  }
+  return this.prisma.conversation.findUnique({
+    where: { jobId_fixerId: { jobId, fixerId } },
+    include: {
+      job: true,
+      fixer: {
+        select: {
+          id: true,
+          fullName: true,
+          isActive: true
+        }
+      },
+      negotiation: true
+    }
+  });
+}
 
   async getConversationMessages(conversationId: string, cursor: string | undefined, take: number) {
     return this.prisma.chatMessage.findMany({

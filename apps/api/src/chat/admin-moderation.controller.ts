@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/admin-moderation.controller.ts
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../common/auth/jwt-auth.guard";
 import { RolesGuard } from "../common/auth/roles.guard";

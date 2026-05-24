@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/dto/list-my-conversations.dto.ts
 import { Type } from "class-transformer";
 import { IsIn, IsInt, IsOptional, Max, Min } from "class-validator";
 

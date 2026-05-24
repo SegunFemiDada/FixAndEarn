@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/auth/session.ts
 export type Role = "CLIENT" | "FIXER";
 
 const TOKEN_KEY = "fa_jwt";

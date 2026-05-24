@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/negotiation/negotiation.machine.spec.ts
 import { lockPrice, proposePrice, respondToLockedPrice } from './negotiation.machine';
 
 describe('Negotiation machine', () => {

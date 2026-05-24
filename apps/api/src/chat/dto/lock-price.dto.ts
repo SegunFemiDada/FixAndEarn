@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/dto/lock-price.dto.ts
 import { IsInt, Min } from 'class-validator';
 
 export class LockPriceDto {

@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/dto/send-message.dto.ts
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SendMessageDto {

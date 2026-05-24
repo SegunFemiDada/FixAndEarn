@@ -48,15 +48,6 @@ export class ChatRealtimeController {
       return;
     }
 
-    const agreement = await this.prisma.chatAgreement.findUnique({
-      where: { conversationId_userId: { conversationId: convo.id, userId } },
-      select: { acceptedAt: true }
-    });
-    if (!agreement?.acceptedAt) {
-      res.status(403).end();
-      return;
-    }
-
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
