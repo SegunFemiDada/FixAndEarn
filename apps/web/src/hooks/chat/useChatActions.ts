@@ -7,7 +7,6 @@ import type {
 } from "@/lib/chat/types";
 
 import {
-  acceptAgreement,
   lockPrice,
   proposePrice,
   respondLockedPrice,
@@ -81,11 +80,6 @@ export function useChatActions({
   const [
     sendingMessage,
     setSendingMessage,
-  ] = React.useState(false);
-
-  const [
-    agreementBusy,
-    setAgreementBusy,
   ] = React.useState(false);
 
   const [
@@ -179,46 +173,6 @@ export function useChatActions({
       ]
     );
 
-  const submitAgreement =
-    React.useCallback(
-      async () => {
-        try {
-          setAgreementBusy(
-            true
-          );
-
-          setActionErr(
-            null
-          );
-
-          await acceptAgreement(
-            jobId,
-            fixerId,
-            {
-              accepted: true,
-            }
-          );
-
-          await refetch();
-        } catch (e) {
-          setActionErr(
-            renderAxiosError(
-              e
-            )
-          );
-        } finally {
-          setAgreementBusy(
-            false
-          );
-        }
-      },
-      [
-        fixerId,
-        jobId,
-        refetch,
-      ]
-    );
-
   const submitProposePrice =
     React.useCallback(
       async (
@@ -227,6 +181,10 @@ export function useChatActions({
         try {
           setProposingPrice(
             true
+          );
+
+          setActionErr(
+            null
           );
 
           await proposePrice(
@@ -268,6 +226,10 @@ export function useChatActions({
             true
           );
 
+          setActionErr(
+            null
+          );
+
           await lockPrice(
             jobId,
             fixerId,
@@ -307,6 +269,10 @@ export function useChatActions({
             true
           );
 
+          setActionErr(
+            null
+          );
+
           await respondLockedPrice(
             jobId,
             fixerId,
@@ -340,13 +306,11 @@ export function useChatActions({
     setActionErr,
 
     sendingMessage,
-    agreementBusy,
     proposingPrice,
     lockingPrice,
     respondingToLockedPrice,
 
     sendChatMessage,
-    submitAgreement,
     submitProposePrice,
     submitLockPrice,
     submitLockedPriceResponse,

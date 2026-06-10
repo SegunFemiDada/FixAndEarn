@@ -39,15 +39,13 @@ export function buildChatConversationState(params: {
     backendMsg === "CONVERSATION_NOT_FOUND" ||
     Boolean(backendMsg?.includes("CONVERSATION_NOT_FOUND"));
 
-  const needsAgreement =
-    backendMsg === "CHAT_AGREEMENT_REQUIRED";
+  const needsAgreement = false;
 
   const isCompleted = job?.status === "COMPLETED";
 
   const canChat = Boolean(data) && !isError && !isCompleted;
 
-  const showAgreementBootstrap =
-    isError && (isConversationMissing || needsAgreement);
+  const showAgreementBootstrap = false;
 
   return {
     job,
@@ -57,7 +55,7 @@ export function buildChatConversationState(params: {
     canChat,
     needsAgreement,
     isConversationMissing,
-    showAgreementBootstrap,
+    showAgreementBootstrap: false,
     error,
   };
 }

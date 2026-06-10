@@ -3,14 +3,9 @@
 
 type Props = {
   jobId: string;
-
   fixerId: string;
-
   isLoading: boolean;
-
   error: unknown;
-
-  showAgreementBootstrap: boolean;
 };
 
 export function useChatPageStatus({
@@ -18,7 +13,6 @@ export function useChatPageStatus({
   fixerId,
   isLoading,
   error,
-  showAgreementBootstrap,
 }: Props) {
   const hasInvalidParams =
     !jobId || !fixerId;
@@ -28,8 +22,7 @@ export function useChatPageStatus({
 
   const showStates =
     isLoading ||
-    isError ||
-    showAgreementBootstrap;
+    isError;
 
   const showContent =
     !isLoading &&

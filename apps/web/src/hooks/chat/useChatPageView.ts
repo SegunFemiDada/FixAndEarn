@@ -1,4 +1,3 @@
-// Path: apps/web/src/hooks/chat/useChatPageView.ts
 "use client";
 
 import {
@@ -9,8 +8,6 @@ type Props = {
   isLoading: boolean;
 
   error: unknown;
-
-  showAgreementBootstrap: boolean;
 };
 
 type Result = {
@@ -18,15 +15,12 @@ type Result = {
 
   showContent: boolean;
 
-  showAgreementBootstrap: boolean;
-
   errorMessage: string | null;
 };
 
 export function useChatPageView({
   isLoading,
   error,
-  showAgreementBootstrap,
 }: Props): Result {
   const isError =
     Boolean(error);
@@ -44,11 +38,7 @@ export function useChatPageView({
 
   return {
     isError,
-
     showContent,
-
-    showAgreementBootstrap,
-
     errorMessage,
   };
 }

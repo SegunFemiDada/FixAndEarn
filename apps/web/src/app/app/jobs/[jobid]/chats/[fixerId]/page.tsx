@@ -2,31 +2,19 @@
 "use client";
 
 import { useParams } from "next/navigation";
-
 import { useChatController } from "@/hooks/chat/useChatController";
-
 import { useChatPageView } from "@/hooks/chat/useChatPageView";
-
 import { useChatConversationSection } from "@/hooks/chat/useChatConversationSection";
-
 import { useChatNegotiationSection } from "@/hooks/chat/useChatNegotiationSection";
-
 import { useChatPageActions } from "@/hooks/chat/useChatPageActions";
-
 import { useChatPageStatus } from "@/hooks/chat/useChatPageStatus";
 
 import ChatHeader from "@/components/chats/ChatHeader";
-
 import ChatPageContent from "@/components/chats/ChatPageContent";
-
 import ChatPageStates from "@/components/chats/ChatPageStates";
-
 import ChatActionError from "@/components/chats/ChatActionError";
-
 import ChatReportModal from "@/components/chats/ChatReportModal";
-
 import ChatPageShell from "@/components/chats/ChatPageShell";
-
 import ChatInvalidParams from "@/components/chats/ChatInvalidParams";
 
 export default function JobChatDetailPage() {
@@ -55,9 +43,6 @@ export default function JobChatDetailPage() {
 
       error:
         chat.error,
-
-      showAgreementBootstrap:
-        chat.showAgreementBootstrap,
     });
 
   const status =
@@ -71,9 +56,6 @@ export default function JobChatDetailPage() {
 
       error:
         chat.error,
-
-      showAgreementBootstrap:
-        chat.showAgreementBootstrap,
     });
 
   const actions =
@@ -114,21 +96,9 @@ export default function JobChatDetailPage() {
           isError={
             status.isError
           }
-          showAgreementBootstrap={
-            view.showAgreementBootstrap
-          }
           errorMessage={
             view.errorMessage ??
             "Unknown error"
-          }
-          isConversationMissing={Boolean(
-            chat.isConversationMissing
-          )}
-          agreementBusy={
-            chat.agreementBusy
-          }
-          onAcceptAgreement={
-            chat.submitAgreement
           }
         />
       )}
