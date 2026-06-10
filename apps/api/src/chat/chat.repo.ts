@@ -30,13 +30,32 @@ export class ChatRepo {
   }
 
   async upsertConversation(jobId: string, fixerId: string) {
-    return this.prisma.conversation.upsert({
-      where: { jobId_fixerId: { jobId, fixerId } },
-      update: {},
-      create: { jobId, fixerId },
-      include: { agreements: true, negotiation: true }
-    });
-  }
+  return this.prisma.conversation.upsert({
+    where: {
+      jobId_fixerId: {
+        jobId,
+        fixerId,
+      },
+    },
+    update: {},
+    create: {
+      jobId,
+      fixerId,
+    },
+    include: {
+      agreements: true,
+      negotiation: true,
+      job: true,
+      fixer: {
+        select: {
+          id: true,
+          fullName: true,
+          isActive: true,
+        },
+      },
+    },
+  });
+}
 
   async acceptAgreement(conversationId: string, userId: string, ip?: string, userAgent?: string) {
     return this.prisma.chatAgreement.upsert({

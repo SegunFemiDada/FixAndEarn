@@ -1038,16 +1038,10 @@ export class ChatService {
     }
   ) {
     const convo =
-      await this.repo.getConversationByJobFixer(
-        jobId,
-        fixerId
-      );
-
-    if (!convo) {
-      throw new NotFoundException(
-        "CONVERSATION_NOT_FOUND"
-      );
-    }
+  await this.repo.upsertConversation(
+    jobId,
+    fixerId
+  );
 
     const isClient =
       convo.job.clientId === requesterId;
