@@ -236,7 +236,6 @@ export default function AdminWithdrawalDetailPage() {
                   <DetailField label="Withdrawal ID" value={detail.id} breakAll />
                   <DetailField label="User ID" value={detail.userId} breakAll />
                   <DetailField label="Email" value={detail.user.email} breakAll />
-                  <DetailField label="Amount" value={formatFecFromMilli(Number(detail.amountMilliFec ?? 0))} />
                   <DetailField label="Requested" value={formatDateTime(detail.createdAt)} />
                   <DetailField label="Updated" value={formatDateTime(detail.updatedAt)} />
                   <DetailField label="Reviewed at" value={formatDateTime(detail.reviewedAt)} />
@@ -246,6 +245,14 @@ export default function AdminWithdrawalDetailPage() {
                   <DetailField label="Transfer reference" value={detail.paystackTransferReference} breakAll />
                   <DetailField label="Transfer code" value={detail.paystackTransferCode} breakAll />
                   <DetailField label="Payout mode" value={detail.payoutMode} />
+                  <DetailField
+                    label="Wallet balance"
+                    value={
+                      detail.user.wallet
+                        ? formatFecFromMilli(Number(detail.user.wallet.balanceMilliFec ?? 0))
+                        : "Not available"
+                    }
+                  />
                 </div>
               </div>
 
@@ -256,19 +263,12 @@ export default function AdminWithdrawalDetailPage() {
                   <DetailField label="Bank name" value={detail.user.bankDetails?.bankName ?? null} />
                   <DetailField label="Account name" value={detail.user.bankDetails?.accountName ?? null} />
                   <DetailField label="Account number" value={detail.user.bankDetails?.accountNumber ?? null} />
+                  <DetailField label="Amount" value={formatFecFromMilli(Number(detail.amountMilliFec ?? 0))} />
                   <DetailField label="Bank code" value={detail.user.bankDetails?.bankCode ?? null} />
                   <DetailField
                     label="Recipient code"
                     value={detail.user.bankDetails?.paystackRecipientCode ?? null}
                     breakAll
-                  />
-                  <DetailField
-                    label="Wallet balance"
-                    value={
-                      detail.user.wallet
-                        ? formatFecFromMilli(Number(detail.user.wallet.balanceMilliFec ?? 0))
-                        : "Not available"
-                    }
                   />
                 </div>
               </div>
