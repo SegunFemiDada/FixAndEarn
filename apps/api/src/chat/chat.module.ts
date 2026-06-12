@@ -14,7 +14,7 @@ import { ChatRealtimeService } from "./realtime/chat-realtime.service";
 import { ChatRealtimeController } from "./realtime/chat-realtime.controller";
 import { PaymentsModule } from "src/modules/payments/payments.module";
 import { AuthModule } from "src/modules/auth/auth.module";
-
+import { ChatGateway } from "./chat.gateway";
 @Module({
   imports: [UsersModule, NotificationsModule, ConfigModule, forwardRef(() => WalletModule), forwardRef(() => PaymentsModule), AuthModule, NotificationsModule],
   controllers: [
@@ -23,7 +23,7 @@ import { AuthModule } from "src/modules/auth/auth.module";
     AdminModerationController,
     ChatRealtimeController
   ],
-  providers: [ChatService, ChatRepo, ChatModerationService, ChatRealtimeService],
+  providers: [ChatService, ChatRepo, ChatModerationService, ChatRealtimeService, ChatGateway],
   exports: [ChatService],
 })
 export class ChatModule {}

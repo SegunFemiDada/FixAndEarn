@@ -1,3 +1,4 @@
+//path: apps/web/src/hooks/chat/useChatActions.ts
 "use client";
 
 import * as React from "react";

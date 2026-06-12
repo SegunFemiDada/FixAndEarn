@@ -14,6 +14,12 @@ async function bootstrap(): Promise<void> {
     cors: true,
     rawBody: true,
   });
+  app.enableCors({
+  origin: [
+    "https://fixandearn.vercel.app",
+  ],
+  credentials: true,
+});
   const uploadsPath = join(process.cwd(), 'apps/api/uploads');
 console.log('Serving static files from:', uploadsPath);
 app.use('/uploads', express.static(uploadsPath));

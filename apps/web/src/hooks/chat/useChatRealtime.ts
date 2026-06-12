@@ -123,15 +123,24 @@ export function useChatRealtime({
     );
 
     socket.on(
-      "negotiation:update",
-       () => {
-        if (unmounted) {
-          return;
-        }
+  "negotiation:proposed",
+  () => refetch()
+);
 
-        refetch();
-      }
-    );
+socket.on(
+  "negotiation:locked",
+  () => refetch()
+);
+
+socket.on(
+  "negotiation:response",
+  () => refetch()
+);
+
+socket.on(
+  "negotiation:agreed",
+  () => refetch()
+);
 
     socket.on(
       "agreement:update",
@@ -145,7 +154,7 @@ export function useChatRealtime({
     );
 
     socket.on(
-      "job:update",
+      "job:status",
       async () => {
         if (unmounted) {
           return;

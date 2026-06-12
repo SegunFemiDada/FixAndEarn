@@ -17,6 +17,10 @@ export function useChatMessages(
   ] = React.useState<
     PendingChatMessage[]
   >(initialMessages);
+  
+  React.useEffect(() => {
+  setMessages(initialMessages);
+}, [initialMessages]);
 
   const addRealtimeMessage = (
     message: ChatMessage
