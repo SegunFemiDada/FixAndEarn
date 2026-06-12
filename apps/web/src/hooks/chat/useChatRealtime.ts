@@ -1,4 +1,3 @@
-//paths: apps/web/src/hooks/chat/useChatRealtime.ts
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -64,6 +63,17 @@ export function useChatRealtime({
       });
     };
 
+    const safeRefetch =
+      async () => {
+        if (unmounted) {
+          return;
+        }
+
+        try {
+          await refetch();
+        } catch {}
+      };
+
     socket.on(
       "connect",
       joinRoom
@@ -77,12 +87,12 @@ export function useChatRealtime({
     socket.on(
       "message:new",
       (
-      payload: {
-        jobId?: string;
-        fixerId?: string;
-        message?: ChatMessage;
-      }
-    ) => {
+        payload: {
+          jobId?: string;
+          fixerId?: string;
+          message?: ChatMessage;
+        }
+      ) => {
         if (unmounted) {
           return;
         }
@@ -119,49 +129,49 @@ export function useChatRealtime({
               ? message.flags
               : [],
         });
+
+        safeRefetch();
       }
     );
 
     socket.on(
-  "negotiation:proposed",
-  () => refetch()
-);
-
-socket.on(
-  "negotiation:locked",
-  () => refetch()
-);
-
-socket.on(
-  "negotiation:response",
-  () => refetch()
-);
-
-socket.on(
-  "negotiation:agreed",
-  () => refetch()
-);
+      "negotiation:update",
+      safeRefetch
+    );
 
     socket.on(
       "agreement:update",
-       () => {
-        if (unmounted) {
-          return;
-        }
+      safeRefetch
+    );
 
-        refetch();
-      }
+    socket.on(
+      "job:update",
+      safeRefetch
+    );
+
+    socket.on(
+      "negotiation:proposed",
+      safeRefetch
+    );
+
+    socket.on(
+      "negotiation:locked",
+      safeRefetch
+    );
+
+    socket.on(
+      "negotiation:response",
+      safeRefetch
+    );
+
+    socket.on(
+      "negotiation:agreed",
+      safeRefetch
     );
 
     socket.on(
       "job:status",
-      async () => {
-        if (unmounted) {
-          return;
-        }
-
-        await refetch();
-      }
+      safeRefetch
     );
 
     socket.on(
