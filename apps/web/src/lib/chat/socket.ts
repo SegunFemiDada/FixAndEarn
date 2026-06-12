@@ -1,9 +1,12 @@
-//paths: apps/web/src/lib/chat/socket.ts
 "use client";
 
-import { io, type Socket } from "socket.io-client";
+import {
+  io,
+  type Socket,
+} from "socket.io-client";
 
-let socket: Socket | null = null;
+let socket: Socket | null =
+  null;
 
 export function connectChatSocket(): Socket {
   if (socket?.connected) {
@@ -17,19 +20,52 @@ export function connectChatSocket(): Socket {
   const baseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL;
 
+  console.log(
+    "[CHAT] connecting to",
+    baseUrl
+  );
+
   socket = io(baseUrl, {
     transports: ["websocket"],
     withCredentials: true,
     autoConnect: true,
     reconnection: true,
-    reconnectionAttempts: Infinity,
+    reconnectionAttempts:
+      Infinity,
     reconnectionDelay: 1500,
-    reconnectionDelayMax: 10000,
+    reconnectionDelayMax:
+      10000,
   });
 
-  socket.on("disconnect", () => {});
+  socket.on(
+    "connect",
+    () => {
+      console.log(
+        "[CHAT] connected",
+        socket?.id
+      );
+    }
+  );
 
-  socket.on("connect_error", () => {});
+  socket.on(
+    "disconnect",
+    (reason) => {
+      console.log(
+        "[CHAT] disconnected",
+        reason
+      );
+    }
+  );
+
+  socket.on(
+    "connect_error",
+    (err) => {
+      console.error(
+        "[CHAT] connect_error",
+        err
+      );
+    }
+  );
 
   return socket;
 }

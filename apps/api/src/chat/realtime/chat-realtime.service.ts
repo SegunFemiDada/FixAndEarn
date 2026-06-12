@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/realtime/chat-realtime.service.ts
 import { Injectable } from "@nestjs/common";
 import { ChatGateway } from "../chat.gateway";
 

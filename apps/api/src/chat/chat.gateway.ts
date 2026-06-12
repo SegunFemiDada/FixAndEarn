@@ -1,3 +1,4 @@
+//path: apps/api/src/chat/chat.gateway.ts
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
