@@ -16,13 +16,27 @@ export function connectChatSocket(): Socket {
   const baseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  socket = io(
-    `${baseUrl}/chat`,
-    {
-      withCredentials: true,
-      reconnection: true,
-    }
+  if (!baseUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_API_BASE_URL is not defined"
+    );
+  }
+
+  console.log(
+    "[CHAT] connecting to",
+    baseUrl
   );
+
+  socket = io(baseUrl, {
+    transports: [
+      "websocket",
+      "polling",
+    ],
+    withCredentials: true,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+  });
 
   socket.on(
     "connect",
@@ -30,6 +44,16 @@ export function connectChatSocket(): Socket {
       console.log(
         "[CHAT] connected",
         socket?.id
+      );
+    }
+  );
+
+  socket.on(
+    "disconnect",
+    (reason) => {
+      console.log(
+        "[CHAT] disconnected",
+        reason
       );
     }
   );
