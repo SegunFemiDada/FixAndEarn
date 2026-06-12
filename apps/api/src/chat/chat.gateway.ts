@@ -74,8 +74,9 @@ export class ChatGateway
     client.join(room);
 
     console.log(
-      "JOIN ROOM",
-      room
+    "[CHAT JOIN]",
+    client.id,
+    room
     );
 
     return {
@@ -98,6 +99,12 @@ export class ChatGateway
       `job:${payload.jobId}:fixer:${payload.fixerId}`;
 
     client.leave(room);
+
+    console.log(
+    "[CHAT LEAVE]",
+    client.id,
+    room
+  );
 
     return {
       left: room,

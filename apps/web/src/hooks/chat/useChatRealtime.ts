@@ -92,8 +92,13 @@ export function useChatRealtime({
           jobId?: string;
           fixerId?: string;
           message?: ChatMessage;
+          
         }
-      ) => {
+      ) => { 
+        console.log(
+        "[CHAT EVENT RECEIVED]",
+        payload
+      );
         if (unmounted) {
           return;
         }
@@ -218,12 +223,20 @@ export function useChatRealtime({
         );
       } catch {}
 
-      socket.removeAllListeners();
+      socket.off("connect", joinRoom);
+socket.off("reconnect", joinRoom);
 
-      socket.disconnect();
+socket.off("message:new");
+socket.off("negotiation:update");
+socket.off("agreement:update");
+socket.off("job:update");
+socket.off("negotiation:proposed");
+socket.off("negotiation:locked");
+socket.off("negotiation:response");
+socket.off("negotiation:agreed");
+socket.off("job:status");
 
-      socketRef.current =
-        null;
+socketRef.current = null;
     };
   }, [
     enabled,
