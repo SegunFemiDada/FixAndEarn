@@ -1,40 +1,55 @@
-//path: apps/api/src/chat/chat.gateway.ts
 import {
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  MessageBody,
   ConnectedSocket,
+  MessageBody,
 } from "@nestjs/websockets";
 
-import {
-  Server,
-  Socket,
-} from "socket.io";
+import { Server, Socket } from "socket.io";
 
 @WebSocketGateway({
+  namespace: "/chat",
   cors: {
-    origin: true,
+    origin: "*",
     credentials: true,
   },
 })
 export class ChatGateway
   implements
+    OnGatewayInit,
     OnGatewayConnection,
     OnGatewayDisconnect
 {
   @WebSocketServer()
   server!: Server;
 
+  afterInit() {
+    console.log(
+      "CHAT GATEWAY INITIALIZED"
+    );
+  }
+
   handleConnection(
-    _client: Socket
-  ) {}
+    client: Socket
+  ) {
+    console.log(
+      "CHAT CONNECTED:",
+      client.id
+    );
+  }
 
   handleDisconnect(
-    _client: Socket
-  ) {}
+    client: Socket
+  ) {
+    console.log(
+      "CHAT DISCONNECTED:",
+      client.id
+    );
+  }
 
   @SubscribeMessage("join")
   handleJoin(
@@ -57,51 +72,6 @@ export class ChatGateway
     };
   }
 
-  @SubscribeMessage("leave")
-  handleLeave(
-    @ConnectedSocket()
-    client: Socket,
-
-    @MessageBody()
-    payload: {
-      jobId: string;
-      fixerId: string;
-    }
-  ) {
-    const room =
-      `job:${payload.jobId}:fixer:${payload.fixerId}`;
-
-    client.leave(room);
-
-    return {
-      left: room,
-    };
-  }
-
-  @SubscribeMessage("typing:update")
-  handleTyping(
-    @ConnectedSocket()
-    client: Socket,
-
-    @MessageBody()
-    payload: {
-      jobId: string;
-      fixerId: string;
-      typing: boolean;
-    }
-  ) {
-    const room =
-      `job:${payload.jobId}:fixer:${payload.fixerId}`;
-
-    client.to(room).emit(
-      "typing:update",
-      {
-        ...payload,
-        userId: client.id,
-      }
-    );
-  }
-
   emitToRoom(
     room: string,
     event: string,
@@ -109,9 +79,6 @@ export class ChatGateway
   ) {
     this.server
       .to(room)
-      .emit(
-        event,
-        payload
-      );
+      .emit(event, payload);
   }
 }

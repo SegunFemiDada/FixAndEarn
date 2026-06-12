@@ -9,10 +9,6 @@ let socket: Socket | null =
   null;
 
 export function connectChatSocket(): Socket {
-  if (socket?.connected) {
-    return socket;
-  }
-
   if (socket) {
     return socket;
   }
@@ -20,21 +16,13 @@ export function connectChatSocket(): Socket {
   const baseUrl =
     process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  console.log(
-    "[CHAT] connecting to",
-    baseUrl
+  socket = io(
+    `${baseUrl}/chat`,
+    {
+      withCredentials: true,
+      reconnection: true,
+    }
   );
-
-  socket = io(baseUrl, {
-    withCredentials: true,
-    autoConnect: true,
-    reconnection: true,
-    reconnectionAttempts:
-      Infinity,
-    reconnectionDelay: 1500,
-    reconnectionDelayMax:
-      10000,
-  });
 
   socket.on(
     "connect",
@@ -42,16 +30,6 @@ export function connectChatSocket(): Socket {
       console.log(
         "[CHAT] connected",
         socket?.id
-      );
-    }
-  );
-
-  socket.on(
-    "disconnect",
-    (reason) => {
-      console.log(
-        "[CHAT] disconnected",
-        reason
       );
     }
   );
@@ -70,13 +48,6 @@ export function connectChatSocket(): Socket {
 }
 
 export function disconnectChatSocket() {
-  if (!socket) {
-    return;
-  }
-
-  socket.removeAllListeners();
-
-  socket.disconnect();
-
+  socket?.disconnect();
   socket = null;
 }
