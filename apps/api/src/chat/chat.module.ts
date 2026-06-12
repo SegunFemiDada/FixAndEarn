@@ -11,7 +11,6 @@ import { WalletModule } from "../modules/wallet/wallet.module";
 import { NotificationsModule } from "../modules/notifications/notifications.module";
 import { ConfigModule } from "@nestjs/config";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
-import { ChatRealtimeController } from "./realtime/chat-realtime.controller";
 import { PaymentsModule } from "src/modules/payments/payments.module";
 import { AuthModule } from "src/modules/auth/auth.module";
 import { ChatGateway } from "./chat.gateway";
@@ -20,8 +19,7 @@ import { ChatGateway } from "./chat.gateway";
   controllers: [
     ChatController,
     ChatQueryController,
-    AdminModerationController,
-    ChatRealtimeController
+    AdminModerationController
   ],
   providers: [ChatService, ChatRepo, ChatModerationService, ChatRealtimeService, ChatGateway],
   exports: [ChatService],
