@@ -14,12 +14,6 @@ async function bootstrap(): Promise<void> {
     cors: true,
     rawBody: true,
   });
-  app.enableCors({
-  origin: [
-    "https://fixandearn.vercel.app",
-  ],
-  credentials: true,
-});
   const uploadsPath = join(process.cwd(), 'apps/api/uploads');
 console.log('Serving static files from:', uploadsPath);
 app.use('/uploads', express.static(uploadsPath));
@@ -34,8 +28,18 @@ app.use('/uploads', express.static(uploadsPath));
     })
   );
 app.enableCors({
-  origin: ['https://fixandearn.vercel.app'], // add your frontend URLs
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  origin: [
+    "https://fixandearn.vercel.app",
+  ],
+  methods: [
+    "GET",
+    "HEAD",
+    "PUT",
+    "PATCH",
+    "POST",
+    "DELETE",
+    "OPTIONS",
+  ],
   credentials: true,
 });
 app.use(

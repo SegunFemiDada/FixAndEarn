@@ -26,7 +26,6 @@ export function connectChatSocket(): Socket {
   );
 
   socket = io(baseUrl, {
-    transports: ["websocket"],
     withCredentials: true,
     autoConnect: true,
     reconnection: true,
