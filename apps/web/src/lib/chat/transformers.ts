@@ -17,6 +17,8 @@ export type ChatConversationState = {
   isConversationMissing: boolean;
   showAgreementBootstrap: boolean;
   error: unknown | null;
+
+  active: boolean; // NEW FIELD
 };
 
 export function buildChatConversationState(params: {
@@ -55,8 +57,9 @@ export function buildChatConversationState(params: {
     canChat,
     needsAgreement,
     isConversationMissing,
-    showAgreementBootstrap: false,
+    showAgreementBootstrap,
     error,
+    active: data?.conversation?.active ?? false, // NEW FIELD
   };
 }
 

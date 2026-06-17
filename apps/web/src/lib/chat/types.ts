@@ -1,4 +1,5 @@
 // Path: apps/web/src/lib/chat/types.ts
+
 export type ChatFlag = {
   id?: string;
   type: string;
@@ -43,6 +44,8 @@ export type ChatJob = {
 export type ConversationDetailData = {
   conversation?: {
     id?: string;
+    status?: string;
+    active?: boolean; // NEW FIELD
   };
 
   job?: ChatJob;
@@ -53,8 +56,8 @@ export type ConversationDetailData = {
 
   messages?: ChatMessage[];
 };
-export type PendingChatMessage =
-  ChatMessage & {
-    pending?: boolean;
-    failed?: boolean;
-  };
+
+export type PendingChatMessage = ChatMessage & {
+  pending?: boolean;
+  failed?: boolean;
+};

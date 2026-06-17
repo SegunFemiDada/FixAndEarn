@@ -18,6 +18,7 @@ export function useChatConversation({
 }) {
   const query = useConversationDetail(jobId, fixerId);
 
+  // Build base state from backend data
   const state = useMemo(() => {
     return buildChatConversationState({
       data: query.data as ConversationDetailData | undefined,
@@ -26,6 +27,7 @@ export function useChatConversation({
     });
   }, [query.data, query.error, query.isError]);
 
+  // Local message state management
   const {
     messages,
     addRealtimeMessage,
@@ -34,7 +36,7 @@ export function useChatConversation({
     markFailedMessage,
   } = useChatMessages(state.messages ?? []);
 
-  // Auto‑wire realtime socket
+  // Auto‑wire realtime socket for updates
   useChatRealtime({
     jobId,
     fixerId,
@@ -46,16 +48,25 @@ export function useChatConversation({
   return {
     ...state,
 
+    // Query state
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     refetch: query.refetch,
 
+    // Message handlers
     messages,
     addRealtimeMessage,
     addOptimisticMessage,
     replacePendingMessage,
     markFailedMessage,
 
+    // Refresh conversation manually
     refreshConversation: query.refetch,
+
+    // NEW: conversation active flag (safe fallback)
+    isActive:
+      state.active ??
+      (query.data as ConversationDetailData | undefined)?.conversation?.active ??
+      false,
   };
 }

@@ -74,6 +74,23 @@ export function useChatRealtime({
           await refetch();
         } catch {}
       };
+      socket.on("conversation:activated", (payload: {
+      jobId: string;
+      fixerId: string;
+      conversationId: string;
+    }) => {
+      if (unmounted) return;
+      if (payload.jobId !== jobId || payload.fixerId !== fixerId) return;
+
+      // Play notification sound
+      const audio = new Audio("/sounds/chat-activated.mp3");
+      audio.play().catch(() => {
+        console.warn("Notification sound blocked by browser policy");
+      });
+
+      // Refetch conversation so isActive updates
+      safeRefetch();
+    });
 
     socket.on(
       "connect",
