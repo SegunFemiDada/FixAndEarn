@@ -1,4 +1,4 @@
-//path: apps/api/src/modules/auth/dto/forgot-password.dto.ts
+//path: apps/api/src/modules/auth/dto/resend-verification.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail } from "class-validator";
 

@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/ChatInput.tsx
 "use client";
 
 import Button from "@/components/ui/Button";

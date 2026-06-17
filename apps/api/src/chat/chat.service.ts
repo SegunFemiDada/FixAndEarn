@@ -584,14 +584,28 @@ export class ChatService {
       this.assertFixerApplied(job, fixerId);
     }
 
-    const convo = await this.repo.upsertConversation(
-      jobId,
-      fixerId
-    );
+    const convo = await this.repo.upsertConversation(jobId, fixerId);
 
-    if (convo.status !== "OPEN") {
-      throw new ForbiddenException("CHAT_CLOSED");
-    }
+if (convo.status !== "OPEN") {
+  throw new ForbiddenException("CHAT_CLOSED");
+}
+
+// NEW GATING LOGIC
+if (!convo.active) {
+  if (role === "CLIENT") {
+    await this.repo.setConversationActive(convo.id, true);
+
+    const room = this.realtime.roomFor(jobId, fixerId);
+    this.realtime.emitToRoom(room, "conversation:activated", {
+      jobId,
+      fixerId,
+      conversationId: convo.id,
+    });
+  } else {
+    throw new ForbiddenException("FIXER_CANNOT_SEND_FIRST_MESSAGE");
+  }
+}
+
 
     const msg = await this.repo.createMessage(
       convo.id,

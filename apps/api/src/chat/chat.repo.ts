@@ -29,33 +29,31 @@ export class ChatRepo {
     });
   }
 
-  async upsertConversation(jobId: string, fixerId: string) {
+async upsertConversation(jobId: string, fixerId: string) {
   return this.prisma.conversation.upsert({
-    where: {
-      jobId_fixerId: {
-        jobId,
-        fixerId,
-      },
-    },
+    where: { jobId_fixerId: { jobId, fixerId } },
     update: {},
     create: {
       jobId,
       fixerId,
+      active: false, // NEW
     },
     include: {
       agreements: true,
       negotiation: true,
       job: true,
-      fixer: {
-        select: {
-          id: true,
-          fullName: true,
-          isActive: true,
-        },
-      },
+      fixer: { select: { id: true, fullName: true, isActive: true } },
     },
   });
 }
+
+async setConversationActive(conversationId: string, active: boolean) {
+  return this.prisma.conversation.update({
+    where: { id: conversationId },
+    data: { active },
+  });
+}
+
 
   async acceptAgreement(conversationId: string, userId: string, ip?: string, userAgent?: string) {
     return this.prisma.chatAgreement.upsert({

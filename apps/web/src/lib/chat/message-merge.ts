@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/chat/message-merge.ts
 import type { ChatMessage } from "./types";
 
 export function mergeMessages(

@@ -93,14 +93,21 @@ export function respondToLockedPrice(
     throw new Error("PRICE_NOT_LOCKED");
   }
 
-  if (!accept) {
-    return {
-      ...state,
-      status: "REJECTED",
-      rejectedAt: now,
-      rejectedByUserId: actorUserId,
-    };
-  }
+if (!accept) {
+  return {
+    ...state,
+    status: "OPEN",
+
+    lockedPriceMilliFec: null,
+    lockedByUserId: null,
+
+    clientAcceptedAt: null,
+    fixerAcceptedAt: null,
+
+    rejectedAt: now,
+    rejectedByUserId: actorUserId,
+  };
+}
 
   const next: NegotiationState = {
     ...state,

@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/JobSummaryCard.tsx
 "use client";
 
 import Card from "@/components/ui/Card";

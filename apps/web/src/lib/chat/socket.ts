@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/chat/socket.ts
 "use client";
 
 import {

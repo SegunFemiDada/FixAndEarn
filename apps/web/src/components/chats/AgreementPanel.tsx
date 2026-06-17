@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/AgreementPanel.tsx
 "use client";
 
 import Button from "@/components/ui/Button";

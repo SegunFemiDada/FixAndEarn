@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/ChatHeader.tsx
 "use client";
 
 import Link from "next/link";

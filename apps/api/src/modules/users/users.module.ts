@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/users/users.module.ts
 import { Module } from "@nestjs/common";
 import { UsersController } from "./users.controller";
 import { UsersRepo } from "./users.repo";

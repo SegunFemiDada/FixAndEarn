@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/NegotiationPanel.tsx
 "use client";
 
 import Button from "@/components/ui/Button";

@@ -1,3 +1,4 @@
+//path: apps/web/src/hooks/chat/useChatPageView.ts
 "use client";
 
 import {

@@ -4,13 +4,17 @@ import { useMemo } from "react";
 import { useConversationDetail } from "@/lib/chat/queries";
 import type { ConversationDetailData } from "@/lib/chat/types";
 import { buildChatConversationState } from "@/lib/chat/transformers";
+import { useChatMessages } from "./useChatMessages";
+import { useChatRealtime } from "./useChatRealtime";
 
 export function useChatConversation({
   jobId,
   fixerId,
+  enabled = true,
 }: {
   jobId: string;
   fixerId: string;
+  enabled?: boolean;
 }) {
   const query = useConversationDetail(jobId, fixerId);
 
@@ -22,6 +26,23 @@ export function useChatConversation({
     });
   }, [query.data, query.error, query.isError]);
 
+  const {
+    messages,
+    addRealtimeMessage,
+    addOptimisticMessage,
+    replacePendingMessage,
+    markFailedMessage,
+  } = useChatMessages(state.messages ?? []);
+
+  // Auto‑wire realtime socket
+  useChatRealtime({
+    jobId,
+    fixerId,
+    enabled,
+    refetch: query.refetch,
+    addRealtimeMessage,
+  });
+
   return {
     ...state,
 
@@ -29,9 +50,11 @@ export function useChatConversation({
     isFetching: query.isFetching,
     refetch: query.refetch,
 
-    addRealtimeMessage: () => {},
-    addOptimisticMessage: () => {},
-    markFailedMessage: () => {},
+    messages,
+    addRealtimeMessage,
+    addOptimisticMessage,
+    replacePendingMessage,
+    markFailedMessage,
 
     refreshConversation: query.refetch,
   };

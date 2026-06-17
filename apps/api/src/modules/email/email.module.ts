@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/email/email.module.ts
 import { Module } from "@nestjs/common";
 import { EmailService } from "./email.service";
 

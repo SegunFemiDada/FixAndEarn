@@ -199,13 +199,13 @@ export default function ProfilePage() {
       response?: { data?: { message?: unknown } };
       message?: unknown;
     };
-    const msg = e?.response?.data?.message ?? e?.message ?? "Failed to load profile.";
+    const msg = e?.response?.data?.message ?? e?.message ?? "Failed to load profile. (Re-Login)";
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
         <div className="mx-auto max-w-2xl space-y-4">
           <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            <div className="font-semibold">Failed to load profile</div>
+            <div className="font-semibold">Failed to load profile. (Re-Login)</div>
             <pre className="mt-2 whitespace-pre-wrap">{String(msg)}</pre>
             <button
               onClick={() => refetch()}
