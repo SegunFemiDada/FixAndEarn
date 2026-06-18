@@ -1,12 +1,19 @@
+//path: apps/web/src/components/chats/ChatInput.tsx
 "use client";
 
 import Button from "@/components/ui/Button";
 
 type Props = {
   value: string;
-  disabled: boolean; // true if chat not active or busy
+
+  disabled: boolean;
+
   busy: boolean;
-  onChange: (value: string) => void;
+
+  onChange: (
+    value: string
+  ) => void;
+
   onSend: () => void;
 };
 
@@ -17,25 +24,31 @@ export default function ChatInput({
   onChange,
   onSend,
 }: Props) {
-  if (disabled) {
-    // Show a clear message instead of input when chat is not active
-    return (
-      <div className="flex items-center justify-center w-full py-3 text-sm text-gray-500 dark:text-gray-400">
-        Waiting for client to start chat…
-      </div>
-    );
-  }
-
   return (
     <div className="flex gap-2">
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="Type a message..."
-        disabled={busy}
+        onChange={(e) =>
+          onChange(
+            e.target.value
+          )
+        }
+        placeholder={
+          disabled
+            ? "Chat unavailable"
+            : "Type a message..."
+        }
+        disabled={
+          disabled ||
+          busy
+        }
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (
+            e.key === "Enter" &&
+            !e.shiftKey
+          ) {
             e.preventDefault();
+
             onSend();
           }
         }}
@@ -44,9 +57,15 @@ export default function ChatInput({
 
       <Button
         onClick={onSend}
-        disabled={busy || !value.trim()}
+        disabled={
+          disabled ||
+          busy ||
+          !value.trim()
+        }
       >
-        {busy ? "Sending..." : "Send"}
+        {busy
+          ? "Sending..."
+          : "Send"}
       </Button>
     </div>
   );

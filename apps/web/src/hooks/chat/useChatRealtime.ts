@@ -53,7 +53,7 @@ export function useChatRealtime({
       } catch {}
     };
 
-    // Conversation activated event
+    // Conversation activated event (client starts chat)
     socket.on("conversation:activated", (payload: {
       jobId: string;
       fixerId: string;
@@ -62,7 +62,7 @@ export function useChatRealtime({
       if (unmounted) return;
       if (payload.jobId !== jobId || payload.fixerId !== fixerId) return;
 
-      playSound("/sounds/chat-activated.mp3");
+      playSound("/sounds/chat-activated.mp3"); // distinct activation sound
       safeRefetch();
     });
 
@@ -83,13 +83,11 @@ export function useChatRealtime({
         flags: Array.isArray(message.flags) ? message.flags : [],
       });
 
-      // Play sound for every message
-      playSound("/sounds/message.mp3");
-
+      playSound("/sounds/message.mp3"); // sound for every message
       safeRefetch();
     });
 
-    // Other notification events
+    // Other notification events (negotiation, job status, etc.)
     const notificationEvents = [
       "negotiation:update",
       "agreement:update",
@@ -103,7 +101,7 @@ export function useChatRealtime({
 
     notificationEvents.forEach((event) => {
       socket.on(event, () => {
-        playSound("/sounds/notification.mp3");
+        playSound("/sounds/notification.mp3"); // sound for every notification
         safeRefetch();
       });
     });
