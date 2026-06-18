@@ -9,14 +9,15 @@ export default function ChatConversationSection({
   typingUsers,
   messageValue,
   canChat,
-  isActive,          // NEW: accept isActive
+  isActive,
+  role,                // NEW: accept role
   sendingMessage,
   isFetching,
   onRefresh,
   onReport,
   onMessageChange,
   onSend,
-}: ConversationSectionProps & { isActive: boolean }) {   // FIX: extend props type
+}: ConversationSectionProps & { isActive: boolean; role: "client" | "fixer" }) {
   return (
     <ChatConversationCard
       messages={messages}
@@ -24,7 +25,8 @@ export default function ChatConversationSection({
       typingUsers={typingUsers}
       messageValue={messageValue}
       canChat={canChat}
-      isActive={isActive}          // FIX: pass down
+      role={role}                // FIX: pass role down
+      isActive={isActive}
       sendingMessage={sendingMessage}
       isFetching={isFetching}
       onRefresh={onRefresh}

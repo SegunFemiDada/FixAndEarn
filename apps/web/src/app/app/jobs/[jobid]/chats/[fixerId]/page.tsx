@@ -1,4 +1,3 @@
-// Path: apps/web/src/app/app/jobs/[jobid]/chats/[fixerId]/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
@@ -18,126 +17,74 @@ import ChatPageShell from "@/components/chats/ChatPageShell";
 import ChatInvalidParams from "@/components/chats/ChatInvalidParams";
 
 export default function JobChatDetailPage() {
-  const params =
-    useParams<{
-      jobid?: string;
-      fixerId?: string;
-    }>();
+  const params = useParams<{ jobid?: string; fixerId?: string }>();
 
-  const jobId =
-    params?.jobid ?? "";
+  const jobId = params?.jobid ?? "";
+  const fixerId = params?.fixerId ?? "";
 
-  const fixerId =
-    params?.fixerId ?? "";
+  // TODO: Replace with actual logged-in user context
+  const currentUserId = "123"; // e.g. from auth/session
+  const role: "client" | "fixer" = "client"; // decide based on who is logged in
 
-  const chat =
-    useChatController({
-      jobId,
-      fixerId,
-    });
+  const chat = useChatController({
+    jobId,
+    fixerId,
+    myUserId: currentUserId, // FIX: pass myUserId
+    role,                    // FIX: pass role
+  });
 
-  const view =
-    useChatPageView({
-      isLoading:
-        chat.isLoading,
+  const view = useChatPageView({
+    isLoading: chat.isLoading,
+    error: chat.error,
+  });
 
-      error:
-        chat.error,
-    });
+  const status = useChatPageStatus({
+    jobId,
+    fixerId,
+    isLoading: chat.isLoading,
+    error: chat.error,
+  });
 
-  const status =
-    useChatPageStatus({
-      jobId,
+  const actions = useChatPageActions({ chat });
 
-      fixerId,
+  const conversationSection = useChatConversationSection(chat);
+  const negotiationSection = useChatNegotiationSection(chat);
 
-      isLoading:
-        chat.isLoading,
-
-      error:
-        chat.error,
-    });
-
-  const actions =
-    useChatPageActions({
-      chat,
-    });
-
-  const conversationSection =
-    useChatConversationSection(
-      chat
-    );
-
-  const negotiationSection =
-    useChatNegotiationSection(
-      chat
-    );
-
-  if (
-    status.hasInvalidParams
-  ) {
-    return (
-      <ChatInvalidParams />
-    );
+  if (status.hasInvalidParams) {
+    return <ChatInvalidParams />;
   }
 
   return (
     <ChatPageShell>
-      <ChatHeader
-        jobId={jobId}
-        fixerId={fixerId}
-      />
+      <ChatHeader jobId={jobId} fixerId={fixerId} />
 
       {status.showStates && (
         <ChatPageStates
-          isLoading={
-            chat.isLoading
-          }
-          isError={
-            status.isError
-          }
-          errorMessage={
-            view.errorMessage ??
-            "Unknown error"
-          }
+          isLoading={chat.isLoading}
+          isError={status.isError}
+          errorMessage={view.errorMessage ?? "Unknown error"}
         />
       )}
 
       {status.showContent && (
         <ChatPageContent
-          job={
-            chat.job ?? null
-          }
-          needsAgreement={
-            chat.needsAgreement
-          }
+          job={chat.job ?? null}
+          needsAgreement={chat.needsAgreement}
           conversation={{
             ...conversationSection,
-
-            onReport:
-              actions.openReportModal,
+            onReport: actions.openReportModal,
           }}
-          negotiationSection={
-            negotiationSection
-          }
+          negotiationSection={negotiationSection}
         />
       )}
 
-      <ChatActionError
-        error={
-          chat.actionErr
-        }
-      />
+      <ChatActionError error={chat.actionErr} />
 
       <ChatReportModal
-        reportMessageId={
-          chat.reportMessageId
-        }
+        reportMessageId={chat.reportMessageId}
         jobId={jobId}
         fixerId={fixerId}
-        onClose={
-          actions.closeReportModal
-        }
+        onClose={actions.closeReportModal}
       />
     </ChatPageShell>
   );

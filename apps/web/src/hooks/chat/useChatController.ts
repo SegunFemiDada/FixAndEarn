@@ -1,10 +1,6 @@
-// Path: apps/web/src/hooks/chat/useChatController.ts
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-} from "react";
+import { useCallback, useEffect } from "react";
 
 import { useTypingIndicator } from "@/hooks/chat/useTypingIndicator";
 import { useChatRealtime } from "@/hooks/chat/useChatRealtime";
@@ -15,197 +11,101 @@ import { useChatMessages } from "@/hooks/chat/useChatMessages";
 
 type Props = {
   jobId: string;
-
   fixerId: string;
+  myUserId: string;              // NEW
+  role: "client" | "fixer";      // NEW
 };
 
-export type ChatController =
-  ReturnType<
-    typeof useChatController
-  >;
+export type ChatController = ReturnType<typeof useChatController>;
 
 export function useChatController({
   jobId,
   fixerId,
+  myUserId,
+  role,
 }: Props) {
-  const conversation =
-    useChatConversation({
-      jobId,
-      fixerId,
-    });
+  const conversation = useChatConversation({
+    jobId,
+    fixerId,
+    myUserId,   // FIX: pass down
+    role,       // FIX: pass down
+  });
 
   const {
     messages,
-
     addRealtimeMessage,
-
     addOptimisticMessage,
-
     markFailedMessage,
-  } = useChatMessages(
-    conversation.messages
-  );
+  } = useChatMessages(conversation.messages);
 
-  const state =
-    useChatPageState({
-      job:
-        conversation.job ??
-        null,
-    });
-
-  const {
-    typingUsers,
-    emitTyping,
-  } = useTypingIndicator({
-    jobId,
-    fixerId,
-    enabled:
-      conversation.canChat,
+  const state = useChatPageState({
+    job: conversation.job ?? null,
   });
 
-  const actions =
-    useChatActions({
-      jobId,
-      fixerId,
-      myUserId:
-        state.myUserId,
-      refetch:
-        conversation.refetch,
-      addOptimisticMessage,
-      markFailedMessage,
-    });
+  const { typingUsers, emitTyping } = useTypingIndicator({
+    jobId,
+    fixerId,
+    enabled: conversation.canChat,
+  });
+
+  const actions = useChatActions({
+    jobId,
+    fixerId,
+    myUserId,
+    refetch: conversation.refetch,
+    addOptimisticMessage,
+    markFailedMessage,
+  });
 
   useChatRealtime({
     jobId,
     fixerId,
-    enabled: Boolean(
-      jobId &&
-        fixerId &&
-        conversation.canChat
-    ),
+    enabled: Boolean(jobId && fixerId && conversation.canChat),
+    myUserId,             // FIX: pass down
     addRealtimeMessage,
-    refetch:
-      conversation.refetch,
+    refetch: conversation.refetch,
   });
 
-  const {
-    canChat,
-    isCompleted,
-  } = conversation;
-
-  const {
-    msg,
-    setMsg,
-    proposeFec,
-    lockFec,
-  } = state;
-
-  const {
-    setActionErr,
-    sendChatMessage,
-    submitProposePrice,
-    submitLockPrice,
-  } = actions;
+  const { canChat, isCompleted } = conversation;
+  const { msg, setMsg, proposeFec, lockFec } = state;
+  const { setActionErr, sendChatMessage, submitProposePrice, submitLockPrice } = actions;
 
   useEffect(() => {
     setActionErr(null);
-  }, [
-    jobId,
-    fixerId,
-    setActionErr,
-  ]);
+  }, [jobId, fixerId, setActionErr]);
 
-  const handleSend =
-    useCallback(
-      async () => {
-        const body =
-          msg.trim();
+  const handleSend = useCallback(async () => {
+    const body = msg.trim();
+    if (!body || !canChat || isCompleted) return;
 
-        if (
-          !body ||
-          !canChat ||
-          isCompleted
-        ) {
-          return;
-        }
+    await sendChatMessage(body);
+    setMsg("");
+  }, [msg, setMsg, canChat, isCompleted, sendChatMessage]);
 
-        await sendChatMessage(
-          body
-        );
+  const handleMessageChange = useCallback((value: string) => {
+    setMsg(value);
+    emitTyping();
+  }, [setMsg, emitTyping]);
 
-        setMsg("");
-      },
-      [
-        msg,
-        setMsg,
-        canChat,
-        isCompleted,
-        sendChatMessage,
-      ]
-    );
+  const handlePropose = useCallback(() => {
+    return submitProposePrice(Number(proposeFec) * 1000);
+  }, [proposeFec, submitProposePrice]);
 
-  const handleMessageChange =
-    useCallback(
-      (
-        value: string
-      ) => {
-        setMsg(value);
-
-        emitTyping();
-      },
-      [
-        setMsg,
-        emitTyping,
-      ]
-    );
-
-  const handlePropose =
-    useCallback(
-      () => {
-        return submitProposePrice(
-          Number(
-            proposeFec
-          ) * 1000
-        );
-      },
-      [
-        proposeFec,
-        submitProposePrice,
-      ]
-    );
-
-  const handleLock =
-    useCallback(
-      () => {
-        return submitLockPrice(
-          Number(
-            lockFec
-          ) * 1000
-        );
-      },
-      [
-        lockFec,
-        submitLockPrice,
-      ]
-    );
+  const handleLock = useCallback(() => {
+    return submitLockPrice(Number(lockFec) * 1000);
+  }, [lockFec, submitLockPrice]);
 
   return {
     ...conversation,
-
     ...state,
-
     ...actions,
-
     messages,
-
     typingUsers,
-
+    role,          // expose role
+    myUserId,      // expose myUserId
     handleSend,
-
     handleMessageChange,
-
     handlePropose,
-
     handleLock,
   };
 }

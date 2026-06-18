@@ -107,7 +107,7 @@ export default function ChatPageContent({
       />
 
       <ChatConversationSection
-      isActive={false} {...conversation}      />
+        role={"client"} isActive={false} {...conversation}      />
     </>
   );
 }

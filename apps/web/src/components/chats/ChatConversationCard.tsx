@@ -14,7 +14,8 @@ type Props = {
   typingUsers: string[];
   messageValue: string;
   canChat: boolean;
-  isActive: boolean; // NEW
+  isActive: boolean;
+  role: "client" | "fixer";   // NEW
   sendingMessage: boolean;
   isFetching: boolean;
   onRefresh: () => void;
@@ -30,6 +31,7 @@ export default function ChatConversationCard({
   messageValue,
   canChat,
   isActive,
+  role,
   sendingMessage,
   isFetching,
   onRefresh,
@@ -50,7 +52,9 @@ export default function ChatConversationCard({
 
       <ChatInput
         value={messageValue}
-        disabled={!canChat || !isActive} // FIX: input locked until client activates
+        disabled={
+          !canChat || (role === "fixer" && !isActive) // FIX: only block fixer until active
+        }
         busy={sendingMessage}
         onChange={onMessageChange}
         onSend={onSend}

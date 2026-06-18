@@ -5,7 +5,6 @@ import type { Socket } from "socket.io-client";
 import { connectChatSocket } from "@/lib/chat/socket";
 import type { ChatMessage } from "@/lib/chat/types";
 
-// Utility to play sounds consistently
 function playSound(file: string) {
   try {
     const audio = new Audio(file);
@@ -21,6 +20,7 @@ type Params = {
   jobId: string;
   fixerId: string;
   enabled: boolean;
+  myUserId: string;   // NEW
   addRealtimeMessage: (message: ChatMessage) => void;
   refetch: () => Promise<any>;
 };
@@ -29,6 +29,7 @@ export function useChatRealtime({
   jobId,
   fixerId,
   enabled,
+  myUserId,
   refetch,
   addRealtimeMessage,
 }: Params) {
@@ -53,25 +54,14 @@ export function useChatRealtime({
       } catch {}
     };
 
-    // Conversation activated event (client starts chat)
-    socket.on("conversation:activated", (payload: {
-      jobId: string;
-      fixerId: string;
-      conversationId: string;
-    }) => {
+    socket.on("conversation:activated", (payload) => {
       if (unmounted) return;
       if (payload.jobId !== jobId || payload.fixerId !== fixerId) return;
-
-      playSound("/sounds/chat-activated.mp3"); // distinct activation sound
+      playSound("/sounds/chat-activated.mp3");
       safeRefetch();
     });
 
-    // New message event
-    socket.on("message:new", (payload: {
-      jobId?: string;
-      fixerId?: string;
-      message?: ChatMessage;
-    }) => {
+    socket.on("message:new", (payload) => {
       if (unmounted) return;
       if (payload?.jobId !== jobId || payload?.fixerId !== fixerId) return;
 
@@ -83,11 +73,14 @@ export function useChatRealtime({
         flags: Array.isArray(message.flags) ? message.flags : [],
       });
 
-      playSound("/sounds/message.mp3"); // sound for every message
+      // Only play sound if it's not my own message
+      if (message.senderId !== myUserId) {
+        playSound("/sounds/message.mp3");
+      }
+
       safeRefetch();
     });
 
-    // Other notification events (negotiation, job status, etc.)
     const notificationEvents = [
       "negotiation:update",
       "agreement:update",
@@ -101,7 +94,7 @@ export function useChatRealtime({
 
     notificationEvents.forEach((event) => {
       socket.on(event, () => {
-        playSound("/sounds/notification.mp3"); // sound for every notification
+        playSound("/sounds/notification.mp3");
         safeRefetch();
       });
     });
@@ -139,5 +132,5 @@ export function useChatRealtime({
 
       socketRef.current = null;
     };
-  }, [enabled, fixerId, jobId, refetch, addRealtimeMessage]);
+  }, [enabled, fixerId, jobId, refetch, addRealtimeMessage, myUserId]);
 }
