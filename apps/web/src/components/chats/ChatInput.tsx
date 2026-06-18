@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 
 type Props = {
   value: string;
-  disabled: boolean; // true if chat not active
+  disabled: boolean; // true if chat not active or busy
   busy: boolean;
   onChange: (value: string) => void;
   onSend: () => void;

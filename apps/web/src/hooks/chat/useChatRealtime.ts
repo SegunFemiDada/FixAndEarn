@@ -5,7 +5,7 @@ import type { Socket } from "socket.io-client";
 import { connectChatSocket } from "@/lib/chat/socket";
 import type { ChatMessage } from "@/lib/chat/types";
 
-// Simple utility to play sounds
+// Utility to play sounds consistently
 function playSound(file: string) {
   try {
     const audio = new Audio(file);
