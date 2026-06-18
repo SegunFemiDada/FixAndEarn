@@ -1,25 +1,27 @@
-//path: apps/web/src/hooks/chat/useChatRealtime.ts
 "use client";
 
 import { useEffect, useRef } from "react";
-
 import type { Socket } from "socket.io-client";
-
 import { connectChatSocket } from "@/lib/chat/socket";
+import type { ChatMessage } from "@/lib/chat/types";
 
-import type {
-  ChatMessage,
-} from "@/lib/chat/types";
+// Simple utility to play sounds
+function playSound(file: string) {
+  try {
+    const audio = new Audio(file);
+    audio.play().catch(() => {
+      console.warn("Notification sound blocked by browser policy");
+    });
+  } catch (err) {
+    console.error("Failed to play sound", err);
+  }
+}
 
 type Params = {
   jobId: string;
   fixerId: string;
   enabled: boolean;
-
-  addRealtimeMessage: (
-    message: ChatMessage
-  ) => void;
-
+  addRealtimeMessage: (message: ChatMessage) => void;
   refetch: () => Promise<any>;
 };
 
@@ -30,51 +32,29 @@ export function useChatRealtime({
   refetch,
   addRealtimeMessage,
 }: Params) {
-  const socketRef =
-    useRef<Socket | null>(
-      null
-    );
-
-  const reconnectTimerRef =
-    useRef<NodeJS.Timeout | null>(
-      null
-    );
+  const socketRef = useRef<Socket | null>(null);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (
-      !enabled ||
-      !jobId ||
-      !fixerId
-    ) {
-      return;
-    }
+    if (!enabled || !jobId || !fixerId) return;
 
     let unmounted = false;
-
-    const socket =
-      connectChatSocket();
-
-    socketRef.current =
-      socket;
+    const socket = connectChatSocket();
+    socketRef.current = socket;
 
     const joinRoom = () => {
-      socket.emit("join", {
-        jobId,
-        fixerId,
-      });
+      socket.emit("join", { jobId, fixerId });
     };
 
-    const safeRefetch =
-      async () => {
-        if (unmounted) {
-          return;
-        }
+    const safeRefetch = async () => {
+      if (unmounted) return;
+      try {
+        await refetch();
+      } catch {}
+    };
 
-        try {
-          await refetch();
-        } catch {}
-      };
-      socket.on("conversation:activated", (payload: {
+    // Conversation activated event
+    socket.on("conversation:activated", (payload: {
       jobId: string;
       fixerId: string;
       conversationId: string;
@@ -82,184 +62,84 @@ export function useChatRealtime({
       if (unmounted) return;
       if (payload.jobId !== jobId || payload.fixerId !== fixerId) return;
 
-      // Play notification sound
-      const audio = new Audio("/sounds/chat-activated.mp3");
-      audio.play().catch(() => {
-        console.warn("Notification sound blocked by browser policy");
-      });
-
-      // Refetch conversation so isActive updates
+      playSound("/sounds/chat-activated.mp3");
       safeRefetch();
     });
 
-    socket.on(
-      "connect",
-      joinRoom
-    );
+    // New message event
+    socket.on("message:new", (payload: {
+      jobId?: string;
+      fixerId?: string;
+      message?: ChatMessage;
+    }) => {
+      if (unmounted) return;
+      if (payload?.jobId !== jobId || payload?.fixerId !== fixerId) return;
 
-    socket.on(
-      "reconnect",
-      joinRoom
-    );
+      const message = payload?.message;
+      if (!message?.id) return;
 
-    socket.on(
-      "message:new",
-      (
-        payload: {
-          jobId?: string;
-          fixerId?: string;
-          message?: ChatMessage;
-          
-        }
-      ) => { 
-        console.log(
-        "[CHAT EVENT RECEIVED]",
-        payload
-      );
-        if (unmounted) {
-          return;
-        }
+      addRealtimeMessage({
+        ...message,
+        flags: Array.isArray(message.flags) ? message.flags : [],
+      });
 
-        if (
-          payload?.jobId !==
-          jobId
-        ) {
-          return;
-        }
+      // Play sound for every message
+      playSound("/sounds/message.mp3");
 
-        if (
-          payload?.fixerId !==
-          fixerId
-        ) {
-          return;
-        }
+      safeRefetch();
+    });
 
-        const message =
-          payload?.message;
-
-        if (
-          !message?.id
-        ) {
-          return;
-        }
-
-        addRealtimeMessage({
-          ...message,
-          flags:
-            Array.isArray(
-              message.flags
-            )
-              ? message.flags
-              : [],
-        });
-
-        safeRefetch();
-      }
-    );
-
-    socket.on(
+    // Other notification events
+    const notificationEvents = [
       "negotiation:update",
-      safeRefetch
-    );
-
-    socket.on(
       "agreement:update",
-      safeRefetch
-    );
-
-    socket.on(
       "job:update",
-      safeRefetch
-    );
-
-    socket.on(
       "negotiation:proposed",
-      safeRefetch
-    );
-
-    socket.on(
       "negotiation:locked",
-      safeRefetch
-    );
-
-    socket.on(
       "negotiation:response",
-      safeRefetch
-    );
-
-    socket.on(
       "negotiation:agreed",
-      safeRefetch
-    );
-
-    socket.on(
       "job:status",
-      safeRefetch
-    );
+    ];
 
-    socket.on(
-      "connect_error",
-      () => {
-        if (
-          reconnectTimerRef.current
-        ) {
-          clearTimeout(
-            reconnectTimerRef.current
-          );
-        }
+    notificationEvents.forEach((event) => {
+      socket.on(event, () => {
+        playSound("/sounds/notification.mp3");
+        safeRefetch();
+      });
+    });
 
-        reconnectTimerRef.current =
-          setTimeout(() => {
-            try {
-              socket.connect();
-            } catch {}
-          }, 3000);
+    socket.on("connect", joinRoom);
+    socket.on("reconnect", joinRoom);
+
+    socket.on("connect_error", () => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
       }
-    );
+      reconnectTimerRef.current = setTimeout(() => {
+        try {
+          socket.connect();
+        } catch {}
+      }, 3000);
+    });
 
     joinRoom();
 
     return () => {
       unmounted = true;
-
-      if (
-        reconnectTimerRef.current
-      ) {
-        clearTimeout(
-          reconnectTimerRef.current
-        );
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
       }
-
       try {
-        socket.emit(
-          "leave",
-          {
-            jobId,
-            fixerId,
-          }
-        );
+        socket.emit("leave", { jobId, fixerId });
       } catch {}
 
       socket.off("connect", joinRoom);
-socket.off("reconnect", joinRoom);
+      socket.off("reconnect", joinRoom);
+      socket.off("conversation:activated");
+      socket.off("message:new");
+      notificationEvents.forEach((event) => socket.off(event));
 
-socket.off("message:new");
-socket.off("negotiation:update");
-socket.off("agreement:update");
-socket.off("job:update");
-socket.off("negotiation:proposed");
-socket.off("negotiation:locked");
-socket.off("negotiation:response");
-socket.off("negotiation:agreed");
-socket.off("job:status");
-
-socketRef.current = null;
+      socketRef.current = null;
     };
-  }, [
-    enabled,
-    fixerId,
-    jobId,
-    refetch,
-    addRealtimeMessage,
-  ]);
+  }, [enabled, fixerId, jobId, refetch, addRealtimeMessage]);
 }
