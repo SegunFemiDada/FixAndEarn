@@ -107,8 +107,7 @@ export default function ChatPageContent({
       />
 
       <ChatConversationSection
-        {...conversation}
-      />
+      isActive={false} {...conversation}      />
     </>
   );
 }

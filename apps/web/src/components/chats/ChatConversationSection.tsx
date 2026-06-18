@@ -1,11 +1,7 @@
-// Path: apps/web/src/components/chats/ChatConversationSection.tsx
 "use client";
 
 import ChatConversationCard from "@/components/chats/ChatConversationCard";
-
-import type {
-  ConversationSectionProps,
-} from "@/components/chats/ChatPageContent";
+import type { ConversationSectionProps } from "@/components/chats/ChatPageContent";
 
 export default function ChatConversationSection({
   messages,
@@ -13,37 +9,27 @@ export default function ChatConversationSection({
   typingUsers,
   messageValue,
   canChat,
+  isActive,          // NEW: accept isActive
   sendingMessage,
   isFetching,
   onRefresh,
   onReport,
   onMessageChange,
   onSend,
-}: ConversationSectionProps) {
+}: ConversationSectionProps & { isActive: boolean }) {   // FIX: extend props type
   return (
     <ChatConversationCard
       messages={messages}
       myUserId={myUserId}
-      typingUsers={
-        typingUsers
-      }
-      messageValue={
-        messageValue
-      }
+      typingUsers={typingUsers}
+      messageValue={messageValue}
       canChat={canChat}
-      sendingMessage={
-        sendingMessage
-      }
-      isFetching={
-        isFetching
-      }
-      onRefresh={
-        onRefresh
-      }
+      isActive={isActive}          // FIX: pass down
+      sendingMessage={sendingMessage}
+      isFetching={isFetching}
+      onRefresh={onRefresh}
       onReport={onReport}
-      onMessageChange={
-        onMessageChange
-      }
+      onMessageChange={onMessageChange}
       onSend={onSend}
     />
   );
