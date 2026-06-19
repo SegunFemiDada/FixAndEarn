@@ -54,7 +54,7 @@ export default function ChatConversationCard({
       <ChatInput
         value={messageValue}
         disabled={
-          !canChat || (role === "fixer" && !isActive) // FIX: only block fixer until active
+          !canChat // FIX: only block fixer until active
         }
         busy={sendingMessage}
         onChange={onMessageChange}
