@@ -51,15 +51,16 @@ export default function ChatConversationCard({
 
       <TypingIndicator users={typingUsers} />
 
+      {role === "client" || isActive ? (
       <ChatInput
         value={messageValue}
-        disabled={
-          !canChat // FIX: only block fixer until active
-        }
+        disabled={!canChat}
         busy={sendingMessage}
         onChange={onMessageChange}
         onSend={onSend}
       />
+    ) : null}
+
     </Card>
   );
 }
