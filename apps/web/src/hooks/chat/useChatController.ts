@@ -1,3 +1,4 @@
+//path: apps/web/src/hooks/chat/useChatController.ts
 "use client";
 
 import { useCallback, useEffect } from "react";

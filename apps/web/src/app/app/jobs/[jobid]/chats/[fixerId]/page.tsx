@@ -1,3 +1,4 @@
+// Path: apps/web/src/app/app/jobs/[jobid]/chats/[fixerId]/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
@@ -7,6 +8,9 @@ import { useChatConversationSection } from "@/hooks/chat/useChatConversationSect
 import { useChatNegotiationSection } from "@/hooks/chat/useChatNegotiationSection";
 import { useChatPageActions } from "@/hooks/chat/useChatPageActions";
 import { useChatPageStatus } from "@/hooks/chat/useChatPageStatus";
+
+import { getToken, getActiveRole } from "@/lib/auth/session";
+import { decodeJwtUserId } from "@/lib/auth/jwt";
 
 import ChatHeader from "@/components/chats/ChatHeader";
 import ChatPageContent from "@/components/chats/ChatPageContent";
@@ -22,29 +26,21 @@ export default function JobChatDetailPage() {
   const jobId = params?.jobid ?? "";
   const fixerId = params?.fixerId ?? "";
 
-  // TODO: Replace with actual logged-in user context
-  const currentUserId = "123"; // e.g. from auth/session
-  const role: "client" | "fixer" = "client"; // decide based on who is logged in
+  // ✅ Get user ID and role from session
+  const token = getToken();
+  const myUserId = decodeJwtUserId(token) ?? "";
+  const activeRole = getActiveRole();
+  const role: "client" | "fixer" = activeRole === "FIXER" ? "fixer" : "client";
 
   const chat = useChatController({
     jobId,
     fixerId,
-    myUserId: currentUserId, // FIX: pass myUserId
-    role,                    // FIX: pass role
+    myUserId,
+    role,
   });
 
-  const view = useChatPageView({
-    isLoading: chat.isLoading,
-    error: chat.error,
-  });
-
-  const status = useChatPageStatus({
-    jobId,
-    fixerId,
-    isLoading: chat.isLoading,
-    error: chat.error,
-  });
-
+  const view = useChatPageView({ isLoading: chat.isLoading, error: chat.error });
+  const status = useChatPageStatus({ jobId, fixerId, isLoading: chat.isLoading, error: chat.error });
   const actions = useChatPageActions({ chat });
 
   const conversationSection = useChatConversationSection(chat);
@@ -70,10 +66,7 @@ export default function JobChatDetailPage() {
         <ChatPageContent
           job={chat.job ?? null}
           needsAgreement={chat.needsAgreement}
-          conversation={{
-            ...conversationSection,
-            onReport: actions.openReportModal,
-          }}
+          conversation={{ ...conversationSection, onReport: actions.openReportModal }}
           negotiationSection={negotiationSection}
         />
       )}

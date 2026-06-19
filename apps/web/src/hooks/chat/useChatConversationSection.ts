@@ -1,3 +1,4 @@
+//path: apps/web/src/hooks/chat/useChatConversationSection.ts
 "use client";
 
 import { useMemo } from "react";
@@ -5,14 +6,15 @@ import type { ConversationSectionProps } from "@/components/chats/ChatPageConten
 import type { ChatController } from "@/hooks/chat/useChatController";
 
 export function useChatConversationSection(chat: ChatController) {
-  return useMemo<ConversationSectionProps & { isActive: boolean }>(
+  return useMemo<ConversationSectionProps>(
     () => ({
       messages: chat.messages,
       myUserId: chat.myUserId,
       typingUsers: chat.typingUsers,
       messageValue: chat.msg,
       canChat: chat.canChat,
-      isActive: chat.isActive,        // FIX: wire isActive through
+      isActive: chat.isActive,
+      role: chat.role,                  // ✅ include role
       sendingMessage: chat.sendingMessage,
       isFetching: chat.isFetching,
       onRefresh: chat.refreshConversation,
@@ -23,3 +25,4 @@ export function useChatConversationSection(chat: ChatController) {
     [chat]
   );
 }
+

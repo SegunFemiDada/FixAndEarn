@@ -15,31 +15,20 @@ import type {
 
 export type ConversationSectionProps = {
   messages: ChatMessage[];
-
   myUserId: string | null;
-
   typingUsers: string[];
-
   messageValue: string;
-
   canChat: boolean;
-
   sendingMessage: boolean;
-
   isFetching: boolean;
-
   onRefresh: () => void;
-
-  onReport: (
-    id: string
-  ) => void;
-
-  onMessageChange: (
-    value: string
-  ) => void;
-
+  onReport: (id: string) => void;
+  onMessageChange: (value: string) => void;
   onSend: () => void;
+  role: "client" | "fixer";   // ✅ NEW
+  isActive: boolean;          // ✅ NEW
 };
+
 
 export type NegotiationSectionProps = {
   negotiation: Negotiation | null;
@@ -107,7 +96,7 @@ export default function ChatPageContent({
       />
 
       <ChatConversationSection
-        role={"client"} isActive={false} {...conversation}      />
+        {...conversation}      />
     </>
   );
 }
