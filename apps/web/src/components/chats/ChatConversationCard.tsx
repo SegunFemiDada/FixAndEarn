@@ -1,4 +1,3 @@
-//path: apps/web/src/components/chats/ChatConversationCard.tsx
 "use client";
 
 import ChatMessages from "@/components/chats/ChatMessages";
@@ -16,7 +15,7 @@ type Props = {
   messageValue: string;
   canChat: boolean;
   isActive: boolean;
-  role: "client" | "fixer";   // NEW
+  role: "client" | "fixer";
   sendingMessage: boolean;
   isFetching: boolean;
   onRefresh: () => void;
@@ -40,6 +39,11 @@ export default function ChatConversationCard({
   onMessageChange,
   onSend,
 }: Props) {
+  // ✅ Check if client has already sent at least one message
+  const clientHasMessaged = messages.some(
+    (m) => m.senderId !== myUserId
+  );
+
   return (
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
@@ -51,16 +55,26 @@ export default function ChatConversationCard({
 
       <TypingIndicator users={typingUsers} />
 
-      {role === "client" || isActive ? (
-      <ChatInput
-        value={messageValue}
-        disabled={!canChat}
-        busy={sendingMessage}
-        onChange={onMessageChange}
-        onSend={onSend}
-      />
-    ) : null}
-
+      {/* ✅ Input box logic */}
+      {role === "client" ? (
+        // Client always sees input box
+        <ChatInput
+          value={messageValue}
+          disabled={!canChat}
+          busy={sendingMessage}
+          onChange={onMessageChange}
+          onSend={onSend}
+        />
+      ) : (isActive || clientHasMessaged) ? (
+        // Fixer sees input box only after client has messaged or chat is active
+        <ChatInput
+          value={messageValue}
+          disabled={!canChat}
+          busy={sendingMessage}
+          onChange={onMessageChange}
+          onSend={onSend}
+        />
+      ) : null}
     </Card>
   );
 }
