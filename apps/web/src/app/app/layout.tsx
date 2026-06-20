@@ -4,6 +4,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Home,
+  Briefcase,
+  Wallet,
+  User,
+  Bell,
+} from "lucide-react";
 import { clearSession, getActiveRole, type Role } from "@/lib/auth/session";
 import { useNotificationsUnreadCount } from "@/lib/notifications/queries";
 import { useMyVerification } from "@/lib/verification/queries";
@@ -74,28 +81,38 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex flex-wrap items-center gap-2">
-            <Link href="/app/dashboard" className={navLinkClass()}>
-              Dashboard
-            </Link>
-            <Link href="/app/jobs" className={navLinkClass()}>
-              Jobs
-            </Link>
-            <Link href="/app/wallet" className={navLinkClass()}>
-              Wallet
-            </Link>
-            {!isVerified ? (
-              <Link href="/app/verification" className={navLinkClass()}>
-                Verification
-              </Link>
-            ) : null}
-            <Link href="/app/profile" className={navLinkClass()}>
-              Profile
-            </Link>
-            <Link href="/app/notifications" className={navLinkClass()}>
-              <span>Notifications</span>
-              <UnreadBadge count={unread} />
-            </Link>
-          </nav>
+  <Link href="/app/dashboard" className={navLinkClass()}>
+    <Home className="h-4 w-4" />
+    <span>Dashboard</span>
+  </Link>
+
+  <Link href="/app/jobs" className={navLinkClass()}>
+    <Briefcase className="h-4 w-4" />
+    <span>Jobs</span>
+  </Link>
+
+  <Link href="/app/wallet" className={navLinkClass()}>
+    <Wallet className="h-4 w-4" />
+    <span>Wallet</span>
+  </Link>
+
+  {!isVerified ? (
+    <Link href="/app/verification" className={navLinkClass()}>
+      <span>Verification</span>
+    </Link>
+  ) : null}
+
+  <Link href="/app/profile" className={navLinkClass()}>
+    <User className="h-4 w-4" />
+    <span>Profile</span>
+  </Link>
+
+  <Link href="/app/notifications" className={navLinkClass()}>
+    <Bell className="h-4 w-4" />
+    <span>Notifications</span>
+    <UnreadBadge count={unread} />
+  </Link>
+</nav>
         </div>
       </header>
 
