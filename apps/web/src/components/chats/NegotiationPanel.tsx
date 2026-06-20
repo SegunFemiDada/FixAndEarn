@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import LockedPriceModal from "@/components/chats/LockedPriceModal";
 import type { Negotiation } from "@/lib/chat/types";
@@ -16,7 +16,7 @@ type Props = {
   onPropose: (milli: number) => void | Promise<void>;
   onLock: (milli: number) => void | Promise<void>;
   onRespond: (accept: boolean) => void | Promise<void>;
-  myUserId?: string | null; // current user ID
+  myUserId?: string | null;
 };
 
 function fmtFecFromMilli(milli?: number | null): string {
@@ -58,15 +58,19 @@ export default function NegotiationPanel({
 
   const lockedByMe = negotiation?.lockedByUserId === myUserId;
 
-  // Trigger modal only for counterparty
-  if (showLockedActions && !lockedByMe && !showModal) {
-    setShowModal(true);
-  }
+  // ✅ Only open modal for counterparty when status is LOCKED
+  useEffect(() => {
+    if (showLockedActions && !lockedByMe) {
+      setShowModal(true);
+    } else {
+      setShowModal(false);
+    }
+  }, [showLockedActions, lockedByMe]);
 
   return (
-    <div className="space-y-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow">
-      <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Negotiation</div>
-      <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Status: {status}</div>
+    <div className="space-y-4 rounded-2xl border p-4">
+      <div className="font-semibold">Negotiation</div>
+      <div className="text-sm">Status: {status}</div>
 
       {/* Proposed & Locked summary */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -125,20 +129,19 @@ export default function NegotiationPanel({
 
       {/* Locked actions — modal for counterparty */}
       {showModal && !lockedByMe && (
-  <LockedPriceModal
-    lockedPrice={negotiation?.lockedPriceMilliFec ?? null}
-    busy={respondingToLockedPrice}
-    onAccept={() => {
-      onRespond(true);
-      setShowModal(false);   // ✅ auto-close
-    }}
-    onReject={() => {
-      onRespond(false);
-      setShowModal(false);   // ✅ auto-close
-    }}
-  />
-)}
-
+        <LockedPriceModal
+          lockedPrice={negotiation?.lockedPriceMilliFec ?? null}
+          busy={respondingToLockedPrice}
+          onAccept={() => {
+            onRespond(true);
+            setShowModal(false); // ✅ closes immediately
+          }}
+          onReject={() => {
+            onRespond(false);
+            setShowModal(false); // ✅ closes immediately
+          }}
+        />
+      )}
 
       {/* Agreed state */}
       {showAgreedState && (
