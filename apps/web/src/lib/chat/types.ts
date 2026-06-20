@@ -17,10 +17,14 @@ export type ChatMessage = {
 };
 
 export type Negotiation = {
-  status?: string | null;
+  id: string;
+  status: "OPEN" | "LOCKED" | "REJECTED" | "AGREED";
   proposedPriceMilliFec?: number | null;
   lockedPriceMilliFec?: number | null;
+  // ✅ Add this field
+  lockedByUserId?: string | null;
 };
+
 
 export type ChatParticipant = {
   id?: string;
