@@ -56,16 +56,16 @@ export default function NegotiationPanel({
   const showLockedActions = status === "LOCKED";
   const showAgreedState = status === "AGREED";
 
-  const lockedByMe = negotiation?.lockedByUserId === myUserId;
+const lockedByMe = negotiation?.lockedByUserId === myUserId;
 
-  // ✅ Only open modal for counterparty
-  useEffect(() => {
-    if (showLockedActions && !lockedByMe) {
-      setShowModal(true);
-    } else {
-      setShowModal(false);
-    }
-  }, [showLockedActions, lockedByMe]);
+useEffect(() => {
+  if (showLockedActions && negotiation?.lockedByUserId && !lockedByMe) {
+    setShowModal(true);
+  } else {
+    setShowModal(false);
+  }
+}, [showLockedActions, lockedByMe, negotiation?.lockedByUserId]);
+
 
   return (
     <div className="space-y-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
