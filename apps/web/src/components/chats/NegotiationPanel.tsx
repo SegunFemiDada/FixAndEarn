@@ -125,19 +125,20 @@ export default function NegotiationPanel({
 
       {/* Locked actions — modal for counterparty */}
       {showModal && !lockedByMe && (
-        <LockedPriceModal
-          busy={respondingToLockedPrice}
-          onAccept={() => {
-            onRespond(true);
-            setShowModal(false);
-          }}
-          onReject={() => {
-            onRespond(false);
-            setShowModal(false);
-          }}
-          onClose={() => setShowModal(false)}
-        />
-      )}
+  <LockedPriceModal
+    lockedPrice={negotiation?.lockedPriceMilliFec ?? null}
+    busy={respondingToLockedPrice}
+    onAccept={() => {
+      onRespond(true);
+      setShowModal(false);   // ✅ auto-close
+    }}
+    onReject={() => {
+      onRespond(false);
+      setShowModal(false);   // ✅ auto-close
+    }}
+  />
+)}
+
 
       {/* Agreed state */}
       {showAgreedState && (

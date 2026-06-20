@@ -2,26 +2,42 @@
 import Button from "@/components/ui/Button";
 
 type Props = {
+  lockedPrice: number | null;   // ✅ show locked price value
   onAccept: () => void;
   onReject: () => void;
   busy: boolean;
-  onClose: () => void;
 };
 
-export default function LockedPriceModal({ onAccept, onReject, busy, onClose }: Props) {
+function fmtFecFromMilli(milli?: number | null): string {
+  if (typeof milli !== "number") return "—";
+  return `${(milli / 1000).toFixed(2)} FEC`;
+}
+
+export default function LockedPriceModal({ lockedPrice, onAccept, onReject, busy }: Props) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white dark:bg-[#1E2A3A] rounded-xl p-6 shadow-lg space-y-4">
+      <div className="bg-white dark:bg-[#1E2A3A] rounded-xl p-6 shadow-lg space-y-4 max-w-sm w-full">
         <div className="text-lg font-semibold">Locked Price</div>
-        <div className="text-sm">Do you accept or reject the locked price?</div>
-        <div className="flex gap-3">
-          <Button disabled={busy} onClick={onAccept}>Accept</Button>
-          <Button disabled={busy} onClick={onReject}>Reject</Button>
+        <div className="text-sm">
+          The price has been locked at <strong>{fmtFecFromMilli(lockedPrice)}</strong>.  
+          Do you accept or reject this locked price?
         </div>
-        {/* ✅ Removed unsupported `variant` prop */}
-        <Button onClick={onClose} className="mt-4 bg-gray-200 text-black dark:bg-gray-700 dark:text-white">
-          Close
-        </Button>
+        <div className="flex justify-between gap-4">
+          <Button
+            disabled={busy}
+            onClick={onAccept}
+            className="flex-1 bg-green-600 text-white"
+          >
+            Accept
+          </Button>
+          <Button
+            disabled={busy}
+            onClick={onReject}
+            className="flex-1 bg-red-600 text-white"
+          >
+            Reject
+          </Button>
+        </div>
       </div>
     </div>
   );
