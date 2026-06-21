@@ -1,3 +1,4 @@
+//path: apps/api/src/common/storage/cloudinary-storage.provider.ts
 import { Injectable } from "@nestjs/common";
 import { v2 as cloudinary } from "cloudinary";
 import { randomUUID } from "crypto";

@@ -6,17 +6,15 @@ import { JobsRepo } from "./jobs.repo";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { WalletModule } from "../wallet/wallet.module";
 import { NotificationsModule } from "../notifications/notifications.module";
-import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
-
+import { StorageModule } from "../../common/storage/storage.module";
 @Module({
-  imports: [WalletModule, NotificationsModule],
+  imports: [WalletModule, NotificationsModule, StorageModule],
   controllers: [JobsController],
   providers: [
     JobsService,
     JobsRepo,
     PrismaService,
-    LocalStorageProvider,
-  ],
+    ],
   exports: [JobsService, JobsRepo],
 })
 export class JobsModule {}
