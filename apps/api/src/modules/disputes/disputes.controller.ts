@@ -13,7 +13,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
-import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
+import { StorageProvider } from "../../common/storage/storage.provider";
 import { OpenDisputeDto } from "./dto/open-dispute.dto";
 import { DisputesService } from "./disputes.service";
 
@@ -24,7 +24,7 @@ import { DisputesService } from "./disputes.service";
 export class DisputesController {
   constructor(
     private readonly disputes: DisputesService,
-    private readonly storage: LocalStorageProvider
+    private readonly storage: StorageProvider
   ) {}
 
   @Post()

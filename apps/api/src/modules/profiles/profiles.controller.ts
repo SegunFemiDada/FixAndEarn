@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/profiles/profiles.controller.ts
 import { Controller, Get, NotFoundException, Param, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { PrismaService } from "../../infra/prisma/prisma.service";

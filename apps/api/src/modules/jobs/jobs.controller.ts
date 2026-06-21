@@ -17,7 +17,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
-import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
+import { StorageProvider } from "../../common/storage/storage.provider";
 import { JobsService } from "./jobs.service";
 import { ApplyJobDto } from "./dto/apply-job.dto";
 import { ApproveCompletionDto } from "./dto/approve-completion.dto";
@@ -38,7 +38,7 @@ import { UrgentDirectHireDto } from "./dto/urgent-direct-hire.dto";
 export class JobsController {
   constructor(
     private readonly jobsService: JobsService,
-    private readonly storage: LocalStorageProvider
+    private readonly storage: StorageProvider
   ) {}
 
   @Get()

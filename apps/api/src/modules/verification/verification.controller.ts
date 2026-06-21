@@ -12,7 +12,7 @@ import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiConsumes, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
-import { LocalStorageProvider } from "../../common/storage/local-storage.provider";
+import { StorageProvider } from "../../common/storage/storage.provider";
 import { SubmitVerificationDto } from "./dto/submit-verification.dto";
 import { VerificationService } from "./verification.service";
 
@@ -22,7 +22,7 @@ import { VerificationService } from "./verification.service";
 @Controller("verification")
 export class VerificationController {
   constructor(
-    private readonly storage: LocalStorageProvider,
+    private readonly storage: StorageProvider,
     private readonly verification: VerificationService
   ) {}
 
