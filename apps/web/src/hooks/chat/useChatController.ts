@@ -92,14 +92,9 @@ export function useChatController({
     return submitProposePrice(Number(proposeFec) * 1000);
   }, [proposeFec, submitProposePrice]);
 
- const handleLock = useCallback(async () => {
-  const milli = Number(lockFec) * 1000;
-  await submitLockPrice(milli);
-
-  // ✅ record initiator immutably
-  state.setLockedByUser(myUserId);
-}, [lockFec, submitLockPrice, myUserId, state]);
-
+  const handleLock = useCallback(() => {
+    return submitLockPrice(Number(lockFec) * 1000);
+  }, [lockFec, submitLockPrice]);
 
   return {
     ...conversation,

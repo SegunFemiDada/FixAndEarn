@@ -217,27 +217,48 @@ export function useChatActions({
       ]
     );
 
- const submitLockPrice = React.useCallback(
-  async (milli: number) => {
-    try {
-      setLockingPrice(true);
-      setActionErr(null);
+  const submitLockPrice =
+    React.useCallback(
+      async (
+        milli: number
+      ) => {
+        try {
+          setLockingPrice(
+            true
+          );
 
-      await lockPrice(jobId, fixerId, {
-        lockedPriceMilliFec: milli,
-      });
+          setActionErr(
+            null
+          );
 
-      await refetch(); // negotiation gets updated from backend
-    } catch (e) {
-      setActionErr(renderAxiosError(e));
-    } finally {
-      setLockingPrice(false);
-    }
-  },
-  [fixerId, jobId, refetch]
-);
+          await lockPrice(
+            jobId,
+            fixerId,
+            {
+              lockedPriceMilliFec:
+                milli,
+            }
+          );
 
-
+          await refetch();
+        } catch (e) {
+          setActionErr(
+            renderAxiosError(
+              e
+            )
+          );
+        } finally {
+          setLockingPrice(
+            false
+          );
+        }
+      },
+      [
+        fixerId,
+        jobId,
+        refetch,
+      ]
+    );
 
   const submitLockedPriceResponse =
     React.useCallback(

@@ -10,7 +10,7 @@ import {
 import { getToken } from "@/lib/auth/session";
 import { decodeJwtUserId } from "@/lib/auth/jwt";
 
-import type { ChatJob, Negotiation } from "@/lib/chat/types";
+import type { ChatJob } from "@/lib/chat/types";
 
 import {
   milliToFecInput,
@@ -51,13 +51,6 @@ export function useChatPageState({
     lockFec,
     setLockFec,
   ] = useState("");
-  const [negotiation, setNegotiation] = useState<Negotiation | null>(null);
-
-const setLockedByUser = (userId: string) => {
-  setNegotiation((prev) =>
-    prev ? { ...prev, lockedByUserId: userId } : prev
-  );
-};
 
   useEffect(() => {
     const token =
@@ -124,8 +117,6 @@ const setLockedByUser = (userId: string) => {
     reportMessageId,
     setReportMessageId,
 
-    negotiation,
-    setNegotiation,
-    setLockedByUser,
+    
   };
 }
