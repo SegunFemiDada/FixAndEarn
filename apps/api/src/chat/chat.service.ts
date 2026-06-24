@@ -605,8 +605,6 @@ if (!convo.active) {
     throw new ForbiddenException("FIXER_CANNOT_SEND_FIRST_MESSAGE");
   }
 }
-
-
     const msg = await this.repo.createMessage(
       convo.id,
       userId,

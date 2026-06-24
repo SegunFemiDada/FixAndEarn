@@ -684,7 +684,6 @@ export class JobsService {
         });
       }
     } catch {}
-
     return res;
   }
 }

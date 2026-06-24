@@ -2,7 +2,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { Prisma, WalletRole } from "@prisma/client";
-
 @Injectable()
 export class JobsRepo {
   constructor(private readonly prisma: PrismaService) {}
@@ -10,7 +9,6 @@ export class JobsRepo {
   findIdentityVerificationByUserId(userId: string) {
     return this.prisma.identityVerification.findUnique({ where: { userId } });
   }
-
   createJob(data: {
     clientId: string;
     skillCategory: string;

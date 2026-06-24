@@ -54,7 +54,6 @@ async setConversationActive(conversationId: string, active: boolean) {
   });
 }
 
-
   async acceptAgreement(conversationId: string, userId: string, ip?: string, userAgent?: string) {
     return this.prisma.chatAgreement.upsert({
       where: { conversationId_userId: { conversationId, userId } },
