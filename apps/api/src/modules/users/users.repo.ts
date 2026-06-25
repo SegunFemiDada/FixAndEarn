@@ -159,6 +159,29 @@ export class UsersRepo {
       },
     });
   }
+  async incrementSessionVersion(userId: string) {
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      sessionVersion: {
+        increment: 1,
+      },
+    },
+    select: {
+      id: true,
+      sessionVersion: true,
+    },
+  });
+}
+
+async getSessionVersion(userId: string) {
+  return this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      sessionVersion: true,
+    },
+  });
+}
 
 
   async discoverFixers(args: {

@@ -69,6 +69,8 @@ model User {
   phoneVerifiedAt           DateTime?
   phoneVerifyCode           String?
   phoneVerifyCodeExpiresAt  DateTime?
+  sessionVersion            Int                   @default(1)
+
   @@map("users")
 }
 
@@ -275,6 +277,7 @@ model WithdrawalRequest {
   @@index([userId, createdAt])
   @@map("withdrawal_requests")
 }
+
 model WebhookEvent {
   id          String   @id @default(uuid())
   reference   String   @unique
@@ -441,7 +444,7 @@ model Conversation {
   fixerId String
   status  ConversationStatus @default(OPEN)
 
-  active  Boolean            @default(false) // NEW FIELD
+  active Boolean @default(false) // NEW FIELD
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -458,7 +461,6 @@ model Conversation {
   @@index([fixerId])
   @@map("conversations")
 }
-
 
 model ChatAgreement {
   id             String @id @default(uuid())

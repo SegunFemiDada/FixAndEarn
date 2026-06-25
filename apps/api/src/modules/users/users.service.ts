@@ -47,4 +47,12 @@ export class UsersService {
   async requestDeletion(userId: string, reason: string) {
   return this.usersRepo.requestDeletion(userId, reason);
 }
+incrementSessionVersion(userId: string) {
+  return this.usersRepo.incrementSessionVersion(userId);
+}
+
+getSessionVersion(userId: string) {
+  return this.usersRepo.getSessionVersion(userId);
+}
+
 }

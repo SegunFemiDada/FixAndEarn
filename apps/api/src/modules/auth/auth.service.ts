@@ -40,7 +40,10 @@ export class AuthService {
     });
 
     const verification = await this.createEmailVerificationToken(user.id, user.email);
-    const accessToken = await this.signAccessToken(user.id);
+    const accessToken = await this.signAccessToken(
+    user.id,
+    user.sessionVersion ?? 1
+  );
 
     return {
       user: this.toUserResponse(user),
@@ -101,7 +104,12 @@ export class AuthService {
   const ok = await argon2.verify(user.passwordHash, input.password);
   if (!ok) throw new UnauthorizedException("Invalid credentials.");
 
-  const accessToken = await this.signAccessToken(user.id);
+  const session = await this.usersService.incrementSessionVersion(user.id);
+
+const accessToken = await this.signAccessToken(
+  user.id,
+  session.sessionVersion
+);
 
   return {
     user: this.toUserResponse(user),
@@ -228,9 +236,15 @@ async forgotPassword(input: { email: string }) {
     return crypto.createHash("sha256").update(token).digest("hex");
   }
 
-  private async signAccessToken(userId: string): Promise<string> {
-    return this.jwt.signAsync({ sub: userId });
-  }
+  private async signAccessToken(
+  userId: string,
+  sessionVersion: number
+): Promise<string> {
+  return this.jwt.signAsync({
+    sub: userId,
+    sessionVersion,
+  });
+}
 
   private async signResetToken(userId: string): Promise<string> {
     const secret =

@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [registered, setRegistered] = React.useState(false);
   const [resetDone, setResetDone] = React.useState(false);
+  const [expired, setExpired] =
+  React.useState(false);
 
   React.useEffect(() => {
     const token = getToken();
@@ -22,11 +24,14 @@ export default function LoginPage() {
       router.replace("/app/continue");
       return;
     }
+    
 
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       setRegistered(params.get("registered") === "1");
       setResetDone(params.get("reset") === "1");
+      setExpired(params.get("expired") === "1");
+      
     }
   }, [router]);
 
@@ -49,7 +54,7 @@ export default function LoginPage() {
   const isDisabled = login.isPending || !email.trim() || !password;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-10 sm:py-16 flex items-center justify-center">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-10 sm:py-16 flex items-center justify-center">
       <div className="w-full max-w-md">
         <div className="rounded-3xl bg-white dark:bg-[#1E2A3A] p-6 sm:p-8 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
 
@@ -78,6 +83,11 @@ export default function LoginPage() {
               Password reset successful. Log in with your new password.
             </div>
           )}
+          {expired && (
+          <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Your session has expired. Please log in again.
+          </div>
+        )}
 
           {/* Form */}
           <form className="space-y-5" onSubmit={handleSubmit}>
