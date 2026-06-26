@@ -19,7 +19,7 @@ function UnreadBadge({ count }: { count: number }) {
   if (!count || count <= 0) return null;
 
   return (
-    <span className="inline-flex min-w-[1.5rem] items-center justify-center rounded-full border border-[#F2C0BC] dark:border-red-700 bg-[#D9534F] dark:bg-red-700 px-2 py-0.5 text-[11px] font-semibold leading-none text-white">
+    <span className="inline-flex min-w-6 items-center justify-center rounded-full border border-[#F2C0BC] dark:border-red-700 bg-[#D9534F] dark:bg-red-700 px-2 py-0.5 text-[11px] font-semibold leading-none text-white">
       {count}
     </span>
   );
@@ -51,7 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
+    <div className="min-h-dvh bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
       <header className="border-b border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] shadow-[0_2px_12px_rgba(91,143,204,0.08)] dark:shadow-none">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-4 sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">

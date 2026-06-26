@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/auth/jwt.strategy.ts
 import {
   Injectable,
   UnauthorizedException,

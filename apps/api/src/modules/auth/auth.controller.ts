@@ -1,5 +1,10 @@
-//path: apps/api/src/modules/auth/auth.controller.ts
-import { Body, Controller, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
 import { LoginDto } from "./dto/login.dto";
@@ -8,6 +13,7 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
 import { ResendVerificationDto } from "./dto/resend-verification.dto";
+import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 
 @ApiTags("auth")
 @Controller("auth")
@@ -42,5 +48,13 @@ export class AuthController {
   @Post("resend-verification")
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.auth.resendVerification(dto.email);
+  }
+
+  @Get("session")
+  @UseGuards(JwtAuthGuard)
+  session() {
+    return {
+      ok: true,
+    };
   }
 }
