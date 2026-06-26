@@ -522,7 +522,7 @@ function ConversationDetailPanel({
         </div>
       </div>
 
-      <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
+      <div className="mt-4 max-h-105 space-y-3 overflow-y-auto rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
         {detail.messages.length === 0 ? (
           <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No messages found.</div>
         ) : (

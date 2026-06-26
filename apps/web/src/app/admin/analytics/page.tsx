@@ -82,7 +82,7 @@ function KpiCard({
   return (
     <article className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition-shadow hover:shadow-[0_8px_32px_rgba(91,143,204,0.2)] dark:hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
       <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">{label}</p>
-      <div className="mt-3 break-words text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+      <div className="mt-3 wrap-break-word text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
         {value}
       </div>
       {helper ? <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">{helper}</p> : null}
@@ -92,7 +92,7 @@ function KpiCard({
 
 function EmptyChartState({ message = "No data available." }: { message?: string }) {
   return (
-    <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-dashed border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 text-center text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+    <div className="flex min-h-55 items-center justify-center rounded-2xl border border-dashed border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 text-center text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
       {message}
     </div>
   );
@@ -364,7 +364,7 @@ function AnalyticsLoadingState() {
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="h-[320px] animate-pulse rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+            className="h-80 animate-pulse rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
           />
         ))}
       </section>

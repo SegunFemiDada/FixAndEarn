@@ -190,7 +190,7 @@ function DisputeChatPanel({ disputeId }: { disputeId: string }) {
         </div>
       ) : (
         <>
-          <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4">
+          <div className="mt-4 max-h-105 space-y-3 overflow-y-auto rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4">
             {messages.length === 0 ? (
               <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No messages yet.</div>
             ) : (

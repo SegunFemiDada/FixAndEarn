@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/admin.controller.ts
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";

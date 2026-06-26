@@ -620,6 +620,7 @@ model Admin {
   updatedAt        DateTime        @updatedAt
   AdminAuditLog    AdminAuditLog[]
   resolvedDisputes Dispute[]
+  sessionVersion   Int             @default(1)
 
   @@map("admins")
 }

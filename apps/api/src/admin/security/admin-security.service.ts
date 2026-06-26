@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/security/admin-security.service.ts
 import { Injectable } from "@nestjs/common";
 import { AdminSecurityRepo } from "./admin-security.repo";
 

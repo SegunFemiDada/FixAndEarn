@@ -151,7 +151,7 @@ function SecurityLogCard({ log }: { log: AdminSecurityLog }) {
 
             <div>
               <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">User agent</span>
-              <span className="mt-1 block break-words">{log.userAgent ?? "Not available"}</span>
+              <span className="mt-1 block wrap-break-word">{log.userAgent ?? "Not available"}</span>
             </div>
           </div>
         </div>

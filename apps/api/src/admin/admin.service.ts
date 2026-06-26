@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/admin.service.ts
 import {
   BadRequestException,
   ForbiddenException,

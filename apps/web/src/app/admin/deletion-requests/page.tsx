@@ -56,7 +56,7 @@ export default function DeletionRequestsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
         <div className="mx-auto max-w-4xl space-y-6">
           <div>
             <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
@@ -80,7 +80,7 @@ export default function DeletionRequestsPage() {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
         <div className="mx-auto max-w-4xl space-y-6">
           <div>
             <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
@@ -100,7 +100,7 @@ export default function DeletionRequestsPage() {
 
   if (!requests) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
         <div className="mx-auto max-w-4xl space-y-6">
           <div>
             <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
@@ -116,7 +116,7 @@ export default function DeletionRequestsPage() {
   const items = Array.isArray(requests) ? requests : requests.items ?? [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
       <div className="mx-auto max-w-4xl space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
