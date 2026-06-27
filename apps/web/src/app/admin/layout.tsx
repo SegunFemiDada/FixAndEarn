@@ -143,7 +143,7 @@ export default function AdminLayout({
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
         <div className="mx-auto max-w-7xl rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading admin area...</p>
         </div>
@@ -160,7 +160,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-4 px-4 py-4 lg:h-screen lg:max-h-screen lg:flex-row lg:gap-6 lg:px-6 lg:py-6">
         <aside className="w-full rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] lg:flex lg:h-full lg:w-80 lg:min-w-80 lg:flex-col lg:overflow-hidden">
           <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">

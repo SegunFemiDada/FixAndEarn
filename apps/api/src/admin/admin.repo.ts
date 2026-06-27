@@ -25,6 +25,7 @@ export class AdminRepo {
         role: true,
         isActive: true,
         is2faEnabled: true,
+        sessionVersion: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -39,7 +40,9 @@ export class AdminRepo {
     return this.prisma.admin.count({
       where: {
         role: AdminRole.SUPER_ADMIN,
-        ...(typeof args?.isActive === "boolean" ? { isActive: args.isActive } : {}),
+        ...(typeof args?.isActive === "boolean"
+          ? { isActive: args.isActive }
+          : {}),
       },
     });
   }
@@ -61,6 +64,17 @@ export class AdminRepo {
       data,
     });
   }
+
+  incrementSessionVersion(id: string) {
+  return this.prisma.admin.update({
+    where: { id },
+    data: {
+      sessionVersion: {
+        increment: 1,
+      },
+    },
+  });
+}
 
   createAuditLog(data: {
     actorAdminId: string;

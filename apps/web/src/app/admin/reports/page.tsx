@@ -1,4 +1,4 @@
-// apps/web/src/app/admin/reports/page.tsx
+//path: apps/web/src/app/admin/reports/page.tsx
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

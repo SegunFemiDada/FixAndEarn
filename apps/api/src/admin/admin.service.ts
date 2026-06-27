@@ -250,6 +250,7 @@ export class AdminService {
       totpSecretIv: enc.ivB64,
       is2faEnabled: true,
     });
+    await this.repo.incrementSessionVersion(admin.id);
 
     await this.audit.log({
       actorAdminId: admin.id,
@@ -295,6 +296,7 @@ export class AdminService {
     await this.repo.updateAdmin(args.targetAdminId, {
       isActive: false,
     });
+    await this.repo.incrementSessionVersion(target.id);
 
     await this.audit.log({
       actorAdminId: args.actorAdminId,
@@ -326,6 +328,7 @@ export class AdminService {
     await this.repo.updateAdmin(args.targetAdminId, {
       isActive: true,
     });
+    await this.repo.incrementSessionVersion(target.id);
 
     await this.audit.log({
       actorAdminId: args.actorAdminId,
@@ -364,6 +367,7 @@ export class AdminService {
       totpSecretIv: enc.ivB64,
       is2faEnabled: true,
     });
+    await this.repo.incrementSessionVersion(target.id);
 
     await this.audit.log({
       actorAdminId: args.actorAdminId,
@@ -444,12 +448,13 @@ export class AdminService {
       }
     }
 
-    const token = await this.jwt.signAsync({
-      sub: admin.id,
-      role: admin.role,
-      email: admin.email,
-      typ: "admin",
-    });
+  const token = await this.jwt.signAsync({
+  sub: admin.id,
+  role: admin.role,
+  email: admin.email,
+  typ: "admin",
+  sv: admin.sessionVersion,
+});
 
     await this.audit.log({
       actorAdminId: admin.id,
