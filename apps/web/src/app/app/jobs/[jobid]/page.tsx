@@ -268,6 +268,7 @@ export default function JobDetailsPage() {
   }, [isClient, isJobOwner, effectiveFixerId]);
 
   const completionRequestedAt = job?.completedRequestedAt ? new Date(job.completedRequestedAt) : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const completionApprovedAt = job?.completedApprovedAt ? new Date(job.completedApprovedAt) : null;
 
   const completionRequest = (job?.completionRequest ?? null) as CompletionRequestShape | null;
@@ -608,18 +609,27 @@ export default function JobDetailsPage() {
                     : "You cannot apply to this job."}
             </div>
           ) : (
-            <button
-              disabled={applyMutation.isPending}
-              onClick={async () => {
-                setActionMsg(null);
-                await applyMutation.mutateAsync({ note: "Interested" });
-                setActionMsg("Application submitted.");
-                await myAppsQuery.refetch();
-              }}
-              className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-semibold text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {applyMutation.isPending ? "Submitting…" : "Apply for this job"}
-            </button>
+           <button
+  disabled={applyMutation.isPending}
+  onClick={async () => {
+    setActionMsg(null);
+    await applyMutation.mutateAsync({ note: "Interested" });
+    setActionMsg("Application submitted.");
+    await myAppsQuery.refetch();
+  }}
+  className="
+    w-full rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    disabled:opacity-50 disabled:cursor-not-allowed
+    transition-colors
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  {applyMutation.isPending ? "Submitting…" : "Apply for this job"}
+</button>
+
           )}
 
           {applyMutation.isError && (
@@ -783,7 +793,7 @@ export default function JobDetailsPage() {
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
                   placeholder="Explain the dispute clearly."
-                  className="min-h-[120px] w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+                  className="min-h-30 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
                   rows={4}
                   disabled={openDispute.isPending}
                 />
@@ -879,7 +889,7 @@ export default function JobDetailsPage() {
                   value={approveComment}
                   onChange={(e) => setApproveComment(e.target.value)}
                   placeholder="e.g. Great work, arrived on time…"
-                  className="mt-2 min-h-[110px] w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+                  className="mt-2 min-h-27.5 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
                   rows={3}
                 />
               </div>
@@ -970,7 +980,7 @@ export default function JobDetailsPage() {
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Explain why the completion is being rejected."
-                  className="mt-2 min-h-[120px] w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+                  className="mt-2 min-h-30 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
                   rows={4}
                 />
               </div>

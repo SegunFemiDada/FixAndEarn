@@ -646,6 +646,21 @@ model AdminAuditLog {
   @@map("admin_audit_logs")
 }
 
+model AdminRefreshToken {
+  id            String   @id @default(cuid())
+  adminId       String
+  tokenHash     String
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  revokedAt     DateTime?
+  replacedById  String?
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
 //
 // ===============================
 // Platform wallet (Commission)

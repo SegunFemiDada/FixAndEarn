@@ -184,7 +184,7 @@ export default function ProfilePage() {
 
   if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
         <div className="mx-auto max-w-2xl">
           <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
             Loading profile…
@@ -202,7 +202,7 @@ export default function ProfilePage() {
     const msg = e?.response?.data?.message ?? e?.message ?? "Failed to load profile. (Re-Login)";
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
         <div className="mx-auto max-w-2xl space-y-4">
           <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
             <div className="font-semibold">Failed to load profile. (Re-Login)</div>
@@ -276,7 +276,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
       <div className="mx-auto max-w-2xl space-y-4">
         {/* Header */}
         <div>
@@ -296,10 +296,10 @@ export default function ProfilePage() {
                 width={72}
                 height={72}
                 unoptimized
-                className="h-[72px] w-[72px] rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] object-cover"
+                className="h-18 w-18 rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] object-cover"
               />
             ) : (
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+              <div className="flex h-18 w-18 items-center justify-center rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                 {initials(data?.fullName)}
               </div>
             )}
