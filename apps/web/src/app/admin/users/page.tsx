@@ -133,12 +133,22 @@ export default function AdminUsersPage() {
             ))}
           </select>
 
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-          >
-            Search
-          </button>
+         <button
+  type="submit"
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  Search
+</button>
+
         </form>
 
         {query.isLoading ? (
@@ -189,12 +199,22 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/admin/users/${user.id}`}
-                      className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                    >
-                      Open
-                    </Link>
+                   <Link
+  href={`/admin/users/${user.id}`}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2 font-semibold
+    bg-green-600 text-white
+    hover:bg-green-700 focus:ring-2 focus:ring-green-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-green-500 dark:text-white
+    dark:hover:bg-green-600 dark:focus:ring-green-300
+  "
+>
+  Open
+</Link>
+
                   </div>
                 </article>
               );
@@ -203,20 +223,38 @@ export default function AdminUsersPage() {
         )}
 
         <div className="mt-4 flex gap-2">
-          <button
-            onClick={() => setSkip((s) => Math.max(0, s - take))}
-            disabled={!hasPrevious}
-            className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:cursor-not-allowed disabled:bg-[#EAF0FB] dark:disabled:bg-[#1E2A3A] disabled:text-[#9BAEC8] dark:disabled:text-[#4A6080]"
-          >
-            Previous
-          </button>
-          <button
-            onClick={() => setSkip((s) => s + take)}
-            disabled={!hasNext}
-            className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:cursor-not-allowed disabled:bg-[#EAF0FB] dark:disabled:bg-[#1E2A3A] disabled:text-[#9BAEC8] dark:disabled:text-[#4A6080]"
-          >
-            Next
-          </button>
+         <button
+  onClick={() => setSkip((s) => Math.max(0, s - take))}
+  disabled={!hasPrevious}
+  className="
+    rounded-lg px-4 py-2 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  Previous
+</button>
+
+<button
+  onClick={() => setSkip((s) => s + take)}
+  disabled={!hasNext}
+  className="
+    rounded-lg px-4 py-2 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  Next
+</button>
+
         </div>
       </section>
     </div>

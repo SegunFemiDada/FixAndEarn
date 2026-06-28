@@ -177,48 +177,58 @@ function ParticipantActions({
 
       <div className="mt-4 grid gap-2">
         <button
-          type="button"
-          onClick={handleStrike}
-          disabled={busy}
-          className={[
-            "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-            busy
-              ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-              : "border border-[#F5A623] dark:border-amber-700 bg-white dark:bg-[#1E2A3A] text-[#B45309] dark:text-amber-300 hover:bg-[#FEF8E7] dark:hover:bg-amber-900/20",
-          ].join(" ")}
-        >
-          {strikeHook.isPending ? "Adding strike..." : "Add strike"}
-        </button>
+  type="button"
+  onClick={handleStrike}
+  disabled={busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-amber-500 text-white
+    hover:bg-amber-600 focus:ring-2 focus:ring-amber-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-amber-600 dark:text-white
+    dark:hover:bg-amber-700 dark:focus:ring-amber-500
+  "
+>
+  {strikeHook.isPending ? "Adding strike..." : "Add strike"}
+</button>
 
-        {isUserActive ? (
-          <button
-            type="button"
-            onClick={handleSuspend}
-            disabled={busy}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              busy
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] text-[#D9534F] dark:text-red-300 hover:bg-[#FFF4F3] dark:hover:bg-red-900/20",
-            ].join(" ")}
-          >
-            {suspendHook.isPending ? "Suspending..." : "Suspend user"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleUnsuspend}
-            disabled={busy}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              busy
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#B8D9B8] dark:border-green-700 bg-white dark:bg-[#1E2A3A] text-[#2E7D32] dark:text-green-200 hover:bg-[#F0FAF0] dark:hover:bg-green-900/20",
-            ].join(" ")}
-          >
-            {unsuspendHook.isPending ? "Restoring..." : "Restore user"}
-          </button>
-        )}
+{isUserActive ? (
+  <button
+    type="button"
+    onClick={handleSuspend}
+    disabled={busy}
+    className="
+      inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+      bg-red-600 text-white
+      hover:bg-red-700 focus:ring-2 focus:ring-red-400
+      transition-colors
+      disabled:opacity-50 disabled:cursor-not-allowed
+      dark:bg-red-500 dark:text-white
+      dark:hover:bg-red-600 dark:focus:ring-red-300
+    "
+  >
+    {suspendHook.isPending ? "Suspending..." : "Suspend user"}
+  </button>
+) : (
+  <button
+    type="button"
+    onClick={handleUnsuspend}
+    disabled={busy}
+    className="
+      inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+      bg-green-600 text-white
+      hover:bg-green-700 focus:ring-2 focus:ring-green-400
+      transition-colors
+      disabled:opacity-50 disabled:cursor-not-allowed
+      dark:bg-green-500 dark:text-white
+      dark:hover:bg-green-600 dark:focus:ring-green-300
+    "
+  >
+    {unsuspendHook.isPending ? "Restoring..." : "Restore user"}
+  </button>
+)}
+
       </div>
     </div>
   );
@@ -465,60 +475,73 @@ function ConversationDetailPanel({
         <h4 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Moderation actions</h4>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <button
-            type="button"
-            onClick={() => handleWarn("CLIENT")}
-            disabled={warnMutation.isPending || restrictMutation.isPending}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              warnMutation.isPending || restrictMutation.isPending
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#F5A623] dark:border-amber-700 bg-white dark:bg-[#1E2A3A] text-[#B45309] dark:text-amber-300 hover:bg-[#FEF8E7] dark:hover:bg-amber-900/20",
-            ].join(" ")}
-          >
-            Warn client
-          </button>
+  type="button"
+  onClick={() => handleWarn("CLIENT")}
+  disabled={warnMutation.isPending || restrictMutation.isPending}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-amber-500 text-white
+    hover:bg-amber-600 focus:ring-2 focus:ring-amber-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-amber-600 dark:text-white
+    dark:hover:bg-amber-700 dark:focus:ring-amber-500
+  "
+>
+  Warn client
+</button>
 
-          <button
-            type="button"
-            onClick={() => handleWarn("FIXER")}
-            disabled={warnMutation.isPending || restrictMutation.isPending}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              warnMutation.isPending || restrictMutation.isPending
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#F5A623] dark:border-amber-700 bg-white dark:bg-[#1E2A3A] text-[#B45309] dark:text-amber-300 hover:bg-[#FEF8E7] dark:hover:bg-amber-900/20",
-            ].join(" ")}
-          >
-            Warn fixer
-          </button>
+<button
+  type="button"
+  onClick={() => handleWarn("FIXER")}
+  disabled={warnMutation.isPending || restrictMutation.isPending}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-amber-500 text-white
+    hover:bg-amber-600 focus:ring-2 focus:ring-amber-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-amber-600 dark:text-white
+    dark:hover:bg-amber-700 dark:focus:ring-amber-500
+  "
+>
+  Warn fixer
+</button>
 
-          <button
-            type="button"
-            onClick={() => handleWarn("BOTH")}
-            disabled={warnMutation.isPending || restrictMutation.isPending}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              warnMutation.isPending || restrictMutation.isPending
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#F5A623] dark:border-amber-700 bg-white dark:bg-[#1E2A3A] text-[#B45309] dark:text-amber-300 hover:bg-[#FEF8E7] dark:hover:bg-amber-900/20",
-            ].join(" ")}
-          >
-            Warn both
-          </button>
+<button
+  type="button"
+  onClick={() => handleWarn("BOTH")}
+  disabled={warnMutation.isPending || restrictMutation.isPending}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-amber-500 text-white
+    hover:bg-amber-600 focus:ring-2 focus:ring-amber-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-amber-600 dark:text-white
+    dark:hover:bg-amber-700 dark:focus:ring-amber-500
+  "
+>
+  Warn both
+</button>
 
-          <button
-            type="button"
-            onClick={handleRestrictConversation}
-            disabled={warnMutation.isPending || restrictMutation.isPending}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              warnMutation.isPending || restrictMutation.isPending
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] text-[#D9534F] dark:text-red-300 hover:bg-[#FFF4F3] dark:hover:bg-red-900/20",
-            ].join(" ")}
-          >
-            {restrictMutation.isPending ? "Restricting..." : "Restrict conversation"}
-          </button>
+<button
+  type="button"
+  onClick={handleRestrictConversation}
+  disabled={warnMutation.isPending || restrictMutation.isPending}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-red-600 text-white
+    hover:bg-red-700 focus:ring-2 focus:ring-red-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-red-500 dark:text-white
+    dark:hover:bg-red-600 dark:focus:ring-red-300
+  "
+>
+  {restrictMutation.isPending ? "Restricting..." : "Restrict conversation"}
+</button>
+
         </div>
       </div>
 
@@ -841,12 +864,22 @@ export default function AdminMessagingPage() {
 
                     <div className="flex shrink-0">
                       <button
-                        type="button"
-                        onClick={() => setExpandedId(isExpanded ? null : conversation.id)}
-                        className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                      >
-                        {isExpanded ? "Hide details" : "Open conversation"}
-                      </button>
+  type="button"
+  onClick={() => setExpandedId(isExpanded ? null : conversation.id)}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  {isExpanded ? "Hide details" : "Open conversation"}
+</button>
+
                     </div>
                   </div>
 

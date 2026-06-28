@@ -317,46 +317,62 @@ export default function AdminWithdrawalDetailPage() {
 
                 <div className="mt-4 grid gap-3">
                   <button
-                    type="button"
-                    onClick={handleApprove}
-                    disabled={!canApprove || busy}
-                    className={[
-                      "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                      !canApprove || busy
-                        ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                        : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-                    ].join(" ")}
-                  >
-                    {approveMutation.isPending && currentAction === "APPROVE" ? "Approving..." : "Approve"}
-                  </button>
+  type="button"
+  onClick={handleApprove}
+  disabled={!canApprove || busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  {approveMutation.isPending && currentAction === "APPROVE"
+    ? "Approving..."
+    : "Approve"}
+</button>
 
-                  <button
-                    type="button"
-                    onClick={handleReject}
-                    disabled={!canReject || busy}
-                    className={[
-                      "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                      !canReject || busy
-                        ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                        : "border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] text-[#D9534F] dark:text-red-300 hover:bg-[#FFF4F3] dark:hover:bg-red-900/20",
-                    ].join(" ")}
-                  >
-                    {rejectMutation.isPending && currentAction === "REJECT" ? "Rejecting..." : "Reject"}
-                  </button>
+<button
+  type="button"
+  onClick={handleReject}
+  disabled={!canReject || busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-red-600 text-white
+    hover:bg-red-700 focus:ring-2 focus:ring-red-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-red-500 dark:text-white
+    dark:hover:bg-red-600 dark:focus:ring-red-300
+  "
+>
+  {rejectMutation.isPending && currentAction === "REJECT"
+    ? "Rejecting..."
+    : "Reject"}
+</button>
 
-                  <button
-                    type="button"
-                    onClick={handleMarkPaid}
-                    disabled={!canMarkPaid || busy}
-                    className={[
-                      "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                      !canMarkPaid || busy
-                        ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                        : "border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]",
-                    ].join(" ")}
-                  >
-                    {paidMutation.isPending && currentAction === "PAID" ? "Marking paid..." : "Mark as paid"}
-                  </button>
+<button
+  type="button"
+  onClick={handleMarkPaid}
+  disabled={!canMarkPaid || busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  {paidMutation.isPending && currentAction === "PAID"
+    ? "Marking paid..."
+    : "Mark as paid"}
+</button>
+
                 </div>
               </div>
             </div>

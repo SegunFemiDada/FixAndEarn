@@ -254,25 +254,53 @@ export default function AdminUserDetailPage() {
 
           <div className="flex gap-2">
             <Link
-              href="/admin/users"
-              className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-            >
-              Back
-            </Link>
-            <button
-              type="button"
-              onClick={() => router.refresh()}
-              className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-            >
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditModalOpen(true)}
-              className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-            >
-              Edit User
-            </button>
+  href="/admin/users"
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  Back
+</Link>
+
+<button
+  type="button"
+  onClick={() => router.refresh()}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  Refresh
+</button>
+
+<button
+  type="button"
+  onClick={() => setEditModalOpen(true)}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  Edit User
+</button>
+
           </div>
         </div>
       </section>
@@ -485,50 +513,64 @@ export default function AdminUserDetailPage() {
 
               <div className="mt-4 grid gap-3">
                 <button
-                  type="button"
-                  onClick={handleSuspend}
-                  disabled={!detail.isActive || busy}
-                  className={[
-                    "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                    !detail.isActive || busy
-                      ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                      : "border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] text-[#D9534F] dark:text-red-300 hover:bg-[#FFF4F3] dark:hover:bg-red-900/20",
-                  ].join(" ")}
-                >
-                  {suspendMutation.isPending && currentAction === "SUSPEND" ? "Suspending..." : "Suspend user"}
-                </button>
+  type="button"
+  onClick={handleSuspend}
+  disabled={!detail.isActive || busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-red-600 text-white
+    hover:bg-red-700 focus:ring-2 focus:ring-red-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-red-500 dark:text-white
+    dark:hover:bg-red-600 dark:focus:ring-red-300
+  "
+>
+  {suspendMutation.isPending && currentAction === "SUSPEND"
+    ? "Suspending..."
+    : "Suspend user"}
+</button>
 
-                <button
-                  type="button"
-                  onClick={handleUnsuspend}
-                  disabled={detail.isActive || busy}
-                  className={[
-                    "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                    detail.isActive || busy
-                      ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                      : "border border-[#B8D9B8] dark:border-green-700 bg-white dark:bg-[#1E2A3A] text-[#2E7D32] dark:text-green-200 hover:bg-[#F0FAF0] dark:hover:bg-green-900/20",
-                  ].join(" ")}
-                >
-                  {unsuspendMutation.isPending && currentAction === "UNSUSPEND" ? "Unsuspending..." : "Unsuspend user"}
-                </button>
+<button
+  type="button"
+  onClick={handleUnsuspend}
+  disabled={detail.isActive || busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-green-600 text-white
+    hover:bg-green-700 focus:ring-2 focus:ring-green-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-green-500 dark:text-white
+    dark:hover:bg-green-600 dark:focus:ring-green-300
+  "
+>
+  {unsuspendMutation.isPending && currentAction === "UNSUSPEND"
+    ? "Unsuspending..."
+    : "Unsuspend user"}
+</button>
 
-                <button
-                  type="button"
-                  onClick={handleForceReverify}
-                  disabled={busy || detail.forceReverify}
-                  className={[
-                    "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                    busy || detail.forceReverify
-                      ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                      : "border border-[#F5A623] dark:border-amber-700 bg-white dark:bg-[#1E2A3A] text-[#B45309] dark:text-amber-300 hover:bg-[#FEF8E7] dark:hover:bg-amber-900/20",
-                  ].join(" ")}
-                >
-                  {forceReverifyMutation.isPending && currentAction === "FORCE_REVERIFY"
-                    ? "Updating..."
-                    : detail.forceReverify
-                      ? "Force reverify already enabled"
-                      : "Force reverify"}
-                </button>
+<button
+  type="button"
+  onClick={handleForceReverify}
+  disabled={busy || detail.forceReverify}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-amber-500 text-white
+    hover:bg-amber-600 focus:ring-2 focus:ring-amber-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-amber-600 dark:text-white
+    dark:hover:bg-amber-700 dark:focus:ring-amber-500
+  "
+>
+  {forceReverifyMutation.isPending && currentAction === "FORCE_REVERIFY"
+    ? "Updating..."
+    : detail.forceReverify
+      ? "Force reverify already enabled"
+      : "Force reverify"}
+</button>
+
               </div>
 
               {message && (

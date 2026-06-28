@@ -71,12 +71,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               ) : null}
 
               <button
-                type="button"
-                onClick={handleSignOut}
-                className="inline-flex items-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-              >
-                Sign out
-              </button>
+  type="button"
+  onClick={handleSignOut}
+  className="
+    inline-flex items-center justify-center gap-2
+    rounded-lg px-3 py-2 font-semibold
+    bg-red-600 text-white
+    hover:bg-red-700 focus:ring-2 focus:ring-red-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-red-500 dark:text-white
+    dark:hover:bg-red-600 dark:focus:ring-red-300
+  "
+>
+  Sign out
+</button>
+
             </div>
           </div>
 

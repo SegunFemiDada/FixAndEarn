@@ -197,13 +197,23 @@ export default function Admin2faPage() {
                 />
 
                 <button
-                  type="button"
-                  onClick={handleVerify}
-                  disabled={verifyMutation.isPending || !totp.trim()}
-                  className="mt-3 inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {verifyMutation.isPending ? "Verifying..." : "Verify TOTP"}
-                </button>
+  type="button"
+  onClick={handleVerify}
+  disabled={verifyMutation.isPending || !totp.trim()}
+  className="
+    mt-3 inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  {verifyMutation.isPending ? "Verifying..." : "Verify TOTP"}
+</button>
+
               </div>
             </div>
 
@@ -228,13 +238,23 @@ export default function Admin2faPage() {
                 />
 
                 <button
-                  type="button"
-                  onClick={handleRotate}
-                  disabled={rotateMutation.isPending}
-                  className="mt-3 inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {rotateMutation.isPending ? "Rotating..." : "Rotate TOTP"}
-                </button>
+  type="button"
+  onClick={handleRotate}
+  disabled={rotateMutation.isPending}
+  className="
+    mt-3 inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  {rotateMutation.isPending ? "Rotating..." : "Rotate TOTP"}
+</button>
+
               </div>
             </div>
           </section>

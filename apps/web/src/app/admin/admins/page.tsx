@@ -225,46 +225,56 @@ function AdminRow({
 
         <div className="flex w-full flex-col gap-3 lg:w-56">
           <button
-            type="button"
-            onClick={handleDeactivate}
-            disabled={!admin.isActive || busy || isSelf}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              !admin.isActive || busy || isSelf
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] text-[#D9534F] dark:text-red-300 hover:bg-[#FFF4F3] dark:hover:bg-red-900/20",
-            ].join(" ")}
-          >
-            {deactivateMutation.isPending ? "Deactivating..." : "Deactivate"}
-          </button>
+  type="button"
+  onClick={handleDeactivate}
+  disabled={!admin.isActive || busy || isSelf}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-red-600 text-white
+    hover:bg-red-700 focus:ring-2 focus:ring-red-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-red-500 dark:text-white
+    dark:hover:bg-red-600 dark:focus:ring-red-300
+  "
+>
+  {deactivateMutation.isPending ? "Deactivating..." : "Deactivate"}
+</button>
 
-          <button
-            type="button"
-            onClick={handleReactivate}
-            disabled={admin.isActive || busy}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              admin.isActive || busy
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#B8D9B8] dark:border-green-700 bg-white dark:bg-[#1E2A3A] text-[#2E7D32] dark:text-green-200 hover:bg-[#F0FAF0] dark:hover:bg-green-900/20",
-            ].join(" ")}
-          >
-            {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
-          </button>
+<button
+  type="button"
+  onClick={handleReactivate}
+  disabled={admin.isActive || busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-green-600 text-white
+    hover:bg-green-700 focus:ring-2 focus:ring-green-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-green-500 dark:text-white
+    dark:hover:bg-green-600 dark:focus:ring-green-300
+  "
+>
+  {reactivateMutation.isPending ? "Reactivating..." : "Reactivate"}
+</button>
 
-          <button
-            type="button"
-            onClick={handleRotateTotp}
-            disabled={busy}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-              busy
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]",
-            ].join(" ")}
-          >
-            {rotateMutation.isPending ? "Rotating..." : "Rotate TOTP"}
-          </button>
+<button
+  type="button"
+  onClick={handleRotateTotp}
+  disabled={busy}
+  className="
+    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  {rotateMutation.isPending ? "Rotating..." : "Rotate TOTP"}
+</button>
+
         </div>
       </div>
     </article>
@@ -412,12 +422,22 @@ export default function AdminManagementPage() {
             )}
 
             <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {createMutation.isPending ? "Creating..." : "Create admin"}
-            </button>
+  type="submit"
+  disabled={createMutation.isPending}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  {createMutation.isPending ? "Creating..." : "Create admin"}
+</button>
+
           </form>
         </div>
 
