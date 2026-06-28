@@ -210,32 +210,31 @@ export default function AdminWithdrawalsPage() {
 
         <div className="mt-4 flex items-center gap-2">
           <button
-            type="button"
-            onClick={() => setSkip((current) => Math.max(0, current - take))}
-            disabled={!hasPrevious || query.isLoading}
-            className={[
-              "rounded-xl border px-4 py-2 text-sm font-medium transition",
-              hasPrevious && !query.isLoading
-                ? "border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                : "cursor-not-allowed border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080]",
-            ].join(" ")}
-          >
-            Previous
-          </button>
+  type="button"
+  onClick={() => setSkip((current) => Math.max(0, current - take))}
+  disabled={!hasPrevious || query.isLoading}
+  className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+    ${!hasPrevious || query.isLoading
+      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-700"
+      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+    }`}
+>
+  Previous
+</button>
 
-          <button
-            type="button"
-            onClick={() => setSkip((current) => current + take)}
-            disabled={!hasNext || query.isLoading}
-            className={[
-              "rounded-xl border px-4 py-2 text-sm font-medium transition",
-              hasNext && !query.isLoading
-                ? "border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                : "cursor-not-allowed border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080]",
-            ].join(" ")}
-          >
-            Next
-          </button>
+<button
+  type="button"
+  onClick={() => setSkip((current) => current + take)}
+  disabled={!hasNext || query.isLoading}
+  className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+    ${!hasNext || query.isLoading
+      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-700"
+      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+    }`}
+>
+  Next
+</button>
+
         </div>
       </section>
     </div>

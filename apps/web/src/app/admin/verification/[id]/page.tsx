@@ -74,18 +74,18 @@ function ActionButton({
 
   return (
     <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onClick(action)}
-      className={[
-        "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition",
-        disabled
-          ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-          : styles,
-      ].join(" ")}
-    >
-      {label}
-    </button>
+  type="button"
+  disabled={disabled}
+  onClick={() => onClick(action)}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
+    ${disabled
+      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
+      : styles
+    }`}
+>
+  {label}
+</button>
+
   );
 }
 
@@ -236,18 +236,24 @@ export default function AdminVerificationDetailPage() {
 
           <div className="flex gap-2">
             <Link
-              href="/admin/verification"
-              className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-            >
-              Back to queue
-            </Link>
-            <button
-              type="button"
-              onClick={() => router.refresh()}
-              className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-            >
-              Refresh
-            </button>
+  href="/admin/verification"
+  className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Back to queue
+</Link>
+
+<button
+  type="button"
+  onClick={() => router.refresh()}
+  className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Refresh
+</button>
+
           </div>
         </div>
       </section>

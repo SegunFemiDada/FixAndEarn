@@ -606,18 +606,18 @@ export default function AdminUserDetailPage() {
               </div>
 
               <button
-                type="button"
-                onClick={handleSaveNotes}
-                disabled={busy}
-                className={[
-                  "mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                  busy
-                    ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                    : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-                ].join(" ")}
-              >
-                {notesMutation.isPending && currentAction === "NOTES" ? "Saving..." : "Save notes"}
-              </button>
+  type="button"
+  onClick={handleSaveNotes}
+  disabled={busy}
+  className={`mt-4 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${busy
+      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
+      : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+    }`}
+>
+  {notesMutation.isPending && currentAction === "NOTES" ? "Saving..." : "Save notes"}
+</button>
+
             </div>
           </div>
         </section>

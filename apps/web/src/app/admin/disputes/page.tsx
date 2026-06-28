@@ -100,18 +100,18 @@ function ResolutionActionButton({
 
   return (
     <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onResolve(dispute.id, resolutionType)}
-      className={[
-        "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-        disabled
-          ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-          : styles,
-      ].join(" ")}
-    >
-      {label}
-    </button>
+  type="button"
+  disabled={disabled}
+  onClick={() => onResolve(dispute.id, resolutionType)}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition
+    ${disabled
+      ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
+      : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+    }`}
+>
+  {label}
+</button>
+
   );
 }
 
@@ -259,13 +259,18 @@ function DisputeChatPanel({ disputeId }: { disputeId: string }) {
               </p>
 
               <button
-                type="button"
-                disabled={sendMutation.isPending || !draft.trim()}
-                onClick={handleSend}
-                className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {sendMutation.isPending ? "Sending..." : "Send admin message"}
-              </button>
+  type="button"
+  disabled={sendMutation.isPending || !draft.trim()}
+  onClick={handleSend}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${sendMutation.isPending || !draft.trim()
+      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
+      : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+    }`}
+>
+  {sendMutation.isPending ? "Sending..." : "Send admin message"}
+</button>
+
             </div>
           </div>
         </>
@@ -417,12 +422,15 @@ export default function AdminDisputesPage() {
             </select>
           </div>
 
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-          >
-            Search
-          </button>
+         <button
+  type="submit"
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Search
+</button>
+
         </form>
 
         {message && (
@@ -525,12 +533,15 @@ export default function AdminDisputesPage() {
 
                       <div className="flex shrink-0 gap-2">
                         <button
-                          type="button"
-                          onClick={() => setExpandedId(isExpanded ? null : dispute.id)}
-                          className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                        >
-                          {isExpanded ? "Hide details" : "Show details"}
-                        </button>
+  type="button"
+  onClick={() => setExpandedId(isExpanded ? null : dispute.id)}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
+    border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  {isExpanded ? "Hide details" : "Show details"}
+</button>
+
                       </div>
                     </div>
 
@@ -650,18 +661,18 @@ export default function AdminDisputesPage() {
                               />
 
                               <button
-                                type="button"
-                                disabled={isBusy || isAmicableBusy}
-                                onClick={() => handleResolveAmicably(dispute.id)}
-                                className={[
-                                  "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                                  isBusy || isAmicableBusy
-                                    ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                                    : "border border-[#F5A623] dark:border-amber-700 bg-white dark:bg-[#1E2A3A] text-[#B45309] dark:text-amber-300 hover:bg-[#FEF8E7] dark:hover:bg-amber-900/20",
-                                ].join(" ")}
-                              >
-                                {isAmicableBusy ? "Resolving..." : "Resolve amicably"}
-                              </button>
+  type="button"
+  disabled={isBusy || isAmicableBusy}
+  onClick={() => handleResolveAmicably(dispute.id)}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${isBusy || isAmicableBusy
+      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
+      : "border border-amber-400 bg-white text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300 dark:hover:bg-amber-900/20"
+    }`}
+>
+  {isAmicableBusy ? "Resolving..." : "Resolve amicably"}
+</button>
+
                             </div>
                           )}
                         </div>
