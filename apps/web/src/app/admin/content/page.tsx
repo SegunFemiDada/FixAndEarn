@@ -383,31 +383,34 @@ export default function AdminContentPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFaqMode("structured")}
-                    className={[
-                      "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                      faqMode === "structured"
-                        ? "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-                        : "border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]",
-                    ].join(" ")}
-                  >
-                    Structured FAQ
-                  </button>
+                  <div className="inline-flex rounded-lg shadow-sm">
+  <button
+    type="button"
+    onClick={() => setFaqMode("structured")}
+    className={`
+      px-4 py-2 font-semibold text-sm rounded-l-lg transition-colors
+      ${faqMode === "structured"
+        ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+        : "bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"}
+    `}
+  >
+    Structured FAQ
+  </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setFaqMode("plain")}
-                    className={[
-                      "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition",
-                      faqMode === "plain"
-                        ? "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-                        : "border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]",
-                    ].join(" ")}
-                  >
-                    Plain text
-                  </button>
+  <button
+    type="button"
+    onClick={() => setFaqMode("plain")}
+    className={`
+      px-4 py-2 font-semibold text-sm rounded-r-lg transition-colors
+      ${faqMode === "plain"
+        ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+        : "bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"}
+    `}
+  >
+    Plain text
+  </button>
+</div>
+
                 </div>
               </div>
 
@@ -415,12 +418,22 @@ export default function AdminContentPage() {
                 <>
                   <div className="mt-4 flex justify-end">
                     <button
-                      type="button"
-                      onClick={handleAddFaqItem}
-                      className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                    >
-                      Add FAQ item
-                    </button>
+  type="button"
+  onClick={handleAddFaqItem}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-green-600 text-white
+    hover:bg-green-700 focus:ring-2 focus:ring-green-400
+    transition-colors
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-green-500 dark:text-white
+    dark:hover:bg-green-600 dark:focus:ring-green-300
+  "
+>
+  Add FAQ item
+</button>
+
                   </div>
 
                   {faqItems.length === 0 ? (
@@ -538,13 +551,23 @@ export default function AdminContentPage() {
 
             <div className="mt-4 flex flex-wrap gap-3">
               <button
-                type="button"
-                onClick={handleSave}
-                disabled={updateMutation.isPending}
-                className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {updateMutation.isPending ? "Saving..." : "Save content"}
-              </button>
+  type="button"
+  onClick={handleSave}
+  disabled={updateMutation.isPending}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  {updateMutation.isPending ? "Saving..." : "Save content"}
+</button>
+
             </div>
           </section>
         </>

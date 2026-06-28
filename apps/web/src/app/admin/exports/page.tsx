@@ -71,13 +71,23 @@ export default function AdminExportsPage() {
             summaries.
           </p>
 
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-          >
-            Download audit-logs.csv
-          </button>
+         <button
+  type="button"
+  onClick={handleDownload}
+  className="
+    mt-4 inline-flex items-center justify-center
+    rounded-lg px-4 py-3 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  Download audit-logs.csv
+</button>
+
 
           {message && (
             <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">

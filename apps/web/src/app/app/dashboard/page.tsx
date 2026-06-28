@@ -91,19 +91,37 @@ function JobCard({
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
-          href={`/app/jobs/${job.id}`}
-          className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-        >
-          View job
-        </Link>
+  href={`/app/jobs/${job.id}`}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2.5 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  View job
+</Link>
+
 
         {secondaryAction ? (
           <Link
-            href={secondaryAction.href}
-            className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-          >
-            {secondaryAction.label}
-          </Link>
+  href={secondaryAction.href}
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2.5 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  {secondaryAction.label}
+</Link>
+
         ) : null}
       </div>
     </div>
@@ -447,11 +465,20 @@ export default function DashboardPage() {
 
       <div className="flex items-center gap-2">
         <Link
-          href="/app/chats"
-          className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-        >
-          My Chats
-        </Link>
+  href="/app/chats"
+  className="
+    inline-flex items-center justify-center
+    rounded-lg px-4 py-2.5 font-semibold
+    bg-gray-200 text-gray-700
+    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+    transition-colors
+    dark:bg-gray-700 dark:text-gray-200
+    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+  "
+>
+  My Chats
+</Link>
+
       </div>
     </div>
 

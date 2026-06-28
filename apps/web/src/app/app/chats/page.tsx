@@ -157,11 +157,20 @@ export default function MyChatsPage() {
 
                       {openHref ? (
                         <Link
-                          className="shrink-0 inline-flex items-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-                          href={openHref}
-                        >
-                          Open
-                        </Link>
+  href={openHref}
+  className="
+    shrink-0 inline-flex items-center justify-center
+    rounded-lg px-4 py-2 font-semibold
+    bg-blue-600 text-white
+    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    transition-colors shadow-md
+    dark:bg-blue-500 dark:text-white
+    dark:hover:bg-blue-600 dark:focus:ring-blue-300
+  "
+>
+  Open
+</Link>
+
                       ) : (
                         <div className="shrink-0 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2 text-sm text-[#9BAEC8] dark:text-[#4A6080]">
                           Unavailable
