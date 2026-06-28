@@ -104,21 +104,30 @@ export default function NotificationsPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-1.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:opacity-60"
-              onClick={() => refetch()}
-              disabled={isLoading}
-            >
-              Refresh
-            </button>
+           <button
+  type="button"
+  onClick={() => refetch()}
+  disabled={isLoading}
+  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:opacity-60 disabled:cursor-not-allowed`}
+>
+  Refresh
+</button>
 
-            <button
-              className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-1.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:opacity-60"
-              onClick={() => markAll.mutate(items)}
-              disabled={isLoading || markAll.isPending || items.length === 0 || unreadCount === 0}
-            >
-              Mark all read
-            </button>
+<button
+  type="button"
+  onClick={() => markAll.mutate(items)}
+  disabled={isLoading || markAll.isPending || items.length === 0 || unreadCount === 0}
+  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:opacity-60 disabled:cursor-not-allowed`}
+>
+  Mark all read
+</button>
+
           </div>
         </div>
 
@@ -140,11 +149,15 @@ export default function NotificationsPage() {
             <div className="font-semibold">Failed to load notifications</div>
             <div className="mt-3">
               <button
-                className="rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] px-3 py-1.5 text-sm font-medium text-[#D9534F] dark:text-red-300 transition hover:bg-[#FFF4F3] dark:hover:bg-red-900/20"
-                onClick={() => refetch()}
-              >
-                Try again
-              </button>
+  type="button"
+  onClick={() => refetch()}
+  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
+    border-red-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700
+    dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20`}
+>
+  Try again
+</button>
+
             </div>
           </div>
         )}
@@ -196,26 +209,33 @@ export default function NotificationsPage() {
                     {href && (
                       <div className="mt-3">
                         <Link
-                          href={href}
-                          className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
-                          onClick={() => {
-                            if (!n.readAt) markOne.mutate(n.id);
-                          }}
-                        >
-                          Open
-                        </Link>
+  href={href}
+  onClick={() => {
+    if (!n.readAt) markOne.mutate(n.id);
+  }}
+  className={`text-sm font-medium text-blue-600 hover:underline
+    dark:text-blue-400 dark:hover:text-blue-300`}
+>
+  Open
+</Link>
+
                       </div>
                     )}
                   </div>
 
                   <div className="shrink-0">
-                    <button
-                      className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-1.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:opacity-60"
-                      onClick={() => markOne.mutate(n.id)}
-                      disabled={!isUnread || markOne.isPending}
-                    >
-                      Mark read
-                    </button>
+                  <button
+  type="button"
+  onClick={() => markOne.mutate(n.id)}
+  disabled={!isUnread || markOne.isPending}
+  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:opacity-60 disabled:cursor-not-allowed`}
+>
+  Mark read
+</button>
+
                   </div>
                 </div>
               </div>

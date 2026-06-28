@@ -93,32 +93,31 @@ export default function SelectRolePage() {
 
         <div className="mt-6 grid gap-3">
           <button
-            type="button"
-            onClick={() => handleChooseRole("CLIENT")}
-            disabled={switchRole.isPending}
-            className={[
-              "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-              switchRole.isPending
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-            ].join(" ")}
-          >
-            {switchRole.isPending ? "Saving..." : "Continue as Client"}
-          </button>
+  type="button"
+  onClick={() => handleChooseRole("CLIENT")}
+  disabled={switchRole.isPending}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200
+    ${switchRole.isPending
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {switchRole.isPending ? "Saving..." : "Continue as Client"}
+</button>
 
-          <button
-            type="button"
-            onClick={() => handleChooseRole("FIXER")}
-            disabled={switchRole.isPending}
-            className={[
-              "inline-flex items-center justify-center rounded-xl border px-4 py-3 text-sm font-medium transition-all duration-200",
-              switchRole.isPending
-                ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border-[#C5D5EE] dark:border-[#2D3F55]"
-                : "border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]",
-            ].join(" ")}
-          >
-            {switchRole.isPending ? "Saving..." : "Continue as Fixer"}
-          </button>
+<button
+  type="button"
+  onClick={() => handleChooseRole("FIXER")}
+  disabled={switchRole.isPending}
+  className={`inline-flex items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition-all duration-200
+    ${switchRole.isPending
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:ring-2 focus:ring-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"}
+  `}
+>
+  {switchRole.isPending ? "Saving..." : "Continue as Fixer"}
+</button>
+
         </div>
       </div>
     </div>

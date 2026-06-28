@@ -265,12 +265,15 @@ export default function NewJobPage() {
                         />
                       </div>
                       <button
-                        type="button"
-                        onClick={() => removePreview(index)}
-                        className="mt-2 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-2 text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                      >
-                        Remove
-                      </button>
+  type="button"
+  onClick={() => removePreview(index)}
+  className={`mt-2 w-full rounded-lg border px-3 py-2 text-xs font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Remove
+</button>
+
                     </div>
                   ))}
                 </div>
@@ -278,17 +281,17 @@ export default function NewJobPage() {
             </div>
 
             <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className={[
-                "inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200",
-                createMutation.isPending
-                  ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                  : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-              ].join(" ")}
-            >
-              {createMutation.isPending ? "Posting…" : "Post job"}
-            </button>
+  type="submit"
+  disabled={createMutation.isPending}
+  className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200
+    ${createMutation.isPending
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {createMutation.isPending ? "Posting…" : "Post job"}
+</button>
+
 
             {createMutation.isError && (
               <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">

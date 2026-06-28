@@ -126,11 +126,14 @@ export default function JobsPage() {
 
         {mounted && isApproved && isClient ? (
           <button
-            onClick={() => setShowHiringModal(true)}
-            className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-semibold text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-          >
-            Post / Hire
-          </button>
+  onClick={() => setShowHiringModal(true)}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Post / Hire
+</button>
+
         ) : null}
       </div>
 
@@ -143,9 +146,13 @@ export default function JobsPage() {
           {!isAuthed ? (
             <div className="space-y-2">
               <p className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Not authenticated</p>
-              <Link href="/login" className="font-medium text-[#5B8FCC] dark:text-[#7AAEE0] underline">
-                Go to login
-              </Link>
+              <Link
+  href="/login"
+  className="font-semibold text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+>
+  Go to login
+</Link>
+
             </div>
           ) : isLoading ? (
             <p className="text-[#6B7C99] dark:text-[#8FA0BC]">Checking verification…</p>
@@ -154,7 +161,7 @@ export default function JobsPage() {
           ) : (
             <div className="space-y-2">
               <p className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Verification required</p>
-              <Link href="/app/verification" className="font-medium text-[#5B8FCC] dark:text-[#7AAEE0] underline">
+              <Link href="/app/verification" className="font-medium text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                 Complete verification
               </Link>
             </div>
@@ -229,42 +236,49 @@ export default function JobsPage() {
 
                   return (
                     <Link
-                      key={j.id}
-                      href={`/app/jobs/${j.id}`}
-                      className="block rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-                    >
-                      {preview ? (
-                        <div className="relative mb-4 h-44 overflow-hidden rounded-2xl bg-[#EAF0FB] dark:bg-[#16202E]">
-                          <Image
-                            src={preview}
-                            alt="Job"
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : null}
+  key={j.id}
+  href={`/app/jobs/${j.id}`}
+  className={`block rounded-2xl border p-4 transition shadow-md
+    border-gray-300 bg-white hover:bg-gray-50
+    dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700`}
+>
+  {preview ? (
+    <div className="relative mb-4 h-44 overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-900">
+      <Image
+        src={preview}
+        alt="Job"
+        fill
+        unoptimized
+        className="object-cover"
+      />
+    </div>
+  ) : null}
 
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                            {j.skillCategory}
-                          </p>
-                          {isFixer && isMine ? (
-                            <span className="mt-2 inline-flex rounded-full border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 px-2.5 py-1 text-xs font-medium text-[#B45309] dark:text-amber-300">
-                              Your job
-                            </span>
-                          ) : null}
-                          <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                            {[j.city, j.state].filter(Boolean).join(", ") || "Location not available"}
-                          </p>
-                        </div>
+  <div className="flex items-start justify-between gap-4">
+    <div className="min-w-0">
+      <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+        {j.skillCategory}
+      </p>
 
-                        <div className="shrink-0 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatFec(j.priceMilliFec)}
-                        </div>
-                      </div>
-                    </Link>
+      {isFixer && isMine ? (
+        <span className="mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-medium
+          border-amber-400 bg-amber-50 text-amber-700
+          dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+          Your job
+        </span>
+      ) : null}
+
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        {[j.city, j.state].filter(Boolean).join(", ") || "Location not available"}
+      </p>
+    </div>
+
+    <div className="shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100">
+      {formatFec(j.priceMilliFec)}
+    </div>
+  </div>
+</Link>
+
                   );
                 })
               )}

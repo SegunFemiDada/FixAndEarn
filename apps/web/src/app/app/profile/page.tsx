@@ -388,32 +388,31 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
-              type="button"
-              onClick={() => handleSwitch("CLIENT")}
-              disabled={switchRoleMutation.isPending || activeRole === "CLIENT"}
-              className={[
-                "rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
-                switchRoleMutation.isPending || activeRole === "CLIENT"
-                  ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                  : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-              ].join(" ")}
-            >
-              {activeRole === "CLIENT" ? "Using CLIENT" : "Switch to CLIENT"}
-            </button>
+  type="button"
+  onClick={() => handleSwitch("CLIENT")}
+  disabled={switchRoleMutation.isPending || activeRole === "CLIENT"}
+  className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200
+    ${switchRoleMutation.isPending || activeRole === "CLIENT"
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {activeRole === "CLIENT" ? "Using CLIENT" : "Switch to CLIENT"}
+</button>
 
-            <button
-              type="button"
-              onClick={() => handleSwitch("FIXER")}
-              disabled={switchRoleMutation.isPending || activeRole === "FIXER"}
-              className={[
-                "rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
-                switchRoleMutation.isPending || activeRole === "FIXER"
-                  ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                  : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-              ].join(" ")}
-            >
-              {activeRole === "FIXER" ? "Using FIXER" : "Switch to FIXER"}
-            </button>
+<button
+  type="button"
+  onClick={() => handleSwitch("FIXER")}
+  disabled={switchRoleMutation.isPending || activeRole === "FIXER"}
+  className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200
+    ${switchRoleMutation.isPending || activeRole === "FIXER"
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {activeRole === "FIXER" ? "Using FIXER" : "Switch to FIXER"}
+</button>
+
           </div>
         </div>
 
@@ -522,27 +521,29 @@ export default function ProfilePage() {
 
               {pinStatus?.hasPin ? (
                 <button
-              onClick={() => setChangePinModalOpen(true)}
-              className="
-                rounded-lg px-4 py-2 font-semibold
-                bg-red-600 text-white
-                hover:bg-red-700 focus:ring-2 focus:ring-red-400
-                transition-colors
-                disabled:opacity-50 disabled:cursor-not-allowed
-                dark:bg-red-500 dark:text-white
-                dark:hover:bg-red-600 dark:focus:ring-red-300
-              "
-            >
-              Change withdrawal pin
-            </button>
+  type="button"
+  onClick={() => setChangePinModalOpen(true)}
+  className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Change withdrawal pin
+</button>
+
 
               ) : (
                 <button
-                  onClick={() => setSetPinModalOpen(true)}
-                  className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#D4E3F7] dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#D9534F] dark:text-[#D9534F] hover:bg-[#C5D5EE] dark:hover:bg-[#2D3F55] transition"
-                >
-                  Set withdrawal pin
-                </button>
+  type="button"
+  onClick={() => setSetPinModalOpen(true)}
+  className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors
+    bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Set withdrawal pin
+</button>
+
               )}
             </div>
           </>
@@ -586,12 +587,17 @@ export default function ProfilePage() {
                   className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
                 />
                 <button
-                  onClick={() => sendPhoneMutation.mutate(phoneInput)}
-                  disabled={sendPhoneMutation.isPending || !phoneInput.trim()}
-                  className="rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 shadow-[0_2px_12px_rgba(91,143,204,0.35)]"
-                >
-                  Send code
-                </button>
+  type="button"
+  onClick={() => sendPhoneMutation.mutate(phoneInput)}
+  disabled={sendPhoneMutation.isPending || !phoneInput.trim()}
+  className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Send code
+</button>
+
               </div>
               {showCodeInput && (
                 <div className="flex flex-col gap-2 sm:flex-row">
@@ -603,9 +609,13 @@ export default function ProfilePage() {
                     className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none"
                   />
                   <button
+                    type="button"
                     onClick={() => verifyMutation.mutate(verifyCode)}
                     disabled={verifyMutation.isPending || !verifyCode.trim()}
-                    className="rounded-xl bg-[#2E7D32] hover:bg-[#1B5E20] dark:bg-green-700 dark:hover:bg-green-800 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50"
+                    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+                      bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                      dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300`}
                   >
                     Verify
                   </button>
@@ -628,11 +638,15 @@ export default function ProfilePage() {
             Once you request account deletion, your data will be anonymised after admin approval. This action cannot be undone.
           </p>
           <button
-            onClick={() => setDeleteModalOpen(true)}
-            className="inline-flex items-center justify-center rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#D9534F] dark:text-red-300 transition hover:bg-[#FFF4F3] dark:hover:bg-red-900/20"
-          >
-            Request account deletion
-          </button>
+  type="button"
+  onClick={() => setDeleteModalOpen(true)}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
+    border border-red-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700
+    dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20`}
+>
+  Request account deletion
+</button>
+
         </div>
 
         {/* Set Pin Modal */}
@@ -680,8 +694,26 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" className="flex-1 rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)]">Save</button>
-                  <button type="button" onClick={() => setSetPinModalOpen(false)} className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition">Cancel</button>
+                 <button
+  type="submit"
+  className={`flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Save
+</button>
+
+<button
+  type="button"
+  onClick={() => setSetPinModalOpen(false)}
+  className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Cancel
+</button>
+
                 </div>
               </form>
             </div>
@@ -744,9 +776,26 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" className="flex-1 rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)]">Change</button>
-                  <button type="button" onClick={() => setChangePinModalOpen(false)} className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition">Cancel</button>
-                </div>
+                 <button
+  type="submit"
+  className={`flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Change
+</button>
+
+<button
+  type="button"
+  onClick={() => setChangePinModalOpen(false)}
+  className={`flex-1 rounded-lg border py-2 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Cancel
+</button>
+</div>
               </form>
             </div>
           </div>
@@ -771,13 +820,13 @@ export default function ProfilePage() {
                 <button
                   onClick={() => requestDeletionMutation.mutate(deleteReason)}
                   disabled={!deleteReason.trim() || requestDeletionMutation.isPending}
-                  className="flex-1 rounded-xl bg-[#D9534F] hover:bg-[#C13E3A] dark:bg-red-700 dark:hover:bg-red-800 py-2 text-sm font-medium text-white transition disabled:opacity-50"
+                  className="flex-1 rounded-lg bg-[#D9534F] hover:bg-[#C13E3A] dark:bg-red-700 dark:hover:bg-red-800 py-2 text-sm font-medium text-white transition disabled:opacity-50"
                 >
                   {requestDeletionMutation.isPending ? "Submitting..." : "Submit request"}
                 </button>
                 <button
                   onClick={() => setDeleteModalOpen(false)}
-                  className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition"
+                  className="flex-1 rounded-lg border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition"
                 >
                   Cancel
                 </button>

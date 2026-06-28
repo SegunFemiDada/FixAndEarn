@@ -236,7 +236,7 @@ export default function WalletDepositPage() {
                     href={lastInit.authorizationUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex w-full items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
+                    className="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-300"
                   >
                     Open Paystack checkout
                   </a>
@@ -244,12 +244,17 @@ export default function WalletDepositPage() {
               )}
 
               <button
-                type="submit"
-                disabled={deposit.isPending}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deposit.isPending ? "Submitting…" : "Initiate deposit"}
-              </button>
+  type="submit"
+  disabled={deposit.isPending}
+  className={`mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    ${deposit.isPending
+      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {deposit.isPending ? "Submitting…" : "Initiate deposit"}
+</button>
+
             </form>
           </>
         )}

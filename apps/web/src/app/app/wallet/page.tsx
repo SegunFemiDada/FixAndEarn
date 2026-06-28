@@ -82,9 +82,15 @@ export default function WalletPage() {
             <div className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">You are not logged in</div>
             <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Sign in to continue.</div>
             <div className="mt-3">
-              <Link href="/login" className="inline-flex w-full justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]">
-                Go to Login
-              </Link>
+             <Link
+  href="/login"
+  className={`inline-flex w-full justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Go to Login
+</Link>
+
             </div>
           </div>
         )}
@@ -96,7 +102,9 @@ export default function WalletPage() {
               Choose the role you want to use before accessing wallet actions.
             </div>
             <div className="mt-3">
-              <Link href="/app/profile" className="inline-flex w-full justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]">
+              <Link href="/app/profile" className={`inline-flex w-full justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}>
                 Go to Profile
               </Link>
             </div>
@@ -161,13 +169,13 @@ export default function WalletPage() {
 
           <div className="mt-3 space-y-2">
             {canDeposit && (
-              <Link href="/app/wallet/deposit" className="block w-full rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-center text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]">
+              <Link href="/app/wallet/deposit" className={`block w-full rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-300`}>
                 Deposit
               </Link>
             )}
 
             {canWithdraw && (
-              <Link href="/app/wallet/withdraw" className="block w-full rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-center text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]">
+              <Link href="/app/wallet/withdraw" className={`block w-full rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-300`}>
                 Withdraw
               </Link>
             )}

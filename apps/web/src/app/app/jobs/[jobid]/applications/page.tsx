@@ -102,11 +102,14 @@ export default function JobApplicantsPage() {
               </div>
             ) : myUserId ? (
               <Link
-                href={`/app/jobs/${jobId}/chats/${myUserId}`}
-                className="inline-flex items-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-              >
-                Open my chat
-              </Link>
+  href={`/app/jobs/${jobId}/chats/${myUserId}`}
+  className={`inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Open my chat
+</Link>
+
             ) : (
               <div className="rounded-xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
                 Could not read your user id from JWT. Re-login.
@@ -119,9 +122,14 @@ export default function JobApplicantsPage() {
           <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Tip</div>
           <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
             You can also use{" "}
-            <Link className="underline text-[#5B8FCC] dark:text-[#7AAEE0]" href="/app/chats">
-              My Chats
-            </Link>{" "}
+            <Link
+  href="/app/chats"
+  className={`underline text-blue-600 hover:text-blue-800
+    dark:text-blue-400 dark:hover:text-blue-300`}
+>
+  My Chats
+</Link>
+{" "}
             to see chats across all jobs.
           </div>
         </div>
@@ -220,17 +228,23 @@ export default function JobApplicantsPage() {
                 ) : fixerId ? (
                   <div className="flex gap-2">
                     <Link
-                      href={`/app/jobs/${jobId}/chats/${fixerId}`}
-                      className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                    >
-                      Open chat
-                    </Link>
-                    <Link
-                      className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                      href={`/app/fixers/${fixerId}`}
-                    >
-                      View profile
-                    </Link>
+  href={`/app/jobs/${jobId}/chats/${fixerId}`}
+  className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Open chat
+</Link>
+
+<Link
+  href={`/app/fixers/${fixerId}`}
+  className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  View profile
+</Link>
+
                   </div>
                 ) : null}
               </div>

@@ -59,7 +59,7 @@ export default function JobChatsPage() {
   // FIXER: do not call /jobs/:jobId/chats (backend blocks it for non-owners)
   if (uiRole === "FIXER") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
         <div className="mx-auto max-w-2xl space-y-4">
           <div className="flex items-center justify-between">
             <Link
@@ -78,11 +78,14 @@ export default function JobChatsPage() {
             </div>
             <div className="mt-3">
               <Link
-                href="/app/chats"
-                className="inline-flex items-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-              >
-                Go to My Chats
-              </Link>
+  href="/app/chats"
+  className={`inline-flex items-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Go to My Chats
+</Link>
+
             </div>
           </div>
         </div>
@@ -94,7 +97,7 @@ export default function JobChatsPage() {
     isError && renderAxiosError(error).toUpperCase().includes("ONLY_JOB_OWNER");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
       <div className="mx-auto max-w-2xl space-y-4">
         <div className="flex items-center justify-between">
           <Link
@@ -166,12 +169,15 @@ export default function JobChatsPage() {
                   </div>
 
                   {fixerId && (
-                    <Link
-                      className="shrink-0 inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-                      href={`/app/jobs/${jobId}/chats/${fixerId}`}
-                    >
-                      Open
-                    </Link>
+                  <Link
+  href={`/app/jobs/${jobId}/chats/${fixerId}`}
+  className={`shrink-0 inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Open
+</Link>
+
                   )}
                 </div>
               </div>

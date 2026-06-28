@@ -90,15 +90,16 @@ function RatingPicker({
         const active = n <= value;
         return (
           <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            className="text-2xl leading-none transition hover:scale-105"
-            aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
-            title={`${n} star${n > 1 ? "s" : ""}`}
-          >
-            <span className={active ? "text-[#F5A623]" : "text-[#C5D5EE] dark:text-[#4A6080]"}>★</span>
-          </button>
+  key={n}
+  type="button"
+  onClick={() => onChange(n)}
+  className="text-2xl leading-none transition hover:scale-105"
+  aria-label={`Rate ${n} star${n > 1 ? "s" : ""}`}
+  title={`${n} star${n > 1 ? "s" : ""}`}
+>
+  <span className={active ? "text-amber-400" : "text-gray-300 dark:text-gray-500"}>★</span>
+</button>
+
         );
       })}
       <span className="ml-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">{value}/5</span>
@@ -416,26 +417,32 @@ export default function JobDetailsPage() {
               <div className="flex flex-wrap gap-2">
                 {canClientOpenUrgentChat && effectiveFixerId && (
                   <Link
-                    href={`/app/jobs/${job.id}/chats/${effectiveFixerId}${
-                      queryConversationId
-                        ? `?conversationId=${encodeURIComponent(queryConversationId)}`
-                        : ""
-                    }`}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-semibold text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-                  >
-                    Open urgent chat
-                  </Link>
+  href={`/app/jobs/${job.id}/chats/${effectiveFixerId}${
+    queryConversationId
+      ? `?conversationId=${encodeURIComponent(queryConversationId)}`
+      : ""
+  }`}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Open urgent chat
+</Link>
+
                 )}
               </div>
             </div>
 
             <button
-              type="button"
-              onClick={() => setUrgentBannerDismissed(true)}
-              className="shrink-0 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-1.5 text-xs font-semibold text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-            >
-              Close
-            </button>
+  type="button"
+  onClick={() => setUrgentBannerDismissed(true)}
+  className={`shrink-0 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors
+    border-gray-300 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200`}
+>
+  Close
+</button>
+
           </div>
         </div>
       )}
@@ -529,50 +536,65 @@ export default function JobDetailsPage() {
           <div className="grid gap-2">
             {isClient && isJobOwner && (
               <Link
-                href={`/app/jobs/${jobId}/applications`}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-              >
-                View applicants
-              </Link>
+  href={`/app/jobs/${jobId}/applications`}
+  className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  View applicants
+</Link>
+
             )}
             {canEdit && (
               <Link
-                href={`/app/jobs/${jobId}/edit`}
-                className="inline-flex w-full items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-              >
-                Edit job
-              </Link>
+  href={`/app/jobs/${jobId}/edit`}
+  className={`inline-flex w-full items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Edit job
+</Link>
+
             )}
             {!isJobOwner && (
               <button
-                onClick={() => setShowReportModal(true)}
-                className="inline-flex w-full items-center justify-center rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-medium text-[#D9534F] dark:text-red-300 transition hover:bg-[#FFF4F3] dark:hover:bg-red-900/20"
-              >
-                Report job
-              </button>
+  onClick={() => setShowReportModal(true)}
+  className={`inline-flex w-full items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors
+    border-red-300 bg-white text-red-600 hover:bg-red-50
+    dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20`}
+>
+  Report job
+</button>
+
             )}
 
             {isClient && isJobOwner && effectiveFixerId && job?.status !== "COMPLETED" && (
               <Link
-                href={`/app/jobs/${jobId}/chats/${effectiveFixerId}${
-                  queryConversationId
-                    ? `?conversationId=${encodeURIComponent(queryConversationId)}`
-                    : ""
-                }`}
-                className="inline-flex w-full items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-              >
-                Open direct chat with fixer
-              </Link>
+  href={`/app/jobs/${jobId}/chats/${effectiveFixerId}${
+    queryConversationId
+      ? `?conversationId=${encodeURIComponent(queryConversationId)}`
+      : ""
+  }`}
+  className={`inline-flex w-full items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Open direct chat with fixer
+</Link>
+
             )}
 
             {isFixer && (
               canOpenMyChat ? (
                 <Link
-                  href={`/app/jobs/${jobId}/chats/${myUserId}`}
-                  className="inline-flex w-full items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-                >
-                  Open my chat
-                </Link>
+  href={`/app/jobs/${jobId}/chats/${myUserId}`}
+  className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Open my chat
+</Link>
+
               ) : (
                 <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
                   Apply to this job to open a chat.
@@ -675,17 +697,21 @@ export default function JobDetailsPage() {
 
           {isFixer && canFixerRequestCompletion && job?.status !== "COMPLETED" && (
             <button
-              disabled={requestCompletion.isPending}
-              onClick={async () => {
-                setActionMsg(null);
-                await requestCompletion.mutateAsync({ note: "Work completed" });
-                setActionMsg("Completion request submitted.");
-                await refetchJob();
-              }}
-              className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-semibold text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {requestCompletion.isPending ? "Submitting…" : "Send Request for Completion"}
-            </button>
+  disabled={requestCompletion.isPending}
+  onClick={async () => {
+    setActionMsg(null);
+    await requestCompletion.mutateAsync({ note: "Work completed" });
+    setActionMsg("Completion request submitted.");
+    await refetchJob();
+  }}
+  className={`w-full rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  {requestCompletion.isPending ? "Submitting…" : "Send Request for Completion"}
+</button>
+
           )}
 
           {isClient && canClientReviewCompletion && job?.status !== "COMPLETED" && (
@@ -695,29 +721,36 @@ export default function JobDetailsPage() {
               </div>
 
               <button
-                disabled={approveCompletion.isPending}
-                onClick={() => {
-                  setApproveErr(null);
-                  setApproveRating(5);
-                  setApproveComment("");
-                  setApproveOpen(true);
-                }}
-                className="w-full rounded-xl border border-[#B8D9B8] dark:border-green-700 bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-semibold text-[#2E7D32] dark:text-green-200 transition hover:bg-[#F0FAF0] dark:hover:bg-green-900/20 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {approveCompletion.isPending ? "Submitting…" : "Approve completion"}
-              </button>
+  disabled={approveCompletion.isPending}
+  onClick={() => {
+    setApproveErr(null);
+    setApproveRating(5);
+    setApproveComment("");
+    setApproveOpen(true);
+  }}
+  className={`w-full rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-green-300 bg-white text-green-700 hover:bg-green-50
+    dark:border-green-700 dark:bg-gray-800 dark:text-green-300 dark:hover:bg-green-900/20
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  {approveCompletion.isPending ? "Submitting…" : "Approve completion"}
+</button>
 
-              <button
-                disabled={!canClientReviewCompletion || rejectCompletion.isPending}
-                onClick={() => {
-                  setRejectErr(null);
-                  setRejectReason("");
-                  setRejectOpen(true);
-                }}
-                className="w-full rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-semibold text-[#D9534F] dark:text-red-300 transition hover:bg-[#FFF4F3] dark:hover:bg-red-900/20 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {rejectCompletion.isPending ? "Submitting…" : "Reject completion"}
-              </button>
+<button
+  disabled={!canClientReviewCompletion || rejectCompletion.isPending}
+  onClick={() => {
+    setRejectErr(null);
+    setRejectReason("");
+    setRejectOpen(true);
+  }}
+  className={`w-full rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-red-300 bg-white text-red-600 hover:bg-red-50
+    dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  {rejectCompletion.isPending ? "Submitting…" : "Reject completion"}
+</button>
+
             </>
           )}
 
@@ -816,31 +849,35 @@ export default function JobDetailsPage() {
                 </div>
 
                 <button
-                  type="button"
-                  disabled={openDispute.isPending || !disputeReason.trim()}
-                  onClick={async () => {
-                    try {
-                      setDisputeMsg(null);
-                      setDisputeErr(null);
+  type="button"
+  disabled={openDispute.isPending || !disputeReason.trim()}
+  onClick={async () => {
+    try {
+      setDisputeMsg(null);
+      setDisputeErr(null);
 
-                      await openDispute.mutateAsync({
-                        reason: disputeReason.trim(),
-                        image: disputeImage,
-                      });
+      await openDispute.mutateAsync({
+        reason: disputeReason.trim(),
+        image: disputeImage,
+      });
 
-                      setDisputeMsg("Dispute opened successfully. Admin will review it.");
-                      setDisputeReason("");
-                      setDisputeImage(null);
-                      await refetchJob();
-                      await disputeQuery.refetch();
-                    } catch (e) {
-                      setDisputeErr(renderAxiosError(e));
-                    }
-                  }}
-                  className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-semibold text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {openDispute.isPending ? "Submitting…" : "Open dispute"}
-                </button>
+      setDisputeMsg("Dispute opened successfully. Admin will review it.");
+      setDisputeReason("");
+      setDisputeImage(null);
+      await refetchJob();
+      await disputeQuery.refetch();
+    } catch (e) {
+      setDisputeErr(renderAxiosError(e));
+    }
+  }}
+  className={`w-full rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  {openDispute.isPending ? "Submitting…" : "Open dispute"}
+</button>
+
               </div>
             ) : null}
           </div>
@@ -865,12 +902,15 @@ export default function JobDetailsPage() {
               </div>
 
               <button
-                onClick={() => setApproveOpen(false)}
-                className="shrink-0 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] px-2.5 py-1.5 text-sm text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-                type="button"
-              >
-                ✕
-              </button>
+  onClick={() => setApproveOpen(false)}
+  type="button"
+  className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-sm transition-colors
+    border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200`}
+>
+  ✕
+</button>
+
             </div>
 
             <div className="mt-4 space-y-4">
@@ -902,45 +942,52 @@ export default function JobDetailsPage() {
 
               <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={() => setApproveOpen(false)}
-                  className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-semibold text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={approveCompletion.isPending}
-                >
-                  Cancel
-                </button>
+  type="button"
+  disabled={approveCompletion.isPending}
+  onClick={() => setApproveOpen(false)}
+  className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  Cancel
+</button>
 
-                <button
-                  type="button"
-                  disabled={approveCompletion.isPending}
-                  onClick={async () => {
-                    try {
-                      setApproveErr(null);
+<button
+  type="button"
+  disabled={approveCompletion.isPending}
+  onClick={async () => {
+    try {
+      setApproveErr(null);
 
-                      if (!isValidRating(approveRating)) {
-                        setApproveErr("Rating must be an integer from 1 to 5.");
-                        return;
-                      }
+      if (!isValidRating(approveRating)) {
+        setApproveErr("Rating must be an integer from 1 to 5.");
+        return;
+      }
 
-                      setActionMsg(null);
+      setActionMsg(null);
 
-                      await approveCompletion.mutateAsync({
-                        rating: approveRating,
-                        comment: approveComment.trim() ? approveComment.trim() : undefined,
-                      });
+      await approveCompletion.mutateAsync({
+        rating: approveRating,
+        comment: approveComment.trim() ? approveComment.trim() : undefined,
+      });
 
-                      setRatingSubmitted(true);
-                      setApproveOpen(false);
-                      setActionMsg("Completion approved.");
-                      await refetchJob();
-                    } catch (e) {
-                      setApproveErr(renderAxiosError(e));
-                    }
-                  }}
-                  className="flex-1 rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-semibold text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {approveCompletion.isPending ? "Submitting…" : "Approve"}
-                </button>
+      setRatingSubmitted(true);
+      setApproveOpen(false);
+      setActionMsg("Completion approved.");
+      await refetchJob();
+    } catch (e) {
+      setApproveErr(renderAxiosError(e));
+    }
+  }}
+  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  {approveCompletion.isPending ? "Submitting…" : "Approve"}
+</button>
+
               </div>
             </div>
           </div>
@@ -965,12 +1012,15 @@ export default function JobDetailsPage() {
               </div>
 
               <button
-                onClick={() => setRejectOpen(false)}
-                className="shrink-0 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] px-2.5 py-1.5 text-sm text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-                type="button"
-              >
-                ✕
-              </button>
+  type="button"
+  onClick={() => setRejectOpen(false)}
+  className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-sm transition-colors
+    border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200`}
+>
+  ✕
+</button>
+
             </div>
 
             <div className="mt-4 space-y-3">
@@ -993,44 +1043,51 @@ export default function JobDetailsPage() {
 
               <div className="flex gap-2">
                 <button
-                  type="button"
-                  onClick={() => setRejectOpen(false)}
-                  className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-semibold text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={rejectCompletion.isPending}
-                >
-                  Cancel
-                </button>
+  type="button"
+  disabled={rejectCompletion.isPending}
+  onClick={() => setRejectOpen(false)}
+  className={`flex-1 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  Cancel
+</button>
 
-                <button
-                  type="button"
-                  disabled={rejectCompletion.isPending}
-                  onClick={async () => {
-                    try {
-                      setRejectErr(null);
+<button
+  type="button"
+  disabled={rejectCompletion.isPending}
+  onClick={async () => {
+    try {
+      setRejectErr(null);
 
-                      if (!rejectReason.trim()) {
-                        setRejectErr("Reason is required.");
-                        return;
-                      }
+      if (!rejectReason.trim()) {
+        setRejectErr("Reason is required.");
+        return;
+      }
 
-                      setActionMsg(null);
+      setActionMsg(null);
 
-                      await rejectCompletion.mutateAsync({
-                        reason: rejectReason.trim(),
-                      });
+      await rejectCompletion.mutateAsync({
+        reason: rejectReason.trim(),
+      });
 
-                      setRejectOpen(false);
-                      setRejectReason("");
-                      setActionMsg("Completion rejected.");
-                      await refetchJob();
-                    } catch (e) {
-                      setRejectErr(renderAxiosError(e));
-                    }
-                  }}
-                  className="flex-1 rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2.5 text-sm font-semibold text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {rejectCompletion.isPending ? "Submitting…" : "Submit rejection"}
-                </button>
+      setRejectOpen(false);
+      setRejectReason("");
+      setActionMsg("Completion rejected.");
+      await refetchJob();
+    } catch (e) {
+      setRejectErr(renderAxiosError(e));
+    }
+  }}
+  className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors
+    bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-400 shadow-md
+    dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-300
+    disabled:cursor-not-allowed disabled:opacity-50`}
+>
+  {rejectCompletion.isPending ? "Submitting…" : "Submit rejection"}
+</button>
+
               </div>
             </div>
           </div>

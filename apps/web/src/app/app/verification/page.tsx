@@ -360,11 +360,14 @@ export default function VerificationPage() {
             </p>
             <div className="mt-4">
               <Link
-                href="/app/jobs"
-                className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-              >
-                Browse jobs
-              </Link>
+  href="/app/jobs"
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Browse jobs
+</Link>
+
             </div>
           </div>
         );
@@ -385,11 +388,14 @@ export default function VerificationPage() {
             </div>
             <div className="mt-4">
               <Link
-                href="/app/jobs"
-                className="inline-flex items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-2 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-              >
-                Go to jobs
-              </Link>
+  href="/app/jobs"
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Go to jobs
+</Link>
+
             </div>
           </div>
         );
@@ -612,12 +618,15 @@ export default function VerificationPage() {
                       ))}
                     </datalist>
                     <button
-                      type="button"
-                      className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                      onClick={addSkill}
-                    >
-                      Add
-                    </button>
+  type="button"
+  onClick={addSkill}
+  className={`rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
+>
+  Add
+</button>
+
                   </div>
 
                   {skills?.length ? (
@@ -700,21 +709,26 @@ export default function VerificationPage() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={!isAuthed || !canSubmit || submitMutation.isPending}
-                className="w-full rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-semibold text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitMutation.isPending
-                  ? isRejected
-                    ? "Resubmitting…"
-                    : "Submitting…"
-                  : isReuploadRequest
-                    ? "Submit corrected field(s)"
-                    : isRejected
-                      ? "Resubmit verification"
-                      : "Submit verification"}
-              </button>
+             <button
+  type="submit"
+  disabled={!isAuthed || !canSubmit || submitMutation.isPending}
+  className={`w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
+    ${submitMutation.isPending || !isAuthed || !canSubmit
+      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {submitMutation.isPending
+    ? isRejected
+      ? "Resubmitting…"
+      : "Submitting…"
+    : isReuploadRequest
+      ? "Submit corrected field(s)"
+      : isRejected
+        ? "Resubmit verification"
+        : "Submit verification"}
+</button>
+
 
               {submitMutation.isError && (
                 <div className="rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-3 text-sm text-[#D9534F] dark:text-red-300">

@@ -246,12 +246,13 @@ export default function WalletWithdrawPage() {
             </div>
             {gateOk && hasBank && !editBank && (
               <button
-                type="button"
-                onClick={() => setEditBank(true)}
-                className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
-              >
-                Edit
-              </button>
+  type="button"
+  onClick={() => setEditBank(true)}
+  className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+>
+  Edit
+</button>
+
             )}
           </div>
 
@@ -369,28 +370,32 @@ export default function WalletWithdrawPage() {
 
               <div className="mt-3 flex gap-2">
                 {hasBank && (
-                  <button
-                    type="button"
-                    onClick={() => setEditBank(false)}
-                    disabled={saveBank.isPending}
-                    className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                  >
-                    Cancel
-                  </button>
-                )}
+                 <button
+  type="button"
+  onClick={() => setEditBank(false)}
+  disabled={saveBank.isPending}
+  className={`flex-1 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    ${saveBank.isPending
+      ? "cursor-not-allowed border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"}
+  `}
+>
+  Cancel
+</button>
 
-                <button
-                  type="submit"
-                  disabled={!gateOk || saveBank.isPending}
-                  className={[
-                    "flex-1 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                    !gateOk || saveBank.isPending
-                      ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                      : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-                  ].join(" ")}
-                >
-                  {saveBank.isPending ? "Saving…" : "Save bank details"}
-                </button>
+                )}
+<button
+  type="submit"
+  disabled={!gateOk || saveBank.isPending}
+  className={`flex-1 rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${!gateOk || saveBank.isPending
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {saveBank.isPending ? "Saving…" : "Save bank details"}
+</button>
+
               </div>
             </form>
           )}
@@ -440,13 +445,18 @@ export default function WalletWithdrawPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={withdraw.isPending}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {withdraw.isPending ? "Processing…" : "Request withdrawal"}
-            </button>
+           <button
+  type="submit"
+  disabled={withdraw.isPending}
+  className={`mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
+    ${withdraw.isPending
+      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {withdraw.isPending ? "Processing…" : "Request withdrawal"}
+</button>
+
           </form>
         ) : (
           <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -511,21 +521,29 @@ export default function WalletWithdrawPage() {
 
               <div className="mt-6 flex gap-2">
                 <button
-                  onClick={submitWithdrawalWithPin}
-                  disabled={withdraw.isPending || pin.length < 4}
-                  className="flex-1 rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] py-3 text-sm font-medium text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {withdraw.isPending ? "Submitting..." : "Confirm withdrawal"}
-                </button>
-                <button
-                  onClick={() => {
-                    setPinModalOpen(false);
-                    setPin("");
-                  }}
-                  className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                >
-                  Cancel
-                </button>
+  onClick={submitWithdrawalWithPin}
+  disabled={withdraw.isPending || pin.length < 4}
+  className={`flex-1 rounded-lg py-3 text-sm font-semibold text-white transition-colors
+    ${withdraw.isPending || pin.length < 4
+      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {withdraw.isPending ? "Submitting..." : "Confirm withdrawal"}
+</button>
+
+<button
+  onClick={() => {
+    setPinModalOpen(false);
+    setPin("");
+  }}
+  className="flex-1 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+>
+  Cancel
+</button>
+
               </div>
 
               {withdraw.isError && (
