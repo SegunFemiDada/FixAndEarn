@@ -609,26 +609,26 @@ export default function JobDetailsPage() {
                     : "You cannot apply to this job."}
             </div>
           ) : (
-           <button
-  disabled={applyMutation.isPending}
-  onClick={async () => {
-    setActionMsg(null);
-    await applyMutation.mutateAsync({ note: "Interested" });
-    setActionMsg("Application submitted.");
-    await myAppsQuery.refetch();
-  }}
-  className="
-    w-full rounded-lg px-4 py-3 font-semibold
-    bg-blue-600 text-white
-    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
-    disabled:opacity-50 disabled:cursor-not-allowed
-    transition-colors
-    dark:bg-blue-500 dark:text-white
-    dark:hover:bg-blue-600 dark:focus:ring-blue-300
-  "
->
-  {applyMutation.isPending ? "Submitting…" : "Apply for this job"}
-</button>
+          <button
+            disabled={applyMutation.isPending}
+            onClick={async () => {
+              setActionMsg(null);
+              await applyMutation.mutateAsync({ note: "Interested" });
+              setActionMsg("Application submitted.");
+              await myAppsQuery.refetch();
+            }}
+            className="
+              w-full rounded-lg px-4 py-3 font-semibold
+              bg-blue-600 text-white
+              hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors
+              dark:bg-blue-500 dark:text-white
+              dark:hover:bg-blue-600 dark:focus:ring-blue-300
+            "
+          >
+            {applyMutation.isPending ? "Submitting…" : "Apply for this job"}
+          </button>
 
           )}
 
