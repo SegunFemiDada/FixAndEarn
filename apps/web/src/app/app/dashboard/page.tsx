@@ -13,6 +13,7 @@ import {
   type FixerAvailabilityResponse,
 } from "@/lib/fixers/availability";
 
+
 function formatFecFromMilli(milli: number) {
   const fec = milli / 1000;
   return `${fec.toFixed(2)} FEC`;
