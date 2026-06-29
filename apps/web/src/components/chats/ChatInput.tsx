@@ -1,7 +1,7 @@
 //path: apps/web/src/components/chats/ChatInput.tsx
 "use client";
 
-import Button from "@/components/ui/Button";
+import {Button} from "@/components/ui/Button";
 
 type Props = {
   value: string;
@@ -62,6 +62,7 @@ export default function ChatInput({
           busy ||
           !value.trim()
         }
+        variant="primary"
       >
         {busy
           ? "Sending..."

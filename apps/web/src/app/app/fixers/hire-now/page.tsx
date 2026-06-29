@@ -209,7 +209,7 @@ export default function HireNowPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
       <div className="mx-auto max-w-4xl space-y-6">
         {/* Info section */}
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] sm:p-6">
@@ -365,28 +365,31 @@ export default function HireNowPage() {
 
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         <Link
-                          href={`/app/fixers/${fixer.id}`}
-                          className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2.5 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                        >
-                          View profile
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleHireNow(fixer)}
-                          disabled={urgentHire.isPending || !isHireable}
-                          className={[
-                            "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200",
-                            urgentHire.isPending || !isHireable
-                              ? "cursor-not-allowed bg-[#EAF0FB] dark:bg-[#1E2A3A] text-[#9BAEC8] dark:text-[#4A6080] border border-[#C5D5EE] dark:border-[#2D3F55]"
-                              : "bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]",
-                          ].join(" ")}
-                        >
-                          {isBusy
-                            ? "Starting..."
-                            : !isHireable
-                              ? `Currently ${availabilityLabel(getEffectiveAvailability(fixer))}`
-                              : "Hire now"}
-                        </button>
+  href={`/app/fixers/${fixer.id}`}
+  className="inline-flex items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+>
+  View profile
+</Link>
+
+<button
+  type="button"
+  onClick={() => handleHireNow(fixer)}
+  disabled={urgentHire.isPending || !isHireable}
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors duration-200
+    ${urgentHire.isPending || !isHireable
+      ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500 opacity-60"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {isBusy
+    ? "Starting..."
+    : !isHireable
+      ? `Currently ${availabilityLabel(getEffectiveAvailability(fixer))}`
+      : "Hire now"}
+</button>
+
                         <span className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
                           Charge on start: 2 FEC
                         </span>

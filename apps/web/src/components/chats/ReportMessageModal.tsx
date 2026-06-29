@@ -105,18 +105,26 @@ export default function ReportMessageModal({
 
             <div className="flex gap-2">
               <button
-                onClick={() => mutation.mutate()}
-                disabled={!reason || mutation.isPending}
-                className="flex-1 rounded-xl bg-[#D9534F] hover:bg-[#C13E3A] dark:bg-red-700 dark:hover:bg-red-800 px-4 py-3 text-sm font-medium text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {mutation.isPending ? "Submitting..." : "Submit report"}
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-              >
-                Cancel
-              </button>
+  onClick={() => mutation.mutate()}
+  disabled={!reason || mutation.isPending}
+  className={`flex-1 rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
+    ${!reason || mutation.isPending
+      ? "cursor-not-allowed bg-red-200 text-red-400 dark:bg-red-900 dark:text-red-500 opacity-50"
+      : "bg-red-600 hover:bg-red-700 focus:ring-2 focus:ring-red-400 shadow-md hover:shadow-lg dark:bg-red-700 dark:hover:bg-red-800 dark:focus:ring-red-500"}
+  `}
+>
+  {mutation.isPending ? "Submitting..." : "Submit report"}
+</button>
+
+<button
+  onClick={onClose}
+  className="flex-1 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+>
+  Cancel
+</button>
+
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import Button from "@/components/ui/Button";
+import {Button} from "@/components/ui/Button";
 import LockedPriceModal from "@/components/chats/LockedPriceModal";
 import type { Negotiation } from "@/lib/chat/types";
 

@@ -1,5 +1,5 @@
 "use client";
-import Button from "@/components/ui/Button";
+import {Button} from "@/components/ui/Button";
 
 type Props = {
   lockedPrice: number | null;   // ✅ show locked price value
@@ -26,14 +26,14 @@ export default function LockedPriceModal({ lockedPrice, onAccept, onReject, busy
           <Button
             disabled={busy}
             onClick={onAccept}
-            className="flex-1 bg-green-600 text-white"
+            variant="primary"
           >
             Accept
           </Button>
           <Button
             disabled={busy}
             onClick={onReject}
-            className="flex-1 bg-red-600 text-white"
+            variant="secondary"
           >
             Reject
           </Button>

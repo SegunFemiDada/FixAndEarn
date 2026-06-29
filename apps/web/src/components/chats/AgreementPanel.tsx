@@ -1,7 +1,7 @@
 //path: apps/web/src/components/chats/AgreementPanel.tsx
 "use client";
 
-import Button from "@/components/ui/Button";
+import {Button} from "@/components/ui/Button";
 
 type Props = {
   canChat: boolean;
@@ -50,6 +50,7 @@ export default function AgreementPanel({
               onClick={
                 onAccept
               }
+              variant="primary"
             >
               {busy
                 ? "Submitting..."

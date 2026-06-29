@@ -2,7 +2,7 @@
 
 "use client";
 
-import Button from "@/components/ui/Button";
+import {Button} from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
 type Props = {
@@ -33,6 +33,7 @@ export default function AgreementBootstrapCard({
       <Button
         disabled={agreementBusy}
         onClick={onAccept}
+        variant="primary"
       >
         {agreementBusy
           ? "Submitting..."

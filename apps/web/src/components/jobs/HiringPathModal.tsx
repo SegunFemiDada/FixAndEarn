@@ -76,13 +76,16 @@ export default function HiringPathModal({ open, onClose }: Props) {
               Fee: 1 FEC (₦1000)
             </div>
 
-            <button
-              type="button"
-              onClick={handleStandard}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-[#5B8FCC] hover:bg-[#4A7DBB] dark:bg-[#5B8FCC] dark:hover:bg-[#4A7DBB] px-4 py-3 text-sm font-semibold text-white transition shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)]"
-            >
-              Continue
-            </button>
+           <button
+  type="button"
+  onClick={handleStandard}
+  className="mt-5 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+>
+  Continue
+</button>
+
           </div>
 
           {/* Urgent */}
@@ -97,13 +100,16 @@ export default function HiringPathModal({ open, onClose }: Props) {
               Fee: 2 FEC (₦2000)
             </div>
 
-            <button
-              type="button"
-              onClick={handleUrgent}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-[#F5A623] dark:border-amber-600 bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-semibold text-[#B45309] dark:text-amber-300 transition hover:bg-[#FEF8E7] dark:hover:bg-amber-900/30"
-            >
-              Browse fixers
-            </button>
+           <button
+  type="button"
+  onClick={handleUrgent}
+  className="mt-5 inline-flex w-full items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-amber-400 bg-white text-amber-700 hover:bg-amber-50
+    dark:border-amber-600 dark:bg-gray-800 dark:text-amber-300 dark:hover:bg-amber-900/30"
+>
+  Browse fixers
+</button>
+
           </div>
         </div>
       </div>
