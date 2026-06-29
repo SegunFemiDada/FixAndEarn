@@ -650,7 +650,7 @@ model AdminAuditLog {
 model AdminRefreshToken {
   id           String    @id @default(cuid())
   adminId      String
-  tokenHash    String
+  tokenHash    String @unique
   expiresAt    DateTime
   createdAt    DateTime  @default(now())
   revokedAt    DateTime?

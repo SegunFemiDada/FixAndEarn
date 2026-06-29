@@ -2,6 +2,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../infra/prisma/prisma.service";
 import { AdminRole, Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 
 @Injectable()
 export class AdminRepo {
@@ -95,4 +96,43 @@ export class AdminRepo {
       },
     });
   }
+  createRefreshToken(data: {
+  adminId: string;
+  tokenHash: string;
+  expiresAt: Date;
+}) {
+  return this.prisma.adminRefreshToken.create({
+    data: {
+      id: randomUUID(),
+      adminId: data.adminId,
+      tokenHash: data.tokenHash,
+      expiresAt: data.expiresAt,
+    },
+  });
+}
+
+findRefreshTokenByHash(tokenHash: string) {
+  return this.prisma.adminRefreshToken.findUnique({
+    where: {
+      tokenHash,
+    },
+    include: {
+      admin: true,
+    },
+  });
+}
+
+deleteRefreshToken(id: string) {
+  return this.prisma.adminRefreshToken.delete({
+    where: { id },
+  });
+}
+
+deleteRefreshTokensForAdmin(adminId: string) {
+  return this.prisma.adminRefreshToken.deleteMany({
+    where: {
+      adminId,
+    },
+  });
+}
 }

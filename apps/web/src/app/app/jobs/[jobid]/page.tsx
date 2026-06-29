@@ -704,13 +704,15 @@ export default function JobDetailsPage() {
     setActionMsg("Completion request submitted.");
     await refetchJob();
   }}
-  className={`w-full rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
-    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
-    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
-    disabled:cursor-not-allowed disabled:opacity-50`}
+  className={`w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
+    ${requestCompletion.isPending
+      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
 >
   {requestCompletion.isPending ? "Submitting…" : "Send Request for Completion"}
 </button>
+
 
           )}
 

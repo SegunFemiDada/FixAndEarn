@@ -30,6 +30,39 @@ export class AdminService {
   private getTotpIssuer() {
     return this.cfg.get<string>("ADMIN_TOTP_ISSUER", "FixAndEarn Admin");
   }
+  private async signAccessToken(admin: {
+  id: string;
+  role: AdminRole;
+  email: string;
+  sessionVersion: number;
+}) {
+  return this.jwt.signAsync(
+    {
+      sub: admin.id,
+      role: admin.role,
+      email: admin.email,
+      typ: "admin",
+      sv: admin.sessionVersion,
+    },
+    {
+      secret: this.cfg.getOrThrow<string>("ADMIN_JWT_SECRET"),
+      expiresIn: "12h",
+    },
+  );
+}
+
+private async signRefreshToken(adminId: string) {
+  return this.jwt.signAsync(
+    {
+      sub: adminId,
+      typ: "refresh",
+    },
+    {
+      secret: this.cfg.getOrThrow<string>("ADMIN_REFRESH_SECRET"),
+      expiresIn: "30d",
+    },
+  );
+}
 
   async getBootstrapStatus() {
     const enabled = this.cfg.get<string>("ADMIN_CREATE_BOOTSTRAP_ENABLED", "false") === "true";
@@ -448,30 +481,29 @@ export class AdminService {
       }
     }
 
-  const token = await this.jwt.signAsync({
-  sub: admin.id,
-  role: admin.role,
-  email: admin.email,
-  typ: "admin",
-  sv: admin.sessionVersion,
+  const accessToken = await this.signAccessToken(admin);
+
+const refreshToken = await this.signRefreshToken(admin.id);
+
+const refreshHash = await argon2.hash(refreshToken);
+
+await this.repo.createRefreshToken({
+  adminId: admin.id,
+  tokenHash: refreshHash,
+  expiresAt: new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000,
+  ),
 });
 
-    await this.audit.log({
-      actorAdminId: admin.id,
-      action: "ADMIN_LOGIN",
-      description: "Admin logged in",
-      ip: args.ip,
-      userAgent: args.userAgent,
-    });
-
     return {
-      accessToken: token,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        fullName: admin.fullName,
-        role: admin.role,
-      },
-    };
+  accessToken,
+  refreshToken,
+  admin: {
+    id: admin.id,
+    email: admin.email,
+    fullName: admin.fullName,
+    role: admin.role,
+  },
+};
   }
 }

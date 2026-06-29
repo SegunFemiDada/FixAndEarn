@@ -26,14 +26,14 @@ export default function LockedPriceModal({ lockedPrice, onAccept, onReject, busy
           <Button
             disabled={busy}
             onClick={onAccept}
-            variant="primary"
+            variant="success"
           >
             Accept
           </Button>
           <Button
             disabled={busy}
             onClick={onReject}
-            variant="secondary"
+            variant="danger"
           >
             Reject
           </Button>
