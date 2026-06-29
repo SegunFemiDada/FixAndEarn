@@ -616,11 +616,12 @@ model Admin {
 
   isActive Boolean @default(true)
 
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  AdminAuditLog    AdminAuditLog[]
-  resolvedDisputes Dispute[]
-  sessionVersion   Int             @default(1)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  AdminAuditLog     AdminAuditLog[]
+  resolvedDisputes  Dispute[]
+  sessionVersion    Int                 @default(1)
+  AdminRefreshToken AdminRefreshToken[]
 
   @@map("admins")
 }
@@ -647,13 +648,13 @@ model AdminAuditLog {
 }
 
 model AdminRefreshToken {
-  id            String   @id @default(cuid())
-  adminId       String
-  tokenHash     String
-  expiresAt     DateTime
-  createdAt     DateTime @default(now())
-  revokedAt     DateTime?
-  replacedById  String?
+  id           String    @id @default(cuid())
+  adminId      String
+  tokenHash    String
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  replacedById String?
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
