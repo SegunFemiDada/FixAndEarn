@@ -632,22 +632,22 @@ export default function ProfilePage() {
         </div>
 
         {/* Danger zone – Account deletion */}
-        <div className="space-y-3 rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="font-semibold text-[#D9534F] dark:text-red-300">Danger zone</div>
-          <p className="text-sm text-[#D9534F] dark:text-red-300/80">
-            Once you request account deletion, your data will be anonymised after admin approval. This action cannot be undone.
-          </p>
-          <button
-  type="button"
-  onClick={() => setDeleteModalOpen(true)}
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
-    border border-red-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700
-    dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20`}
->
-  Request account deletion
-</button>
+        <div className="space-y-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-4">
+  <div className="text-sm font-medium text-red-600 dark:text-red-300">Danger zone</div>
+  <p className="text-sm text-red-600/90 dark:text-red-300/80">
+    Once you request account deletion, your data will be anonymised after admin approval. This action cannot be undone.
+  </p>
+  <button
+    type="button"
+    onClick={() => setDeleteModalOpen(true)}
+    className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors
+      border-red-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700
+      dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20"
+  >
+    Request account deletion
+  </button>
+</div>
 
-        </div>
 
         {/* Set Pin Modal */}
         {setPinModalOpen && (
