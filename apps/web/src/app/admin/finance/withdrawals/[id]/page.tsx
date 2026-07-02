@@ -358,20 +358,17 @@ export default function AdminWithdrawalDetailPage() {
   type="button"
   onClick={handleMarkPaid}
   disabled={!canMarkPaid || busy}
-  className="
-    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
-    bg-gray-200 text-gray-700
-    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
-    transition-colors
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-gray-700 dark:text-gray-200
-    dark:hover:bg-gray-600 dark:focus:ring-gray-500
-  "
+  className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${!canMarkPaid || busy
+      ? "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 opacity-50"
+      : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-green-400 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300"}
+  `}
 >
   {paidMutation.isPending && currentAction === "PAID"
     ? "Marking paid..."
     : "Mark as paid"}
 </button>
+
 
                 </div>
               </div>
