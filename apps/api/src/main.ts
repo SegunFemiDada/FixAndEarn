@@ -8,7 +8,7 @@ import { AppModule } from "./app.module";
 import * as express from "express";
 import * as path from "path";
 import { join } from "path";
-import cookieParser from "cookie-parser";
+import * as cookieParser from "cookie-parser";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
