@@ -632,21 +632,22 @@ export default function ProfilePage() {
         </div>
 
         {/* Danger zone – Account deletion */}
-        <div className="space-y-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-4">
-  <div className="text-sm font-medium text-red-600 dark:text-red-300">Danger zone</div>
-  <p className="text-sm text-red-600/90 dark:text-red-300/80">
+      <div className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Danger zone</div>
+  <p className="text-sm text-gray-600 dark:text-gray-400">
     Once you request account deletion, your data will be anonymised after admin approval. This action cannot be undone.
   </p>
   <button
     type="button"
     onClick={() => setDeleteModalOpen(true)}
     className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors
-      border-red-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700
-      dark:border-red-700 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-red-900/20"
+      border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700
+      dark:border-red-700 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-800/30"
   >
     Request account deletion
   </button>
 </div>
+
 
 
         {/* Set Pin Modal */}
