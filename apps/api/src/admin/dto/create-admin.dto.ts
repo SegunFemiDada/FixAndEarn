@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/dto/create-admin.dto.ts
 import { IsEmail, IsEnum, IsString, MinLength } from "class-validator";
 import { AdminRole } from "@prisma/client";
 

@@ -76,6 +76,40 @@ export class AdminRepo {
     },
   });
 }
+async recordFailedLogin(adminId: string, lockUntil?: Date) {
+  return this.prisma.admin.update({
+    where: { id: adminId },
+    data: {
+      failedLoginAttempts: {
+        increment: 1,
+      },
+      ...(lockUntil
+        ? {
+            lockedUntil: lockUntil,
+          }
+        : {}),
+    },
+  });
+}
+
+async resetFailedLogins(adminId: string) {
+  return this.prisma.admin.update({
+    where: { id: adminId },
+    data: {
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    },
+  });
+}
+
+async setLoginLock(adminId: string, until: Date) {
+  return this.prisma.admin.update({
+    where: { id: adminId },
+    data: {
+      lockedUntil: until,
+    },
+  });
+}
 
   createAuditLog(data: {
     actorAdminId: string;

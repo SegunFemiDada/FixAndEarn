@@ -616,12 +616,14 @@ model Admin {
 
   isActive Boolean @default(true)
 
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  AdminAuditLog     AdminAuditLog[]
-  resolvedDisputes  Dispute[]
-  sessionVersion    Int                 @default(1)
-  AdminRefreshToken AdminRefreshToken[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  AdminAuditLog       AdminAuditLog[]
+  resolvedDisputes    Dispute[]
+  sessionVersion      Int                 @default(1)
+  AdminRefreshToken   AdminRefreshToken[]
+  failedLoginAttempts Int                 @default(0)
+  lockedUntil         DateTime?
 
   @@map("admins")
 }
@@ -650,7 +652,7 @@ model AdminAuditLog {
 model AdminRefreshToken {
   id           String    @id @default(cuid())
   adminId      String
-  tokenHash    String @unique
+  tokenHash    String    @unique
   expiresAt    DateTime
   createdAt    DateTime  @default(now())
   revokedAt    DateTime?

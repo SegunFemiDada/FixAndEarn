@@ -7,6 +7,8 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { JwtPayload } from "jsonwebtoken";
+import * as crypto from "crypto";
 import { AdminRepo } from "./admin.repo";
 import { CryptoService } from "../common/crypto/crypto.service";
 import { authenticator } from "otplib";
@@ -30,32 +32,35 @@ export class AdminService {
   private getTotpIssuer() {
     return this.cfg.get<string>("ADMIN_TOTP_ISSUER", "FixAndEarn Admin");
   }
-  private async signAccessToken(admin: {
+  
+private hashRefreshToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+private async createAccessToken(admin: {
   id: string;
-  role: AdminRole;
   email: string;
+  role: AdminRole;
+  sessionVersion: number;
+}) {
+  return this.jwt.signAsync({
+    sub: admin.id,
+    email: admin.email,
+    role: admin.role,
+    typ: "admin",
+    sv: admin.sessionVersion,
+  });
+}
+
+private async createRefreshToken(admin: {
+  id: string;
   sessionVersion: number;
 }) {
   return this.jwt.signAsync(
     {
       sub: admin.id,
-      role: admin.role,
-      email: admin.email,
-      typ: "admin",
+      typ: "admin-refresh",
       sv: admin.sessionVersion,
-    },
-    {
-      secret: this.cfg.getOrThrow<string>("ADMIN_JWT_SECRET"),
-      expiresIn: "12h",
-    },
-  );
-}
-
-private async signRefreshToken(adminId: string) {
-  return this.jwt.signAsync(
-    {
-      sub: adminId,
-      typ: "refresh",
     },
     {
       secret: this.cfg.getOrThrow<string>("ADMIN_REFRESH_SECRET"),
@@ -63,7 +68,6 @@ private async signRefreshToken(adminId: string) {
     },
   );
 }
-
   async getBootstrapStatus() {
     const enabled = this.cfg.get<string>("ADMIN_CREATE_BOOTSTRAP_ENABLED", "false") === "true";
     const totalAdmins = await this.repo.countAdmins();
@@ -421,6 +425,77 @@ private async signRefreshToken(adminId: string) {
       totpProvisioningUri,
     };
   }
+  async changePassword(args: {
+  adminId: string;
+  currentPassword: string;
+  newPassword: string;
+  totp: string;
+  ip?: string;
+  userAgent?: string;
+}) {
+  const admin = await this.repo.findById(args.adminId);
+
+  if (!admin) {
+    throw new NotFoundException("ADMIN_NOT_FOUND");
+  }
+
+  if (!admin.isActive) {
+    throw new UnauthorizedException("ADMIN_INACTIVE");
+  }
+
+  const passwordOk = await argon2.verify(
+    admin.passwordHash,
+    args.currentPassword
+  );
+
+  if (!passwordOk) {
+    throw new UnauthorizedException("INVALID_CURRENT_PASSWORD");
+  }
+
+  const samePassword = await argon2.verify(
+    admin.passwordHash,
+    args.newPassword
+  );
+
+  if (samePassword) {
+    throw new BadRequestException("PASSWORD_MUST_BE_DIFFERENT");
+  }
+
+  const secret = this.crypto.decryptAes256Gcm(
+    admin.totpSecretEncrypted,
+    admin.totpSecretIv
+  );
+
+  const totpOk = authenticator.check(args.totp.trim(), secret);
+
+  if (!totpOk) {
+    throw new UnauthorizedException("INVALID_TOTP");
+  }
+
+  const passwordHash = await argon2.hash(args.newPassword);
+
+  await this.repo.updateAdmin(admin.id, {
+    passwordHash,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+  });
+
+  await this.repo.incrementSessionVersion(admin.id);
+
+  await this.repo.deleteRefreshTokensForAdmin(admin.id);
+
+  await this.audit.log({
+    actorAdminId: admin.id,
+    action: "ADMIN_PASSWORD_CHANGED",
+    description: "Admin changed account password",
+    ip: args.ip,
+    userAgent: args.userAgent,
+  });
+
+  return {
+    ok: true,
+  };
+}
 
   async login(args: {
     email: string;
@@ -448,20 +523,61 @@ private async signRefreshToken(adminId: string) {
 
       throw new UnauthorizedException("INVALID_CREDENTIALS");
     }
+    const now = new Date();
+
+if (admin.lockedUntil && admin.lockedUntil > now) {
+  await this.audit.log({
+    actorAdminId: admin.id,
+    action: "ADMIN_LOGIN_BLOCKED_LOCKED",
+    description: "Blocked login because the admin account is temporarily locked",
+    ip: args.ip,
+    userAgent: args.userAgent,
+  });
+
+  throw new UnauthorizedException("ACCOUNT_TEMPORARILY_LOCKED");
+}
 
     const ok = await argon2.verify(admin.passwordHash, args.password);
-    if (!ok) {
-      await this.audit.log({
-        actorAdminId: admin.id,
-        action: "ADMIN_LOGIN_FAILED_PASSWORD",
-        description: "Failed admin login due to invalid password",
-        ip: args.ip,
-        userAgent: args.userAgent,
-        metadata: { email },
-      });
 
-      throw new UnauthorizedException("INVALID_CREDENTIALS");
-    }
+if (!ok) {
+  const attempts = admin.failedLoginAttempts + 1;
+
+  if (attempts >= 5) {
+    const lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+
+    await this.repo.recordFailedLogin(admin.id, lockedUntil);
+
+    await this.audit.log({
+      actorAdminId: admin.id,
+      action: "ADMIN_ACCOUNT_LOCKED",
+      description: "Admin account temporarily locked after repeated failed logins",
+      ip: args.ip,
+      userAgent: args.userAgent,
+      metadata: {
+      attempts,
+      lockedUntil: lockedUntil.toISOString(),
+},
+    });
+
+    throw new UnauthorizedException("ACCOUNT_TEMPORARILY_LOCKED");
+  }
+
+  await this.repo.recordFailedLogin(admin.id);
+
+  await this.audit.log({
+    actorAdminId: admin.id,
+    action: "ADMIN_LOGIN_FAILED_PASSWORD",
+    description: "Failed admin login due to invalid password",
+    ip: args.ip,
+    userAgent: args.userAgent,
+    metadata: {
+      email,
+      attempts,
+    },
+  });
+
+  throw new UnauthorizedException("INVALID_CREDENTIALS");
+}
 
     if (admin.is2faEnabled) {
       const secret = this.crypto.decryptAes256Gcm(admin.totpSecretEncrypted, admin.totpSecretIv);
@@ -480,22 +596,28 @@ private async signRefreshToken(adminId: string) {
         throw new UnauthorizedException("INVALID_TOTP");
       }
     }
+    await this.repo.resetFailedLogins(admin.id);
 
-  const accessToken = await this.signAccessToken(admin);
+ const accessToken = await this.createAccessToken(admin);
+const refreshToken = await this.createRefreshToken(admin);
 
-const refreshToken = await this.signRefreshToken(admin.id);
-
-const refreshHash = await argon2.hash(refreshToken);
+const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
 await this.repo.createRefreshToken({
   adminId: admin.id,
-  tokenHash: refreshHash,
-  expiresAt: new Date(
-    Date.now() + 30 * 24 * 60 * 60 * 1000,
-  ),
+  tokenHash: refreshTokenHash,
+  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
 });
 
-    return {
+await this.audit.log({
+  actorAdminId: admin.id,
+  action: "ADMIN_LOGIN",
+  description: "Admin logged in",
+  ip: args.ip,
+  userAgent: args.userAgent,
+});
+
+return {
   accessToken,
   refreshToken,
   admin: {
@@ -504,6 +626,140 @@ await this.repo.createRefreshToken({
     fullName: admin.fullName,
     role: admin.role,
   },
-};
+  };
+
   }
+  async refresh(args: {
+  refreshToken: string;
+  ip?: string;
+  userAgent?: string;
+}) {
+  let payload: JwtPayload & {
+    sub: string;
+    typ: string;
+    sv: number;
+  };
+
+  try {
+    payload = await this.jwt.verifyAsync(args.refreshToken, {
+      secret: this.cfg.getOrThrow<string>("ADMIN_REFRESH_SECRET"),
+    });
+  } catch {
+    throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
+  }
+
+  if (payload.typ !== "admin-refresh") {
+    throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
+  }
+
+  const admin = await this.repo.findById(payload.sub);
+
+  if (!admin || !admin.isActive) {
+    throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
+  }
+
+  if (admin.sessionVersion !== payload.sv) {
+    throw new UnauthorizedException("ADMIN_SESSION_EXPIRED");
+  }
+
+  const refreshTokenHash = this.hashRefreshToken(args.refreshToken);
+
+ const storedToken =
+  await this.repo.findRefreshTokenByHash(refreshTokenHash);
+
+if (!storedToken) {
+  throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
+}
+
+if (storedToken.adminId !== admin.id) {
+  throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
+}
+
+  if (storedToken.expiresAt.getTime() < Date.now()) {
+    throw new UnauthorizedException("REFRESH_TOKEN_EXPIRED");
+  }
+
+  await this.repo.deleteRefreshToken(storedToken.id);
+
+  const accessToken = await this.createAccessToken(admin);
+
+  const refreshToken = await this.createRefreshToken(admin);
+
+  await this.repo.createRefreshToken({
+    adminId: admin.id,
+    tokenHash: this.hashRefreshToken(refreshToken),
+    expiresAt: new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000,
+    ),
+  });
+
+  await this.audit.log({
+    actorAdminId: admin.id,
+    action: "ADMIN_REFRESH_TOKEN",
+    description: "Admin refreshed authentication token",
+    ip: args.ip,
+    userAgent: args.userAgent,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+}
+async logout(refreshToken: string) {
+  let payload: {
+    sub: string;
+    typ: string;
+  };
+
+  try {
+    payload = await this.jwt.verifyAsync(refreshToken, {
+      secret: this.cfg.getOrThrow<string>("ADMIN_REFRESH_SECRET"),
+    });
+  } catch {
+    return {
+      ok: true,
+    };
+  }
+
+  if (payload.typ !== "admin-refresh") {
+    return {
+      ok: true,
+    };
+  }
+
+  const tokenHash = this.hashRefreshToken(refreshToken);
+
+  const stored =
+    await this.repo.findRefreshTokenByHash(tokenHash);
+
+  if (stored) {
+    await this.repo.deleteRefreshToken(stored.id);
+
+    await this.audit.log({
+      actorAdminId: stored.adminId,
+      action: "ADMIN_LOGOUT",
+      description: "Admin logged out",
+    });
+  }
+
+  return {
+    ok: true,
+  };
+}
+async logoutAll(adminId: string) {
+  await this.repo.deleteRefreshTokensForAdmin(adminId);
+
+  await this.repo.incrementSessionVersion(adminId);
+
+  await this.audit.log({
+    actorAdminId: adminId,
+    action: "ADMIN_LOGOUT_ALL",
+    description: "Admin logged out from all devices",
+  });
+
+  return {
+    ok: true,
+  };
+}
 }
