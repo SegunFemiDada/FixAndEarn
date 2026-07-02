@@ -199,7 +199,7 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
 
-                   <Link
+                  <Link
   href={`/admin/users/${user.id}`}
   className="inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
     bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400 shadow-md hover:shadow-lg
@@ -208,6 +208,7 @@ export default function AdminUsersPage() {
 >
   Open
 </Link>
+
 
 
                   </div>
