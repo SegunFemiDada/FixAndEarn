@@ -320,15 +320,11 @@ export default function AdminWithdrawalDetailPage() {
   type="button"
   onClick={handleApprove}
   disabled={!canApprove || busy}
-  className="
-    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
-    bg-blue-600 text-white
-    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
-    transition-colors
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-blue-500 dark:text-white
-    dark:hover:bg-blue-600 dark:focus:ring-blue-300
-  "
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${!canApprove || busy
+      ? "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
 >
   {approveMutation.isPending && currentAction === "APPROVE"
     ? "Approving..."
@@ -339,20 +335,17 @@ export default function AdminWithdrawalDetailPage() {
   type="button"
   onClick={handleReject}
   disabled={!canReject || busy}
-  className="
-    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
-    bg-red-600 text-white
-    hover:bg-red-700 focus:ring-2 focus:ring-red-400
-    transition-colors
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-red-500 dark:text-white
-    dark:hover:bg-red-600 dark:focus:ring-red-300
-  "
+  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
+    ${!canReject || busy
+      ? "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 opacity-50"
+      : "bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-red-400 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-300"}
+  `}
 >
   {rejectMutation.isPending && currentAction === "REJECT"
     ? "Rejecting..."
     : "Reject"}
 </button>
+
 
 <button
   type="button"
