@@ -32,6 +32,22 @@ export class AdminService {
   private getTotpIssuer() {
     return this.cfg.get<string>("ADMIN_TOTP_ISSUER", "FixAndEarn Admin");
   }
+  private getRefreshCookieName() {
+  return this.cfg.get<string>(
+    "ADMIN_REFRESH_COOKIE_NAME",
+    "admin_refresh"
+  );
+}
+
+private getRefreshCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: this.cfg.get("NODE_ENV") === "production",
+    sameSite: "strict" as const,
+    path: "/admin/auth",
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  };
+}
   
 private hashRefreshToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
