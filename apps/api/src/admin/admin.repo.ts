@@ -196,4 +196,75 @@ deleteRefreshTokenById(id: string) {
     },
   });
 }
+createSession(data: {
+  adminId: string;
+  refreshTokenHash: string;
+  expiresAt: Date;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  deviceName?: string | null;
+}) {
+  return this.prisma.adminSession.create({
+    data: {
+      adminId: data.adminId,
+      refreshTokenHash: data.refreshTokenHash,
+      expiresAt: data.expiresAt,
+      ipAddress: data.ipAddress ?? null,
+      userAgent: data.userAgent ?? null,
+      deviceName: data.deviceName ?? null,
+    },
+  });
+}
+rotateSessionRefreshToken(
+  sessionId: string,
+  refreshTokenHash: string,
+  expiresAt: Date,
+) {
+  return this.prisma.adminSession.update({
+    where: {
+      id: sessionId,
+    },
+    data: {
+      refreshTokenHash,
+      expiresAt,
+      lastUsedAt: new Date(),
+    },
+  });
+}
+listSessions(adminId: string) {
+  return this.prisma.adminSession.findMany({
+    where: {
+      adminId,
+    },
+    orderBy: {
+      lastUsedAt: "desc",
+    },
+  });
+}
+deleteSession(sessionId: string) {
+  return this.prisma.adminSession.delete({
+    where: {
+      id: sessionId,
+    },
+  });
+}
+findSessionByRefreshTokenHash(
+  refreshTokenHash: string,
+) {
+  return this.prisma.adminSession.findUnique({
+    where: {
+      refreshTokenHash,
+    },
+    include: {
+      admin: true,
+    },
+  });
+}
+deleteSessions(adminId: string) {
+  return this.prisma.adminSession.deleteMany({
+    where: {
+      adminId,
+    },
+  });
+}
 }

@@ -17,6 +17,7 @@ import { AdminRole } from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
 import { AdminAuditService } from "./audit/admin-audit.service";
 import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
+import { getDeviceName } from "../common/utils/device-name.util";
 
 authenticator.options = { window: 1 };
 
@@ -621,10 +622,15 @@ const refreshToken = await this.createRefreshToken(admin);
 
 const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
-await this.repo.createRefreshToken({
+await this.repo.createSession({
   adminId: admin.id,
-  tokenHash: refreshTokenHash,
-  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  refreshTokenHash,
+  expiresAt: new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000,
+  ),
+  ipAddress: args.ip,
+  userAgent: args.userAgent,
+  deviceName: getDeviceName(args.userAgent),
 });
 
 await this.audit.log({
@@ -682,35 +688,35 @@ return {
 
   const refreshTokenHash = this.hashRefreshToken(args.refreshToken);
 
- const storedToken =
-  await this.repo.findRefreshTokenByHash(refreshTokenHash);
+ const session =
+  await this.repo.findSessionByRefreshTokenHash(
+    refreshTokenHash,
+  );
 
-if (!storedToken) {
+if (!session) {
   throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
 }
 
-if (storedToken.adminId !== admin.id) {
+if (session.adminId !== admin.id) {
   throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
 }
 
-  if (storedToken.expiresAt.getTime() < Date.now()) {
+  if (session.expiresAt.getTime() < Date.now()) {
     throw new UnauthorizedException("REFRESH_TOKEN_EXPIRED");
   }
-  await this.repo.touchRefreshToken(storedToken.id);
-  
-  await this.repo.deleteRefreshToken(storedToken.id);
+  const accessToken =
+  await this.createAccessToken(admin);
 
-  const accessToken = await this.createAccessToken(admin);
+const refreshToken =
+  await this.createRefreshToken(admin);
 
-  const refreshToken = await this.createRefreshToken(admin);
-
-  await this.repo.createRefreshToken({
-    adminId: admin.id,
-    tokenHash: this.hashRefreshToken(refreshToken),
-    expiresAt: new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000,
-    ),
-  });
+await this.repo.rotateSessionRefreshToken(
+  session.id,
+  this.hashRefreshToken(refreshToken),
+  new Date(
+    Date.now() + 30 * 24 * 60 * 60 * 1000,
+  ),
+);
 
   await this.audit.log({
     actorAdminId: admin.id,
@@ -749,14 +755,16 @@ async logout(refreshToken: string) {
 
   const tokenHash = this.hashRefreshToken(refreshToken);
 
-  const stored =
-    await this.repo.findRefreshTokenByHash(tokenHash);
+  const session =
+  await this.repo.findSessionByRefreshTokenHash(
+    tokenHash,
+  );
 
-  if (stored) {
-    await this.repo.deleteRefreshToken(stored.id);
+  if (session) {
+    await this.repo.deleteRefreshToken(session.id);
 
     await this.audit.log({
-      actorAdminId: stored.adminId,
+      actorAdminId: session.adminId,
       action: "ADMIN_LOGOUT",
       description: "Admin logged out",
     });
@@ -766,8 +774,22 @@ async logout(refreshToken: string) {
     ok: true,
   };
 }
+async listMySessions(adminId: string) {
+  const sessions = await this.repo.listSessions(adminId);
+
+  return {
+    sessions: sessions.map((session) => ({
+      id: session.id,
+      deviceName: session.deviceName,
+      ipAddress: session.ipAddress,
+      lastUsedAt: session.lastUsedAt,
+      expiresAt: session.expiresAt,
+      createdAt: session.createdAt,
+    })),
+  };
+}
 async logoutAll(adminId: string) {
-  await this.repo.deleteRefreshTokensForAdmin(adminId);
+  await this.repo.deleteSessions(adminId);
 
   await this.repo.incrementSessionVersion(adminId);
 
