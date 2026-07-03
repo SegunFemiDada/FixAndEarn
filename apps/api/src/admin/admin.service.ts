@@ -622,8 +622,6 @@ const refreshToken = await this.createRefreshToken(admin);
 
 const refreshTokenHash = this.hashRefreshToken(refreshToken);
 
-console.log("User-Agent:", args.userAgent);
-console.log("Device:", getDeviceName(args.userAgent));
 await this.repo.createSession({
   adminId: admin.id,
   refreshTokenHash,

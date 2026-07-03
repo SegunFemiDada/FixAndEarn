@@ -2,7 +2,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AdminPageHero from "@/components/admin/admin-page-hero";
-import AdminStatCard from "@/components/admin/admin-stat-card";
 
 export const metadata: Metadata = {
   robots: {

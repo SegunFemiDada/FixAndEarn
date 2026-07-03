@@ -52,6 +52,9 @@ import { AdminReportsController } from "./reports/admin-reports.controller";
 import { ReportsModule } from "../modules/reports/reports.module";
 import { AdminPermissionsGuard } from "./auth/admin-permissions.guard";
 import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
+import { DashboardController } from "./dashboard/dashboard.controller";
+import { DashboardService } from "./dashboard/dashboard.service";
+import { DashboardRepo } from "./dashboard/dashboard.repo";
 @Module({
   imports: [
     ConfigModule,
@@ -86,6 +89,7 @@ import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
     PublicContentController,
     AdminSettingsController,
     AdminReportsController,
+    DashboardController,
   ],
   providers: [
     CryptoService,
@@ -117,6 +121,8 @@ import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
     AdminSettingsService,
     AdminPermissionsGuard,
     AdminRoleHierarchyService,
+    DashboardRepo,
+    DashboardService,
   ],
   exports: [AdminService, AdminAuditService, AdminFinanceService], 
 })

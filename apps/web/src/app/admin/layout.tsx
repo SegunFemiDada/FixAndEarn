@@ -25,42 +25,42 @@ const navItems: AdminNavItem[] = [
   },
   {
     href: "/admin/verification",
-    label: "Verification",
+    label: "Verification Queue",
     description: "Review pending verification submissions",
   },
   {
     href: "/admin/finance/withdrawals",
-    label: "Withdrawals",
+    label: "Withdrawals Management",
     description: "Approve, reject, and mark payouts",
   },
   {
     href: "/admin/users",
-    label: "Users",
+    label: "User Management",
     description: "Manage user status and notes",
   },
   {
     href: "/admin/disputes",
-    label: "Disputes",
+    label: "Dispute Management",
     description: "Resolve platform disputes",
   },
   {
     href: "/admin/messaging",
-    label: "Messaging",
+    label: "Messaging Oversight",
     description: "Oversee flagged conversations",
   },
   {
     href: "/admin/security",
-    label: "Security",
+    label: "Security Center",
     description: "Review admin auth activity and risk flags",
   },
   {
     href: "/admin/content",
-    label: "Content",
+    label: "Content Management",
     description: "Manage policies, lists, and templates",
   },
   {
     href: "/admin/settings",
-    label: "Settings",
+    label: "Platform Settings",
     description: "Manage finance, verification, and moderation rules",
   },
   {
@@ -70,17 +70,17 @@ const navItems: AdminNavItem[] = [
   },
   {
     href: "/admin/admins",
-    label: "Admins",
+    label: "Admin Management",
     description: "Create and manage admin accounts",
   },
   {
     href: "/admin/notifications",
-    label: "Notifications",
+    label: "System Notifications",
     description: "Send system notifications",
   },
   {
     href: "/admin/reports",
-    label: "Reports",
+    label: "Reports Center",
     description: "View and manage user reports",
   },
   {
@@ -90,7 +90,7 @@ const navItems: AdminNavItem[] = [
   },
   {
     href: "/admin/exports",
-    label: "Exports",
+    label: "Audit Exports",
     description: "Download audit log CSV",
   },
 ];
