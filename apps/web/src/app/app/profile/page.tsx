@@ -2,8 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import apiClient from "@/lib/apiClient";
 import {
@@ -138,7 +137,7 @@ export default function ProfilePage() {
     mutationFn: (phone: string) => sendPhoneVerificationCode(phone),
     onSuccess: () => setShowCodeInput(true),
   });
-  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerified] = useState(false);
   const verifyMutation = useMutation({
     mutationFn: (code: string) => verifyPhoneCode(code),
     onSuccess: () => {

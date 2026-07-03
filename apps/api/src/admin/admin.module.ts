@@ -50,6 +50,8 @@ import { AdminSettingsRepo } from "./settings/admin-settings.repo";
 import { PaymentsModule } from "../modules/payments/payments.module";
 import { AdminReportsController } from "./reports/admin-reports.controller";
 import { ReportsModule } from "../modules/reports/reports.module";
+import { AdminPermissionsGuard } from "./auth/admin-permissions.guard";
+import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
 @Module({
   imports: [
     ConfigModule,
@@ -113,6 +115,8 @@ import { ReportsModule } from "../modules/reports/reports.module";
     PublicContentService,
     AdminSettingsRepo,
     AdminSettingsService,
+    AdminPermissionsGuard,
+    AdminRoleHierarchyService,
   ],
   exports: [AdminService, AdminAuditService, AdminFinanceService], 
 })

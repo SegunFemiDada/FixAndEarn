@@ -622,6 +622,7 @@ model Admin {
   resolvedDisputes    Dispute[]
   sessionVersion      Int                 @default(1)
   AdminRefreshToken   AdminRefreshToken[]
+  sessions            AdminSession[]
   failedLoginAttempts Int                 @default(0)
   lockedUntil         DateTime?
 
@@ -657,11 +658,31 @@ model AdminRefreshToken {
   createdAt    DateTime  @default(now())
   revokedAt    DateTime?
   replacedById String?
+  lastUsedAt   DateTime  @default(now())
 
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@index([expiresAt])
+}
+
+model AdminSession {
+  id String @id @default(cuid())
+
+  adminId          String
+  refreshTokenHash String @unique
+
+  ipAddress  String?
+  userAgent  String?
+  deviceName String?
+
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
 }
 
 //

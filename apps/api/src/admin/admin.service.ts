@@ -16,6 +16,7 @@ import * as argon2 from "argon2";
 import { AdminRole } from "@prisma/client";
 import { ConfigService } from "@nestjs/config";
 import { AdminAuditService } from "./audit/admin-audit.service";
+import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
 
 authenticator.options = { window: 1 };
 
@@ -26,7 +27,8 @@ export class AdminService {
     private readonly jwt: JwtService,
     private readonly crypto: CryptoService,
     private readonly cfg: ConfigService,
-    private readonly audit: AdminAuditService
+    private readonly audit: AdminAuditService,
+    private readonly roleHierarchy: AdminRoleHierarchyService
   ) {}
 
   private getTotpIssuer() {
@@ -694,7 +696,8 @@ if (storedToken.adminId !== admin.id) {
   if (storedToken.expiresAt.getTime() < Date.now()) {
     throw new UnauthorizedException("REFRESH_TOKEN_EXPIRED");
   }
-
+  await this.repo.touchRefreshToken(storedToken.id);
+  
   await this.repo.deleteRefreshToken(storedToken.id);
 
   const accessToken = await this.createAccessToken(admin);

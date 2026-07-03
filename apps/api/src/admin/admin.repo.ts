@@ -169,4 +169,31 @@ deleteRefreshTokensForAdmin(adminId: string) {
     },
   });
 }
+touchRefreshToken(id: string) {
+  return this.prisma.adminRefreshToken.update({
+    where: {
+      id,
+    },
+    data: {
+      lastUsedAt: new Date(),
+    },
+  });
+}
+listRefreshTokensForAdmin(adminId: string) {
+  return this.prisma.adminRefreshToken.findMany({
+    where: {
+      adminId,
+    },
+    orderBy: {
+      lastUsedAt: "desc",
+    },
+  });
+}
+deleteRefreshTokenById(id: string) {
+  return this.prisma.adminRefreshToken.delete({
+    where: {
+      id,
+    },
+  });
+}
 }

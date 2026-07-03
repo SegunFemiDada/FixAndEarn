@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "AdminRefreshToken" ADD COLUMN     "lastUsedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
