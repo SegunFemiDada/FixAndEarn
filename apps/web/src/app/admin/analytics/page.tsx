@@ -311,7 +311,7 @@ function TimelineBarChart({
                       </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-[#EAF0FB] dark:bg-[#16202E]">
-                      <div className="h-full rounded-full bg-[#F5A623] dark:bg-amber-500" style={{ width: depositsWidth }} />
+                      <div className="h-full rounded-full bg-[#40f81f] dark:bg-[#40f81f]" style={{ width: depositsWidth }} />
                     </div>
                   </div>
 
