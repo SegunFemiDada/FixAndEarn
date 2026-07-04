@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/dashboard/dashboard.service.ts
 import { Injectable } from "@nestjs/common";
 import { DashboardRepo } from "./dashboard.repo";
 
