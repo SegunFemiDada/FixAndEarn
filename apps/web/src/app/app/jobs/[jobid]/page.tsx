@@ -397,9 +397,9 @@ export default function JobDetailsPage() {
         </h1>
 
         <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          {job.area ? ` • ${job.area}` : ""}
+          {job.area ? ` ${job.area}` : ""}
           {job.lga ? ` • ${job.lga}` : ""}
-          {job.city ?? "City"}, {job.state ?? "State"}
+          {job.city ?? " • City"}, {job.state ?? "State"}
         </p>
       </div>
 
