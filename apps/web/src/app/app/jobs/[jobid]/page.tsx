@@ -396,12 +396,21 @@ export default function JobDetailsPage() {
           {job.skillCategory ?? "Job"}
         </h1>
 
-        <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          {job.area ? ` ${job.area}` : ""}
-          {job.lga ? ` • ${job.lga}` : ""}
-          {job.city ?? " • City"}, {job.state ?? "State"}
-        </p>
-      </div>
+        <p className="mt-1 flex items-center gap-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+  <Image
+    src="/location-pin-svgrepo-com.svg"
+    alt="Location"
+    width={14}
+    height={14}
+  />
+
+  <span>
+  {job.area && `${job.area}`}
+  {job.lga && ` • ${job.lga}`}
+  {` ${job.city ?? "City"}, ${job.state ?? "State"}`}
+</span>
+</p>
+</div>
 
       {/* Urgent banner */}
       {urgent && !urgentBannerDismissed && (
