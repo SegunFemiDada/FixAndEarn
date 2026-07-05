@@ -398,7 +398,7 @@ export default function JobDetailsPage() {
 
         <p className="mt-1 flex items-center gap-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
   <Image
-    src="/location-pin-svgrepo-com.svg"
+    src="/location-pin.svg"
     alt="Location"
     width={14}
     height={14}
