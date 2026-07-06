@@ -35,8 +35,6 @@ export default function AdminLoginPage() {
   {
     onSuccess: async () => {
       // Let React Query and localStorage finish updating.
-      await Promise.resolve();
-
       router.replace("/admin");
       router.refresh();
     },

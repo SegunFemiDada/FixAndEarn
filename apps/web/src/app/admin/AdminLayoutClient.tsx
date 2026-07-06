@@ -103,18 +103,15 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const [mounted, setMounted] = React.useState(false);
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-const [token, setToken] = React.useState<string | null>(null);
+const [mounted, setMounted] = React.useState(false);
 
 React.useEffect(() => {
   setMounted(true);
-  setToken(getAdminToken());
 }, []);
+
+const token = mounted ? getAdminToken() : null;
+
   const isLoginPage = pathname === "/admin/login";
   const isBootstrapPage = pathname === "/admin/bootstrap";
   const isPublicAdminPage = isLoginPage || isBootstrapPage;
