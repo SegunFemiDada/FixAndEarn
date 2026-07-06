@@ -22,12 +22,6 @@ export default function AdminLoginPage() {
   const existingToken = mounted ? getAdminToken() : null;
   const existingIdentity = mounted ? getStoredAdminIdentity() : null;
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    if (existingToken) {
-      router.replace("/admin");
-    }
-  }, [existingToken, mounted, router]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

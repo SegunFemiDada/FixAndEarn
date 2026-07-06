@@ -1,4 +1,4 @@
-// Path: apps/web/src/app/admin/layout.tsx
+// Path: apps/web/src/app/admin/AdminLayoutClient.tsx
 "use client";
 
 import Link from "next/link";
@@ -109,7 +109,12 @@ export default function AdminLayout({
     setMounted(true);
   }, []);
 
-  const token = mounted ? getAdminToken() : null;
+const [token, setToken] = React.useState<string | null>(null);
+
+React.useEffect(() => {
+  setMounted(true);
+  setToken(getAdminToken());
+}, []);
   const isLoginPage = pathname === "/admin/login";
   const isBootstrapPage = pathname === "/admin/bootstrap";
   const isPublicAdminPage = isLoginPage || isBootstrapPage;
@@ -126,13 +131,21 @@ export default function AdminLayout({
   }, [isPublicAdminPage, mounted, router, token]);
 
   React.useEffect(() => {
-    if (!mounted || isPublicAdminPage) return;
+  if (!mounted || isPublicAdminPage) return;
 
-    if (meQuery.isError) {
-      clearAdminSession();
-      router.replace("/admin/login");
-    }
-  }, [isPublicAdminPage, meQuery.isError, mounted, router]);
+  if (meQuery.isPending) return;
+
+  if (meQuery.isError) {
+    clearAdminSession();
+    router.replace("/admin/login");
+  }
+}, [
+  mounted,
+  isPublicAdminPage,
+  meQuery.isPending,
+  meQuery.isError,
+  router,
+]);
 
   const identity = meQuery.data?.admin ?? (mounted ? getStoredAdminIdentity() : null);
 
