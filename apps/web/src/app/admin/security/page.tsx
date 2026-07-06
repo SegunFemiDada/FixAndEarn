@@ -10,6 +10,7 @@ import type {
   AdminSecurityLog,
   AdminSecurityRiskLevel,
 } from "@/lib/admin/security/types";
+import { useAdminLogoutAll } from "@/lib/admin/queries";
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return "Not available";
@@ -163,16 +164,47 @@ function SecurityLogCard({ log }: { log: AdminSecurityLog }) {
 export default function AdminSecurityPage() {
   const query = useAdminSecurityOverview({ take: 50 }, true);
   const data = query.data;
+  const logoutAllMutation = useAdminLogoutAll();
 
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">Security</p>
-        <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Security center</h2>
-        <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          Review recent admin auth activity, flagged admin accounts, and security-relevant audit actions using live backend data only.
-        </p>
-      </section>
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+        Security
+      </p>
+
+      <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        Security center
+      </h2>
+
+      <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        Review recent admin auth activity, flagged admin accounts, and
+        security-relevant audit actions using live backend data only.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      disabled={logoutAllMutation.isPending}
+      onClick={() => {
+        if (
+          window.confirm(
+            "Log out all devices? Your current session will also be terminated."
+          )
+        ) {
+          logoutAllMutation.mutate();
+        }
+      }}
+      className="inline-flex items-center justify-center rounded-xl bg-[#D9534F] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#C9403C] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {logoutAllMutation.isPending
+        ? "Logging out..."
+        : "Logout All Devices"}
+    </button>
+  </div>
+</section>
 
       {query.isLoading ? (
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">

@@ -1,4 +1,5 @@
 // Path: apps/web/src/lib/admin/types.ts
+
 export type AdminRole =
   | "SUPER_ADMIN"
   | "VERIFICATION_OFFICER"
@@ -26,6 +27,10 @@ export type AdminLoginResponse = {
 
 export type AdminMeResponse = {
   admin: AdminIdentity;
+};
+
+export type AdminLogoutAllResponse = {
+  ok: true;
 };
 
 export type AdminNavItem = {
