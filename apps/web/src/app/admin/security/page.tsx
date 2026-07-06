@@ -205,7 +205,6 @@ export default function AdminSecurityPage() {
     </button>
   </div>
 </section>
-
       {query.isLoading ? (
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading security overview...</p>
