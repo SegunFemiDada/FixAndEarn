@@ -27,17 +27,21 @@ export default function AdminLoginPage() {
     event.preventDefault();
 
     login.mutate(
-      {
-        email: email.trim(),
-        password,
-        totp: totp.trim(),
-      },
-      {
-        onSuccess: () => {
-          router.replace("/admin");
-        },
-      }
-    );
+  {
+    email: email.trim(),
+    password,
+    totp: totp.trim(),
+  },
+  {
+    onSuccess: async () => {
+      // Let React Query and localStorage finish updating.
+      await Promise.resolve();
+
+      router.replace("/admin");
+      router.refresh();
+    },
+  }
+);
   }
 
   function handleClearSession() {
