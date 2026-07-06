@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/auth/admin-permissions.guard.ts
 import {
   CanActivate,
   ExecutionContext,

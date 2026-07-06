@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/auth/admin-permissions.ts
 import { AdminRole } from "@prisma/client";
 
 export const ADMIN_PERMISSIONS = {

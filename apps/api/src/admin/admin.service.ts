@@ -761,7 +761,7 @@ async logout(refreshToken: string) {
   );
 
   if (session) {
-    await this.repo.deleteRefreshToken(session.id);
+    await this.repo.deleteSession(session.id);
 
     await this.audit.log({
       actorAdminId: session.adminId,

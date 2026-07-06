@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/auth/admin-role-hierarchy.service.ts
 import { ForbiddenException, Injectable } from "@nestjs/common";
 import { AdminRole } from "@prisma/client";
 
