@@ -148,6 +148,11 @@ async logout(
   AdminRole.FINANCE_OFFICER,
   AdminRole.VERIFICATION_OFFICER,
 )
+@Get("auth/sessions")
+async mySessions(@Req() req: any) {
+  return this.admins.listMySessions(req.user.adminId);
+}
+
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 @AdminRoles(
@@ -157,26 +162,10 @@ async logout(
   AdminRole.FINANCE_OFFICER,
   AdminRole.VERIFICATION_OFFICER,
 )
-@Get("auth/sessions")
-async mySessions(@Req() req: any) {
-  return this.admins.listMySessions(
-    req.user.adminId,
-  );
-}
 @Post("auth/logout-all")
 async logoutAll(@Req() req: any) {
   return this.admins.logoutAll(req.user.adminId);
 }
-
-  @ApiBearerAuth()
-  @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
-  @AdminRoles(
-    AdminRole.SUPER_ADMIN,
-    AdminRole.SECURITY_OFFICER,
-    AdminRole.SUPPORT_OFFICER,
-    AdminRole.FINANCE_OFFICER,
-    AdminRole.VERIFICATION_OFFICER
-  )
   @Get("me")
   async me(@Req() req: any) {
     return { admin: req.user };
