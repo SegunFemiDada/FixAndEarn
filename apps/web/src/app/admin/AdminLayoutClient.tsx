@@ -125,13 +125,21 @@ console.log("LAYOUT", {
   const meQuery = useAdminMe(shouldCheckAdmin);
 
   React.useEffect(() => {
-    if (!mounted) return;
+  if (!mounted) return;
 
-    if (!token && !isPublicAdminPage) {
-      console.log("Redirecting to login because token is missing");
-      router.replace("/admin/login");
-    }
-  }, [isPublicAdminPage, mounted, router, token]);
+  const latestToken = getAdminToken();
+
+  console.log("Effect check", {
+    token,
+    latestToken,
+    pathname,
+  });
+
+  if (!latestToken && !isPublicAdminPage) {
+    console.log("Redirecting to login");
+    router.replace("/admin/login");
+  }
+}, [mounted, pathname, isPublicAdminPage, router, token]);
 
   React.useEffect(() => {
   if (!mounted || isPublicAdminPage) return;
