@@ -17,7 +17,6 @@ async function bootstrap(): Promise<void> {
   });
   app.use(cookieParser());
   const uploadsPath = join(process.cwd(), 'apps/api/uploads');
-console.log('Serving static files from:', uploadsPath);
 app.use('/uploads', express.static(uploadsPath));
 
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

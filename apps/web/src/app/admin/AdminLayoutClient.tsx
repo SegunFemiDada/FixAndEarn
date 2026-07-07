@@ -117,11 +117,7 @@ React.useEffect(() => {
 
   setToken(getAdminToken());
 }, [mounted, pathname]);
-console.log("LAYOUT", {
-  pathname,
-  token,
-  mounted,
-});
+
 
   const isLoginPage = pathname === "/admin/login";
   const isBootstrapPage = pathname === "/admin/bootstrap";
@@ -135,14 +131,8 @@ console.log("LAYOUT", {
 
   const latestToken = getAdminToken();
 
-  console.log("Effect check", {
-    token,
-    latestToken,
-    pathname,
-  });
 
   if (!latestToken && !isPublicAdminPage) {
-    console.log("Redirecting to login");
     router.replace("/admin/login");
   }
 }, [mounted, pathname, isPublicAdminPage, router, token]);
@@ -153,7 +143,6 @@ console.log("LAYOUT", {
   if (meQuery.isPending) return;
 
   if (meQuery.isError) {
-    console.log("Error occurred while fetching admin identity");
     clearAdminSession();
     router.replace("/admin/login");
   }

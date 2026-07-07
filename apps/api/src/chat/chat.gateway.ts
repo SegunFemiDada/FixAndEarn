@@ -34,29 +34,15 @@ export class ChatGateway
   @WebSocketServer()
   server!: Server;
 
-  afterInit() {
-    console.log(
-      "CHAT GATEWAY INITIALIZED"
-    );
-  }
+  afterInit() {}
 
   handleConnection(
-    client: Socket
-  ) {
-    console.log(
-      "CHAT CONNECTED",
-      client.id
-    );
-  }
+    _client: Socket
+  ) {}
 
   handleDisconnect(
-    client: Socket
-  ) {
-    console.log(
-      "CHAT DISCONNECTED",
-      client.id
-    );
-  }
+    _client: Socket
+  ) {}
 
   @SubscribeMessage("join")
   handleJoin(
@@ -73,12 +59,6 @@ export class ChatGateway
       `job:${payload.jobId}:fixer:${payload.fixerId}`;
 
     client.join(room);
-
-    console.log(
-    "[CHAT JOIN]",
-    client.id,
-    room
-    );
 
     return {
       joined: room,
@@ -100,12 +80,6 @@ export class ChatGateway
       `job:${payload.jobId}:fixer:${payload.fixerId}`;
 
     client.leave(room);
-
-    console.log(
-    "[CHAT LEAVE]",
-    client.id,
-    room
-  );
 
     return {
       left: room,
@@ -141,12 +115,6 @@ export class ChatGateway
     event: string,
     payload: any
   ) {
-    console.log(
-      "EMIT",
-      event,
-      room
-    );
-
     this.server
       .to(room)
       .emit(

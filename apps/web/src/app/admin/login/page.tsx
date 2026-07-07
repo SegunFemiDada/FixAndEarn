@@ -24,25 +24,22 @@ export default function AdminLoginPage() {
 
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  event.preventDefault();
 
-    login.mutate(
-  {
-    email: email.trim(),
-    password,
-    totp: totp.trim(),
-  },
-{
-  onSuccess: async (data) => {
-    console.log("[LOGIN] Login response:", data);
-    console.log("[LOGIN] Stored token:", localStorage.getItem("admin_token"));
-
-    router.replace("/admin");
-    router.refresh();
-  },
+  login.mutate(
+    {
+      email: email.trim(),
+      password,
+      totp: totp.trim(),
+    },
+    {
+      onSuccess: async () => {
+        router.replace("/admin");
+        router.refresh();
+      },
+    }
+  );
 }
-);
-  }
 
   function handleClearSession() {
     clearAdminSession();

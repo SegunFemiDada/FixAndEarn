@@ -23,11 +23,6 @@ export function connectChatSocket(): Socket {
     );
   }
 
-  console.log(
-    "[CHAT] connecting to",
-    baseUrl
-  );
-
   socket = io(baseUrl, {
     transports: [
       "websocket",
@@ -39,35 +34,6 @@ export function connectChatSocket(): Socket {
     reconnectionDelay: 1000,
   });
 
-  socket.on(
-    "connect",
-    () => {
-      console.log(
-        "[CHAT] connected",
-        socket?.id
-      );
-    }
-  );
-
-  socket.on(
-    "disconnect",
-    (reason) => {
-      console.log(
-        "[CHAT] disconnected",
-        reason
-      );
-    }
-  );
-
-  socket.on(
-    "connect_error",
-    (err) => {
-      console.error(
-        "[CHAT] connect_error",
-        err
-      );
-    }
-  );
 
   return socket;
 }

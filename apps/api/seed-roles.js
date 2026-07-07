@@ -1,5 +1,5 @@
 // apps/api/seed-roles.js
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient({
   datasources: { db: { url: process.env.DATABASE_URL } },
@@ -16,7 +16,6 @@ async function main() {
     update: {},
     create: { code: 'FIXER', name: 'Fixer' },
   });
-  console.log('✅ Roles inserted');
 }
 
 main()
