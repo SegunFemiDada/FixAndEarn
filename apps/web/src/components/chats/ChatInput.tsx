@@ -2,6 +2,8 @@
 "use client";
 
 import {Button} from "@/components/ui/Button";
+import Image from "next/image";
+
 
 type Props = {
   value: string;
@@ -55,19 +57,27 @@ export default function ChatInput({
         className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2.5 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none"
       />
 
-      <Button
-        onClick={onSend}
-        disabled={
-          disabled ||
-          busy ||
-          !value.trim()
-        }
-        variant="primary"
-      >
-        {busy
-          ? "Sending..."
-          : "Send"}
-      </Button>
+
+<Button
+  onClick={onSend}
+  disabled={disabled || busy || !value.trim()}
+  variant="primary"
+>
+  {busy ? (
+    "Sending..."
+  ) : (
+    <span className="inline-flex items-center gap-2">
+      <Image
+        src="/send.svg"
+        alt="Send icon"
+        width={16}
+        height={16}
+      />
+      Send
+    </span>
+  )}
+</Button>
+
     </div>
   );
 }

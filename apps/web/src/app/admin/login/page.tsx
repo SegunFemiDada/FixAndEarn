@@ -33,12 +33,14 @@ export default function AdminLoginPage() {
     totp: totp.trim(),
   },
   {
-    onSuccess: async () => {
-      // Let React Query and localStorage finish updating.
-      router.replace("/admin");
-      router.refresh();
-    },
-  }
+  onSuccess: async (data) => {
+    console.log("[LOGIN] Login response:", data);
+    console.log("[LOGIN] Stored token:", localStorage.getItem("admin_token"));
+
+    router.replace("/admin");
+    router.refresh();
+  },
+}
 );
   }
 

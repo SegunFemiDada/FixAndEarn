@@ -111,6 +111,11 @@ React.useEffect(() => {
 }, []);
 
 const token = mounted ? getAdminToken() : null;
+console.log("LAYOUT", {
+  pathname,
+  token,
+  mounted,
+});
 
   const isLoginPage = pathname === "/admin/login";
   const isBootstrapPage = pathname === "/admin/bootstrap";
@@ -123,6 +128,7 @@ const token = mounted ? getAdminToken() : null;
     if (!mounted) return;
 
     if (!token && !isPublicAdminPage) {
+      console.log("Redirecting to login because token is missing");
       router.replace("/admin/login");
     }
   }, [isPublicAdminPage, mounted, router, token]);
@@ -133,6 +139,7 @@ const token = mounted ? getAdminToken() : null;
   if (meQuery.isPending) return;
 
   if (meQuery.isError) {
+    console.log("Error occurred while fetching admin identity");
     clearAdminSession();
     router.replace("/admin/login");
   }
