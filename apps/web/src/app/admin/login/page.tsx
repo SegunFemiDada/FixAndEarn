@@ -33,14 +33,11 @@ export default function AdminLoginPage() {
     totp: totp.trim(),
   },
 {
-  onSuccess: async () => {
-    console.log("[LOGIN] onSuccess fired");
-    console.log("[LOGIN] token after login:", localStorage.getItem("admin_token"));
+  onSuccess: async (data) => {
+    console.log("[LOGIN] Login response:", data);
+    console.log("[LOGIN] Stored token:", localStorage.getItem("admin_token"));
 
-    console.log("[LOGIN] router.replace('/admin')");
     router.replace("/admin");
-
-    console.log("[LOGIN] router.refresh()");
     router.refresh();
   },
 }
