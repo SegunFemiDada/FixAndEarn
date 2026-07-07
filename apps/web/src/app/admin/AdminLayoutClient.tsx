@@ -110,7 +110,13 @@ React.useEffect(() => {
   setMounted(true);
 }, []);
 
-const token = mounted ? getAdminToken() : null;
+const [token, setToken] = React.useState<string | null>(null);
+
+React.useEffect(() => {
+  if (!mounted) return;
+
+  setToken(getAdminToken());
+}, [mounted, pathname]);
 console.log("LAYOUT", {
   pathname,
   token,
