@@ -30,7 +30,8 @@ app.use('/uploads', express.static(uploadsPath));
   );
 app.enableCors({
   origin: [
-    "https://fixandearn.vercel.app",
+    "https://fixandearn.com",
+    "https://www.fixandearn.com",
   ],
   methods: [
     "GET",

@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { NotificationType, Prisma, WalletRole } from "@prisma/client";
+import { JobStatus, NotificationType, Prisma, WalletRole } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 import { PrismaService } from "../../infra/prisma/prisma.service";
@@ -364,16 +364,11 @@ export class JobsService {
       args.clientId,
       WalletRole.CLIENT
     );
-    const required = args.priceMilliFec + JOB_POST_FEE_MILLI_FEC;
-
-    if (wallet.balanceMilliFec < required) {
-      throw new ForbiddenException(
-        `INSUFFICIENT_FUNDS_TO_POST_JOB: Need ${(required / 1000).toFixed(
-          2
-        )} FEC (price + 1.00 FEC posting fee).`
-      );
-    }
-
+   if (wallet.balanceMilliFec < JOB_POST_FEE_MILLI_FEC) {
+  throw new ForbiddenException(
+    "INSUFFICIENT_FUNDS_FOR_POSTING_FEE"
+  );
+}
     const job = await this.repo.createJob({
       clientId: args.clientId,
       skillCategory: args.skillCategory.trim(),
@@ -382,6 +377,7 @@ export class JobsService {
       lga: args.lga?.trim() ?? null,
       area: args.area?.trim() ?? null,
       priceMilliFec: args.priceMilliFec,
+      status: JobStatus.DRAFT,
     });
 
     if (Array.isArray(args.imagePaths) && args.imagePaths.length > 0) {

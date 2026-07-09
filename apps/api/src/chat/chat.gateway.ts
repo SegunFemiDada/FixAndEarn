@@ -17,7 +17,7 @@ import {
 @WebSocketGateway({
   cors: {
     origin: [
-      "https://fixandearn.vercel.app",
+      "https://fixandearn.com",
     ],
     credentials: true,
     methods: [

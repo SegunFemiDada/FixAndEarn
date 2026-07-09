@@ -226,7 +226,7 @@ async forgotPassword(input: { email: string }) {
     const raw =
       this.config.get<string>("FRONTEND_URL") ||
       this.config.get<string>("WEB_APP_URL") ||
-      "https://fixandearn.vercel.app";
+      "https://fixandearn.com";
 
     const clean = raw.trim();
     return clean.endsWith("/") ? clean.slice(0, -1) : clean;

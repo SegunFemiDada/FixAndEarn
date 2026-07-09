@@ -1,7 +1,7 @@
 //path: apps/api/src/modules/jobs/jobs.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma, WalletRole } from "@prisma/client";
+import { Prisma, WalletRole, JobStatus } from "@prisma/client";
 @Injectable()
 export class JobsRepo {
   constructor(private readonly prisma: PrismaService) {}
@@ -10,16 +10,17 @@ export class JobsRepo {
     return this.prisma.identityVerification.findUnique({ where: { userId } });
   }
   createJob(data: {
-    clientId: string;
-    skillCategory: string;
-    state: string;
-    city: string;
-    lga: string | null;
-    area: string | null;
-    priceMilliFec: number;
-  }) {
-    return this.prisma.job.create({ data });
-  }
+  clientId: string;
+  skillCategory: string;
+  state: string;
+  city: string;
+  lga: string | null;
+  area: string | null;
+  priceMilliFec: number;
+  status: JobStatus;
+}) {
+  return this.prisma.job.create({ data });
+}
 
   createJobImages(jobId: string, imagePaths: string[]) {
     if (!imagePaths.length) return Promise.resolve([]);

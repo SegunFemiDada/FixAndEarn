@@ -18,67 +18,51 @@ model AppMeta {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  fullName     String
-  passwordHash String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  roles UserRole[]
-
-  verification IdentityVerification?
-
-  wallets     Wallet[]
-  bankDetails BankDetails?
-  withdrawals WithdrawalRequest[]
-  deposits    Deposit[]
-  reports     Report[]
-
-  fixerPreferredAvailability AvailabilityStatus @default(UNAVAILABLE)
+  id                         String                 @id @default(uuid())
+  email                      String                 @unique
+  fullName                   String
+  passwordHash               String
+  isActive                   Boolean                @default(true)
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @updatedAt
+  adminNotes                 String?
+  forceReverify              Boolean                @default(false)
   fixerAvailabilityUpdatedAt DateTime?
-
-  jobsPosted      Job[]            @relation("UserJobsPosted")
-  jobApplications JobApplication[] @relation("UserJobApplications")
-
-  conversationsAsFixer      Conversation[]         @relation("ConversationFixer")
-  chatAgreements            ChatAgreement[]
-  chatMessagesSent          ChatMessage[]          @relation("ChatMessageSender")
-  completionRequestsAsFixer JobCompletionRequest[]
-  reviewsGiven              JobReview[]            @relation("ReviewsGiven")
-  reviewsReceived           JobReview[]            @relation("ReviewsReceived")
-
-  notifications Notification[]
-
-  adminNotes    String?
-  forceReverify Boolean @default(false)
-
-  jobsAssigned              Job[]                 @relation("UserJobsAssigned")
-  disputesOpened            Dispute[]             @relation("DisputesOpened")
-  averageRating             Float                 @default(0)
-  totalRatings              Int                   @default(0)
-  emailVerifiedAt           DateTime?
-  emailVerifyTokenHash      String?
-  emailVerifyTokenExpiresAt DateTime?
-  withdrawalPinHash         String? // argon2 hash, only for FIXER role
-  deletionRequestedAt       DateTime?
-  deletionRequestReason     String?
-  deletionRequestStatus     DeletionRequestStatus @default(NONE)
-  phone                     String?               @unique
-  phoneVerifiedAt           DateTime?
-  phoneVerifyCode           String?
-  phoneVerifyCodeExpiresAt  DateTime?
-  sessionVersion            Int                   @default(1)
+  fixerPreferredAvailability AvailabilityStatus     @default(UNAVAILABLE)
+  averageRating              Float                  @default(0)
+  totalRatings               Int                    @default(0)
+  emailVerifiedAt            DateTime?
+  emailVerifyTokenExpiresAt  DateTime?
+  emailVerifyTokenHash       String?
+  withdrawalPinHash          String?
+  deletionRequestReason      String?
+  deletionRequestStatus      DeletionRequestStatus  @default(NONE)
+  deletionRequestedAt        DateTime?
+  phone                      String?                @unique
+  phoneVerifiedAt            DateTime?
+  phoneVerifyCode            String?
+  phoneVerifyCodeExpiresAt   DateTime?
+  sessionVersion             Int                    @default(1)
+  deposits                   Deposit[]
+  reports                    Report[]
+  bankDetails                BankDetails?
+  chatAgreements             ChatAgreement[]
+  chatMessagesSent           ChatMessage[]          @relation("ChatMessageSender")
+  conversationsAsFixer       Conversation[]         @relation("ConversationFixer")
+  disputesOpened             Dispute[]              @relation("DisputesOpened")
+  verification               IdentityVerification?
+  jobApplications            JobApplication[]       @relation("UserJobApplications")
+  completionRequestsAsFixer  JobCompletionRequest[]
+  reviewsGiven               JobReview[]            @relation("ReviewsGiven")
+  reviewsReceived            JobReview[]            @relation("ReviewsReceived")
+  jobsPosted                 Job[]                  @relation("UserJobsPosted")
+  jobsAssigned               Job[]                  @relation("UserJobsAssigned")
+  notifications              Notification[]
+  roles                      UserRole[]
+  wallets                    Wallet[]
+  withdrawals                WithdrawalRequest[]
 
   @@map("users")
-}
-
-enum DeletionRequestStatus {
-  NONE
-  PENDING
-  APPROVED
-  REJECTED
 }
 
 model Role {
@@ -96,105 +80,53 @@ model UserRole {
   userId    String
   roleId    String
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@map("user_roles")
 }
 
-enum VerificationStatus {
-  NOT_SUBMITTED
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 model IdentityVerification {
-  id String @id @default(uuid())
-
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  ninHash  String @unique
-  bvnHash  String @unique
-  faceHash String @unique
-
-  ninImagePath    String
-  selfieImagePath String
-  utilityBillPath String
-
-  bio    String
-  skills String
-
-  addressHouse   String
-  addressStreet  String
-  addressArea    String
-  nearestBusStop String
-  lga            String
-  city           String
-  state          String
-
-  instagram String?
-  tiktok    String?
-
-  status VerificationStatus @default(PENDING)
-
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  reviewedByAdminId String?
-  reviewedAt        DateTime?
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  ninHash           String             @unique
+  bvnHash           String             @unique
+  faceHash          String             @unique
+  ninImagePath      String
+  selfieImagePath   String
+  utilityBillPath   String
+  bio               String
+  skills            String
+  addressHouse      String
+  addressStreet     String
+  addressArea       String
+  nearestBusStop    String
+  lga               String
+  city              String
+  state             String
+  instagram         String?
+  tiktok            String?
+  status            VerificationStatus @default(PENDING)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   reviewReason      String?
+  reviewedAt        DateTime?
+  reviewedByAdminId String?
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("identity_verifications")
 }
 
-enum AvailabilityStatus {
-  UNAVAILABLE
-  BUSY
-  AVAILABLE
-}
-
-enum LedgerEntryType {
-  DEPOSIT
-  WITHDRAWAL_REQUEST
-  WITHDRAWAL_APPROVED
-  WITHDRAWAL_REJECTED
-  WITHDRAWAL_REVERSAL
-
-  JOB_PAYMENT
-  JOB_PAYOUT
-  COMMISSION
-
-  ADJUSTMENT
-  FEE
-}
-
-enum LedgerEntryDirection {
-  CREDIT
-  DEBIT
-}
-
-enum WalletRole {
-  CLIENT
-  FIXER
-  SYSTEM
-}
-
 model Wallet {
-  id     String     @id @default(uuid())
-  userId String
-  role   WalletRole @default(CLIENT)
-  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // 1 milliFEC = ₦1
-  balanceMilliFec Int @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  entries LedgerEntry[]
+  id              String        @id @default(uuid())
+  userId          String
+  balanceMilliFec Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  role            WalletRole    @default(CLIENT)
+  entries         LedgerEntry[]
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role])
   @@index([userId])
@@ -202,77 +134,55 @@ model Wallet {
 }
 
 model LedgerEntry {
-  id       String @id @default(uuid())
-  walletId String
-  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-
+  id             String               @id @default(uuid())
+  walletId       String
   type           LedgerEntryType
   direction      LedgerEntryDirection
   amountMilliFec Int
-
-  idempotencyKey String @unique
-
-  reference String?
-  metadata  Json?
-
-  createdAt DateTime @default(now())
+  idempotencyKey String               @unique
+  reference      String?
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+  wallet         Wallet               @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([walletId, createdAt])
   @@map("ledger_entries")
 }
 
 model BankDetails {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  bankName      String
-  accountName   String
-  accountNumber String
-  bankCode      String
-  bvnEncrypted  String
-  bvnIv         String
-
-  paystackRecipientCode String? // 
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  bankName              String
+  accountName           String
+  accountNumber         String
+  bvnEncrypted          String
+  bvnIv                 String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  paystackRecipientCode String?
+  bankCode              String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("bank_details")
 }
 
-enum WithdrawalStatus {
-  PENDING
-  APPROVED
-  PROCESSING
-  PAID
-  FAILED
-  REJECTED
-}
-
 model WithdrawalRequest {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  amountMilliFec Int
-  status         WithdrawalStatus @default(PENDING)
-
-  paystackTransferReference String? @unique
+  id                        String           @id @default(uuid())
+  userId                    String
+  amountMilliFec            Int
+  status                    WithdrawalStatus @default(PENDING)
+  paystackTransferReference String?          @unique
   paystackTransferCode      String?
   paystackTransferStatus    String?
-
-  payoutMode String?
-
-  failureReason String?
-
-  reviewedBy String?
-  reviewNote String?
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  reviewedAt DateTime?
-  paidAt     DateTime?
+  payoutMode                String?
+  failureReason             String?
+  reviewedBy                String?
+  reviewNote                String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  reviewedAt                DateTime?
+  paidAt                    DateTime?
+  user                      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("withdrawal_requests")
@@ -287,53 +197,31 @@ model WebhookEvent {
   @@index([reference])
 }
 
-enum JobStatus {
-  OPEN
-  IN_PROGRESS
-  DISPUTED
-  COMPLETED
-  CANCELLED
-}
-
-enum JobApplicationStatus {
-  APPLIED
-  WITHDRAWN
-}
-
 model Job {
-  id String @id @default(cuid())
-
-  clientId String
-  client   User   @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
-
-  fixerId String?
-  fixer   User?   @relation("UserJobsAssigned", fields: [fixerId], references: [id], onDelete: SetNull)
-
-  skillCategory String
-  state         String
-  city          String
-  lga           String?
-  area          String?
-
-  priceMilliFec Int
-  status        JobStatus @default(OPEN)
-
-  lockedPriceMilliFec Int?
-
-  applications JobApplication[]
-
-  conversations     Conversation[]
-  completionRequest JobCompletionRequest?
-  review            JobReview?
-
-  images JobImage[]
-
-  completedRequestedAt DateTime?
+  id                   String                @id @default(cuid())
+  clientId             String
+  skillCategory        String
+  state                String
+  city                 String
+  lga                  String?
+  area                 String?
+  priceMilliFec        Int
+  status               JobStatus             @default(OPEN)
+  lockedPriceMilliFec  Int?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
   completedApprovedAt  DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  dispute   Dispute?
+  completedRequestedAt DateTime?
+  fixerId              String?
+  payments             JobPayment?
+  conversations        Conversation[]
+  dispute              Dispute?
+  applications         JobApplication[]
+  completionRequest    JobCompletionRequest?
+  images               JobImage[]
+  review               JobReview?
+  client               User                  @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
+  fixer                User?                 @relation("UserJobsAssigned", fields: [fixerId], references: [id])
 
   @@index([status])
   @@index([skillCategory])
@@ -343,32 +231,26 @@ model Job {
 }
 
 model JobImage {
-  id    String @id @default(cuid())
-  jobId String
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(cuid())
+  jobId     String
   imagePath String
-  sortOrder Int    @default(0)
-
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId, sortOrder])
   @@map("job_images")
 }
 
 model JobApplication {
-  id String @id @default(cuid())
-
-  jobId String
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  fixerId String
-  fixer   User   @relation("UserJobApplications", fields: [fixerId], references: [id], onDelete: Cascade)
-
-  note   String?
-  status JobApplicationStatus @default(APPLIED)
-
-  createdAt DateTime @default(now())
+  id        String               @id @default(cuid())
+  jobId     String
+  fixerId   String
+  note      String?
+  status    JobApplicationStatus @default(APPLIED)
+  createdAt DateTime             @default(now())
+  fixer     User                 @relation("UserJobApplications", fields: [fixerId], references: [id], onDelete: Cascade)
+  job       Job                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, fixerId])
   @@index([jobId])
@@ -377,28 +259,364 @@ model JobApplication {
 }
 
 model Report {
-  id         String @id @default(uuid())
-  reporterId String
-  reporter   User   @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-
-  jobId   String? // for CHAT_MESSAGE reports, store the job ID
-  fixerId String? // for CHAT_MESSAGE reports, store the fixer ID
-
-  targetType ReportTargetType
-  targetId   String
-
+  id          String           @id @default(uuid())
+  reporterId  String
+  targetType  ReportTargetType
+  targetId    String
   reason      String
   description String?
-
-  status     ReportStatus @default(PENDING)
-  resolvedBy String?
-  resolvedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status      ReportStatus     @default(PENDING)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  fixerId     String?
+  jobId       String?
+  reporter    User             @relation(fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@index([targetType, targetId])
   @@index([status])
+}
+
+model Conversation {
+  id          String             @id @default(uuid())
+  jobId       String
+  fixerId     String
+  status      ConversationStatus @default(OPEN)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  active      Boolean            @default(false)
+  agreements  ChatAgreement[]
+  messages    ChatMessage[]
+  fixer       User               @relation("ConversationFixer", fields: [fixerId], references: [id], onDelete: Cascade)
+  job         Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  negotiation Negotiation?
+
+  @@unique([jobId, fixerId])
+  @@index([jobId])
+  @@index([fixerId])
+  @@map("conversations")
+}
+
+model ChatAgreement {
+  id             String       @id @default(uuid())
+  conversationId String
+  userId         String
+  acceptedAt     DateTime     @default(now())
+  ip             String?
+  userAgent      String?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@map("chat_agreements")
+}
+
+model ChatMessage {
+  id             String           @id @default(uuid())
+  conversationId String
+  senderId       String
+  body           String
+  createdAt      DateTime         @default(now())
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User             @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  flags          ModerationFlag[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
+}
+
+model Negotiation {
+  id                    String            @id @default(uuid())
+  conversationId        String            @unique
+  status                NegotiationStatus @default(OPEN)
+  proposedPriceMilliFec Int?
+  lockedPriceMilliFec   Int?
+  lockedByUserId        String?
+  clientAcceptedAt      DateTime?
+  fixerAcceptedAt       DateTime?
+  agreedAt              DateTime?
+  rejectedAt            DateTime?
+  rejectedByUserId      String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  conversation          Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("negotiations")
+}
+
+model ModerationFlag {
+  id        String             @id @default(uuid())
+  messageId String
+  type      ModerationFlagType
+  matched   String?
+  createdAt DateTime           @default(now())
+  message   ChatMessage        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([type])
+  @@map("moderation_flags")
+}
+
+model JobCompletionRequest {
+  id                 String                  @id @default(cuid())
+  jobId              String                  @unique
+  fixerId            String
+  status             CompletionRequestStatus @default(PENDING)
+  requestedAt        DateTime                @default(now())
+  reviewedByClientId String?
+  reviewedAt         DateTime?
+  reviewNote         String?
+  fixer              User                    @relation(fields: [fixerId], references: [id], onDelete: Cascade)
+  job                Job                     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([fixerId, status])
+  @@index([jobId])
+  @@map("job_completion_requests")
+}
+
+model JobReview {
+  id        String   @id @default(cuid())
+  jobId     String   @unique
+  clientId  String
+  fixerId   String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  client    User     @relation("ReviewsGiven", fields: [clientId], references: [id], onDelete: Cascade)
+  fixer     User     @relation("ReviewsReceived", fields: [fixerId], references: [id], onDelete: Cascade)
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([fixerId, createdAt])
+  @@index([clientId, createdAt])
+  @@map("job_reviews")
+}
+
+model Admin {
+  id                  String              @id @default(cuid())
+  email               String              @unique
+  fullName            String
+  passwordHash        String
+  role                AdminRole
+  totpSecretEncrypted String
+  totpSecretIv        String
+  is2faEnabled        Boolean             @default(true)
+  isActive            Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  sessionVersion      Int                 @default(1)
+  failedLoginAttempts Int                 @default(0)
+  lockedUntil         DateTime?
+  AdminRefreshToken   AdminRefreshToken[]
+  sessions            AdminSession[]
+  AdminAuditLog       AdminAuditLog[]
+  resolvedDisputes    Dispute[]
+
+  @@map("admins")
+}
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  actorAdminId String
+  action       String
+  description  String
+  ip           String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  actor        Admin    @relation(fields: [actorAdminId], references: [id], onDelete: Cascade)
+
+  @@index([actorAdminId, createdAt])
+  @@index([action, createdAt])
+  @@map("admin_audit_logs")
+}
+
+model AdminRefreshToken {
+  id           String    @id @default(cuid())
+  adminId      String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  replacedById String?
+  lastUsedAt   DateTime  @default(now())
+  admin        Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+model AdminSession {
+  id               String   @id @default(cuid())
+  adminId          String
+  refreshTokenHash String   @unique
+  ipAddress        String?
+  userAgent        String?
+  deviceName       String?
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime @default(now())
+  expiresAt        DateTime
+  admin            Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+}
+
+model PlatformWallet {
+  id              String                @id @default(cuid())
+  balanceMilliFec Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  entries         PlatformLedgerEntry[]
+
+  @@map("platform_wallets")
+}
+
+model PlatformLedgerEntry {
+  id               String               @id @default(cuid())
+  platformWalletId String
+  type             String
+  direction        LedgerEntryDirection
+  amountMilliFec   Int
+  idempotencyKey   String               @unique
+  reference        String?
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  platformWallet   PlatformWallet       @relation(fields: [platformWalletId], references: [id], onDelete: Cascade)
+
+  @@index([platformWalletId, createdAt])
+  @@map("platform_ledger_entries")
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  userId         String
+  type           NotificationType
+  title          String
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime         @default(now())
+  data           Json?
+  idempotencyKey String           @unique
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model Dispute {
+  id                String                 @id @default(cuid())
+  jobId             String                 @unique
+  openedByUserId    String
+  reason            String
+  evidence          Json?
+  status            DisputeStatus          @default(OPEN)
+  resolutionType    DisputeResolutionType?
+  resolvedByAdminId String?
+  resolvedAt        DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  job               Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  openedBy          User                   @relation("DisputesOpened", fields: [openedByUserId], references: [id])
+  resolvedByAdmin   Admin?                 @relation(fields: [resolvedByAdminId], references: [id])
+
+  @@index([status])
+  @@map("disputes")
+}
+
+model Deposit {
+  id             String        @id @default(uuid())
+  userId         String
+  reference      String        @unique
+  amountMilliFec Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  status         DepositStatus @default(PENDING)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reference])
+}
+
+model JobPayment {
+  id                  String           @id @default(cuid())
+  jobId               String           @unique
+  reference           String           @unique
+  amountMilliFec      Int
+  paystackFeeMilliFec Int
+  status              JobPaymentStatus @default(PENDING)
+  paidAt              DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  job                 Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+enum DeletionRequestStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  NOT_SUBMITTED
+}
+
+enum AvailabilityStatus {
+  UNAVAILABLE
+  BUSY
+  AVAILABLE
+}
+
+enum LedgerEntryType {
+  DEPOSIT
+  WITHDRAWAL_REQUEST
+  WITHDRAWAL_APPROVED
+  WITHDRAWAL_REJECTED
+  JOB_PAYMENT
+  JOB_PAYOUT
+  COMMISSION
+  ADJUSTMENT
+  FEE
+  WITHDRAWAL_REVERSAL
+}
+
+enum LedgerEntryDirection {
+  CREDIT
+  DEBIT
+}
+
+enum WalletRole {
+  CLIENT
+  FIXER
+  SYSTEM
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+  PROCESSING
+  FAILED
+}
+
+enum JobStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  DRAFT
+}
+
+enum JobApplicationStatus {
+  APPLIED
+  WITHDRAWN
 }
 
 enum ReportTargetType {
@@ -411,12 +629,6 @@ enum ReportStatus {
   RESOLVED
   DISMISSED
 }
-
-//
-// ===============================
-// Milestone F: Messaging + Negotiation
-// ===============================
-//
 
 enum ConversationStatus {
   OPEN
@@ -438,160 +650,11 @@ enum ModerationFlagType {
   OTHER
 }
 
-model Conversation {
-  id      String             @id @default(uuid())
-  jobId   String
-  fixerId String
-  status  ConversationStatus @default(OPEN)
-
-  active Boolean @default(false) // NEW FIELD
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  job   Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  fixer User @relation("ConversationFixer", fields: [fixerId], references: [id], onDelete: Cascade)
-
-  agreements  ChatAgreement[]
-  messages    ChatMessage[]
-  negotiation Negotiation?
-
-  @@unique([jobId, fixerId])
-  @@index([jobId])
-  @@index([fixerId])
-  @@map("conversations")
-}
-
-model ChatAgreement {
-  id             String @id @default(uuid())
-  conversationId String
-  userId         String
-
-  acceptedAt DateTime @default(now())
-  ip         String?
-  userAgent  String?
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-  @@index([userId])
-  @@map("chat_agreements")
-}
-
-model ChatMessage {
-  id             String @id @default(uuid())
-  conversationId String
-  senderId       String
-
-  body      String
-  createdAt DateTime @default(now())
-
-  conversation Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User             @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  flags        ModerationFlag[]
-
-  @@index([conversationId, createdAt])
-  @@index([senderId])
-  @@map("chat_messages")
-}
-
-model Negotiation {
-  id             String @id @default(uuid())
-  conversationId String @unique
-
-  status NegotiationStatus @default(OPEN)
-
-  proposedPriceMilliFec Int?
-
-  lockedPriceMilliFec Int?
-  lockedByUserId      String?
-
-  clientAcceptedAt DateTime?
-  fixerAcceptedAt  DateTime?
-
-  agreedAt         DateTime?
-  rejectedAt       DateTime?
-  rejectedByUserId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([status])
-  @@map("negotiations")
-}
-
-model ModerationFlag {
-  id        String             @id @default(uuid())
-  messageId String
-  type      ModerationFlagType
-  matched   String?
-  createdAt DateTime           @default(now())
-
-  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
-
-  @@index([messageId])
-  @@index([type])
-  @@map("moderation_flags")
-}
-
 enum CompletionRequestStatus {
   PENDING
   APPROVED
   REJECTED
 }
-
-model JobCompletionRequest {
-  id String @id @default(cuid())
-
-  jobId String @unique
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  fixerId String
-  fixer   User   @relation(fields: [fixerId], references: [id], onDelete: Cascade)
-
-  status CompletionRequestStatus @default(PENDING)
-
-  requestedAt DateTime @default(now())
-
-  reviewedByClientId String?
-  reviewedAt         DateTime?
-  reviewNote         String?
-
-  @@index([fixerId, status])
-  @@index([jobId])
-  @@map("job_completion_requests")
-}
-
-model JobReview {
-  id String @id @default(cuid())
-
-  jobId String @unique
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  clientId String
-  client   User   @relation("ReviewsGiven", fields: [clientId], references: [id], onDelete: Cascade)
-
-  fixerId String
-  fixer   User   @relation("ReviewsReceived", fields: [fixerId], references: [id], onDelete: Cascade)
-
-  rating  Int
-  comment String?
-
-  createdAt DateTime @default(now())
-
-  @@index([fixerId, createdAt])
-  @@index([clientId, createdAt])
-  @@map("job_reviews")
-}
-
-//
-// ===============================
-// Admin
-// ===============================
-//
 
 enum AdminRole {
   SUPER_ADMIN
@@ -601,131 +664,7 @@ enum AdminRole {
   SECURITY_OFFICER
 }
 
-model Admin {
-  id String @id @default(cuid())
-
-  email        String @unique
-  fullName     String
-  passwordHash String
-
-  role AdminRole
-
-  totpSecretEncrypted String
-  totpSecretIv        String
-  is2faEnabled        Boolean @default(true)
-
-  isActive Boolean @default(true)
-
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  AdminAuditLog       AdminAuditLog[]
-  resolvedDisputes    Dispute[]
-  sessionVersion      Int                 @default(1)
-  AdminRefreshToken   AdminRefreshToken[]
-  sessions            AdminSession[]
-  failedLoginAttempts Int                 @default(0)
-  lockedUntil         DateTime?
-
-  @@map("admins")
-}
-
-model AdminAuditLog {
-  id String @id @default(cuid())
-
-  actorAdminId String
-  actor        Admin  @relation(fields: [actorAdminId], references: [id], onDelete: Cascade)
-
-  action      String
-  description String
-
-  ip        String?
-  userAgent String?
-
-  metadata Json?
-
-  createdAt DateTime @default(now())
-
-  @@index([actorAdminId, createdAt])
-  @@index([action, createdAt])
-  @@map("admin_audit_logs")
-}
-
-model AdminRefreshToken {
-  id           String    @id @default(cuid())
-  adminId      String
-  tokenHash    String    @unique
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
-  revokedAt    DateTime?
-  replacedById String?
-  lastUsedAt   DateTime  @default(now())
-
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-  @@index([expiresAt])
-}
-
-model AdminSession {
-  id String @id @default(cuid())
-
-  adminId          String
-  refreshTokenHash String @unique
-
-  ipAddress  String?
-  userAgent  String?
-  deviceName String?
-
-  createdAt  DateTime @default(now())
-  lastUsedAt DateTime @default(now())
-  expiresAt  DateTime
-
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-}
-
-//
-// ===============================
-// Platform wallet (Commission)
-// ===============================
-//
-
-model PlatformWallet {
-  id String @id @default(cuid())
-
-  balanceMilliFec Int @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  entries PlatformLedgerEntry[]
-
-  @@map("platform_wallets")
-}
-
-model PlatformLedgerEntry {
-  id String @id @default(cuid())
-
-  platformWalletId String
-  platformWallet   PlatformWallet @relation(fields: [platformWalletId], references: [id], onDelete: Cascade)
-
-  type           String
-  direction      LedgerEntryDirection
-  amountMilliFec Int
-
-  idempotencyKey String  @unique
-  reference      String?
-  metadata       Json?
-
-  createdAt DateTime @default(now())
-
-  @@index([platformWalletId, createdAt])
-  @@map("platform_ledger_entries")
-}
-
 enum NotificationType {
-  JOB_APPLIED
   JOB_COMPLETION_REQUESTED
   JOB_COMPLETION_APPROVED
   JOB_COMPLETION_REJECTED
@@ -733,39 +672,13 @@ enum NotificationType {
   ESCROW_LOCKED
   DISPUTE_OPENED
   DISPUTE_RESOLVED
-
+  JOB_APPLIED
   DEPOSIT_SUCCEEDED
   WITHDRAWAL_REQUESTED
   WITHDRAWAL_APPROVED
   WITHDRAWAL_REJECTED
   WITHDRAWAL_PAID
-
   SYSTEM_ANNOUNCEMENT
-}
-
-model Notification {
-  id String @id @default(uuid())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type  NotificationType
-  title String
-  body  String
-
-  // needed for idempotent notifications
-  idempotencyKey String @unique
-
-  // optional structured payload
-  data Json?
-
-  // read tracking
-  readAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-  @@map("notifications")
 }
 
 enum DisputeStatus {
@@ -779,48 +692,14 @@ enum DisputeResolutionType {
   PARTIAL_SPLIT
 }
 
-model Dispute {
-  id String @id @default(cuid())
-
-  jobId String @unique
-  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  openedByUserId String
-  openedBy       User   @relation("DisputesOpened", fields: [openedByUserId], references: [id], onDelete: Restrict)
-
-  reason   String
-  evidence Json?
-
-  status DisputeStatus @default(OPEN)
-
-  resolutionType    DisputeResolutionType?
-  resolvedByAdminId String?
-  resolvedByAdmin   Admin?                 @relation(fields: [resolvedByAdminId], references: [id], onDelete: SetNull)
-  resolvedAt        DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status])
-  @@map("disputes")
-}
-
 enum DepositStatus {
   PENDING
   SUCCEEDED
   FAILED
 }
 
-model Deposit {
-  id             String        @id @default(uuid())
-  userId         String
-  reference      String        @unique
-  amountMilliFec Int
-  status         DepositStatus @default(PENDING)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([reference])
+enum JobPaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
