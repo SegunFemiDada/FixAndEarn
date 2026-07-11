@@ -5,15 +5,26 @@ import PublicFooter from "@/components/layout/public-footer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "FixAndEarn",
-  description: "Fix. Earn. Grow.",
-  icons: {
-    icon: [
-      {
-        url: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>",
-      },
-    ],
+  metadataBase: new URL("https://fixandearn.com"),
+
+  title: {
+    default: "FixAndEarn",
+    template: "%s | FixAndEarn",
   },
+
+  description: "Fix. Earn. Grow.",
+
+  applicationName: "FixAndEarn",
+
+  manifest: "/manifest.webmanifest",
+
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
+
+  themeColor: "#2563EB",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

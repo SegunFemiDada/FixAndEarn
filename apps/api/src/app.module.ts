@@ -26,6 +26,7 @@ import { SupportModule } from "./modules/support/support.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
 import { StorageModule } from "./common/storage/storage.module";
+import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
 
 
 
@@ -46,6 +47,7 @@ import { StorageModule } from "./common/storage/storage.module";
     AccountModule,
     VerificationModule,
     PaymentsModule,
+    JobPaymentsModule,
     WalletModule,
     JobsModule,
     AdminModule,

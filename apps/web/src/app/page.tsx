@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden px-4 py-16 sm:px-6 sm:py-24 lg:py-32">

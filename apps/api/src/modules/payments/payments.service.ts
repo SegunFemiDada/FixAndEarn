@@ -14,6 +14,7 @@ import { LedgerService } from "../wallet/ledger.service";
 import { PAYSTACK_PROVIDER } from "./payments.constants";
 import { PaystackProvider } from "./paystack/paystack.provider";
 import { ModuleRef } from "@nestjs/core";
+import { JobPaymentProcessorService } from "../job-payments/job-payment-processor.service";
 
 @Injectable()
 export class PaymentsService {
@@ -25,7 +26,8 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly ledgerService: LedgerService,
     private readonly notifications: NotificationsService,
-    private readonly moduleRef: ModuleRef
+    private readonly moduleRef: ModuleRef,
+    private readonly jobPaymentProcessor: JobPaymentProcessorService,
   ) {}
 
   async initializeDeposit(userId: string, amountMilliFec: number) {
@@ -274,52 +276,78 @@ export class PaymentsService {
     }
 
     // Process within a transaction, creating the webhook record atomically
-    return await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       await tx.webhookEvent.create({
         data: { reference, eventType: event.event },
       });
 
       if (event?.event === "charge.success") {
-        const deposit = await tx.deposit.findUnique({
-          where: { reference },
-        });
-        if (!deposit || deposit.status === "SUCCEEDED") {
-          return { ok: true };
-        }
+  const deposit = await tx.deposit.findUnique({
+    where: { reference },
+  });
 
-        await tx.deposit.update({
-          where: { id: deposit.id },
-          data: { status: "SUCCEEDED" },
-        });
+  if (deposit) {
+    if (deposit.status === "SUCCEEDED") {
+      return { ok: true };
+    }
 
-        await this.ledgerService.addEntry({
-          userId: deposit.userId,
-          role: WalletRole.CLIENT,
-          type: "DEPOSIT",
-          direction: "CREDIT",
+    await tx.deposit.update({
+      where: { id: deposit.id },
+      data: {
+        status: "SUCCEEDED",
+      },
+    });
+
+    await this.ledgerService.addEntry({
+      userId: deposit.userId,
+      role: WalletRole.CLIENT,
+      type: "DEPOSIT",
+      direction: "CREDIT",
+      amountMilliFec: deposit.amountMilliFec,
+      idempotencyKey: `deposit:${reference}`,
+      reference,
+      prisma: tx,
+    });
+
+    try {
+      await this.notifications.create({
+        userId: deposit.userId,
+        type: NotificationType.DEPOSIT_SUCCEEDED,
+        title: "Deposit received",
+        body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
+        idempotencyKey: `notif:deposit:${deposit.reference}`,
+        data: {
+          reference: deposit.reference,
           amountMilliFec: deposit.amountMilliFec,
-          idempotencyKey: `deposit:${reference}`,
-          reference,
-          prisma: tx,
-        });
+        },
+      });
+    } catch {}
 
-        // Notification outside transaction (or inside? It doesn't affect financial state, so safe outside)
-        try {
-          await this.notifications.create({
-            userId: deposit.userId,
-            type: NotificationType.DEPOSIT_SUCCEEDED,
-            title: "Deposit received",
-            body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
-            idempotencyKey: `notif:deposit:${deposit.reference}`,
-            data: {
-              reference: deposit.reference,
-              amountMilliFec: deposit.amountMilliFec,
-            },
-          });
-        } catch {}
+    return {
+      ok: true,
+      paymentType: "DEPOSIT",
+    };
+  }
 
-        return { ok: true };
-      }
+  const jobPayment = await tx.jobPayment.findUnique({
+    where: {
+      paystackReference: reference,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (jobPayment) {
+    return {
+      ok: true,
+      paymentType: "JOB_PAYMENT",
+      jobPaymentId: jobPayment.id,
+    };
+  }
+
+  return { ok: true };
+}
 
       if (
         event?.event === "transfer.success" ||
@@ -337,5 +365,20 @@ export class PaymentsService {
 
       return { ok: true };
     });
+
+if (
+  result &&
+  typeof result === "object" &&
+  "paymentType" in result &&
+  result.paymentType === "JOB_PAYMENT" &&
+  "jobPaymentId" in result &&
+  typeof result.jobPaymentId === "string"
+) {
+  await this.jobPaymentProcessor.handleSuccessfulPayment(
+    result.jobPaymentId,
+  );
+}
+
+return result;
   }
 }

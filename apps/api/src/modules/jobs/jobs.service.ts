@@ -7,7 +7,6 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { JobStatus, NotificationType, Prisma, WalletRole } from "@prisma/client";
-import { randomUUID } from "crypto";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -15,17 +14,20 @@ import { LedgerService } from "../wallet/ledger.service";
 import { PlatformWalletService } from "../wallet/platform-wallet.service";
 import { WalletService } from "../wallet/wallet.service";
 import { JobsRepo } from "./jobs.repo";
+import { JobPaymentsService } from "../job-payments/job-payments.service";
+
 
 @Injectable()
 export class JobsService {
   constructor(
-    private readonly repo: JobsRepo,
-    private readonly ledgerService: LedgerService,
-    private readonly walletService: WalletService,
-    private readonly notifications: NotificationsService,
-    private readonly platformWalletService: PlatformWalletService,
-    private readonly prisma: PrismaService
-  ) {}
+  private readonly repo: JobsRepo,
+  private readonly ledgerService: LedgerService,
+  private readonly walletService: WalletService,
+  private readonly notifications: NotificationsService,
+  private readonly platformWalletService: PlatformWalletService,
+  private readonly prisma: PrismaService,
+  private readonly jobPaymentsService: JobPaymentsService,
+) {}
 
   private ensurePositiveInt(n: number, msg: string) {
     if (!Number.isInteger(n) || n <= 0) {
@@ -124,7 +126,6 @@ export class JobsService {
     }
 
     const URGENT_FEE_MILLI_FEC = 2000;
-    const nonce = randomUUID();
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const clientWallet = await this.walletService.getOrCreateWallet(
@@ -161,35 +162,6 @@ export class JobsService {
         throw new NotFoundException("FIXER_NOT_FOUND_OR_NOT_VERIFIED");
       }
 
-      await this.ledgerService.addEntry({
-        userId: args.clientId,
-        role: WalletRole.CLIENT,
-        type: "FEE",
-        direction: "DEBIT",
-        amountMilliFec: URGENT_FEE_MILLI_FEC,
-        idempotencyKey: `urgent_hire_fee:${args.clientId}:${fixerId}:${nonce}`,
-        reference: fixerId,
-        metadata: {
-          kind: "URGENT_HIRE_FEE",
-          clientId: args.clientId,
-          fixerId,
-        },
-        prisma: tx,
-      });
-
-      await this.platformWalletService.addEntry({
-        type: "URGENT_HIRE_FEE",
-        direction: "CREDIT",
-        amountMilliFec: URGENT_FEE_MILLI_FEC,
-        idempotencyKey: `platform_urgent_hire_fee:${args.clientId}:${fixerId}:${nonce}`,
-        reference: fixerId,
-        metadata: {
-          kind: "URGENT_HIRE_FEE",
-          clientId: args.clientId,
-          fixerId,
-        },
-        prisma: tx,
-      });
 
       const job = await tx.job.create({
         data: {
@@ -227,6 +199,13 @@ export class JobsService {
           status: "OPEN",
         },
       });
+      const payment =
+  await this.jobPaymentsService.createUrgentHirePayment({
+    jobId: job.id,
+    clientId: args.clientId,
+    fixerId,
+    conversationId: conversation.id,
+  });
 
       try {
         await this.notifications.create({
@@ -245,11 +224,11 @@ export class JobsService {
       } catch {}
 
       return {
-        ok: true,
-        jobId: job.id,
-        conversationId: conversation.id,
-        feeChargedMilliFec: URGENT_FEE_MILLI_FEC,
-      };
+  ok: true,
+  jobId: job.id,
+  conversationId: conversation.id,
+  payment,
+};
     });
   }
 
@@ -337,82 +316,47 @@ export class JobsService {
   }
 
   async createJob(args: {
-    clientId: string;
-    skillCategory: string;
-    state: string;
-    city: string;
-    lga?: string;
-    area?: string;
-    priceMilliFec: number;
-    imagePaths?: string[];
-  }) {
-    this.ensurePositiveInt(
-      args.priceMilliFec,
-      "priceMilliFec must be a positive integer (milliFEC)."
-    );
-    await this.assertVerifiedUser(args.clientId);
-
-    if (!args.skillCategory || args.skillCategory.trim().length < 2) {
-      throw new BadRequestException("skillCategory is required.");
-    }
-    if (!args.state || !args.city) {
-      throw new BadRequestException("state and city are required.");
-    }
-
-    const JOB_POST_FEE_MILLI_FEC = 1000;
-    const wallet = await this.walletService.getOrCreateWallet(
-      args.clientId,
-      WalletRole.CLIENT
-    );
-   if (wallet.balanceMilliFec < JOB_POST_FEE_MILLI_FEC) {
-  throw new ForbiddenException(
-    "INSUFFICIENT_FUNDS_FOR_POSTING_FEE"
+  clientId: string;
+  skillCategory: string;
+  state: string;
+  city: string;
+  lga?: string;
+  area?: string;
+  priceMilliFec: number;
+  imagePaths?: string[];
+}) {
+  this.ensurePositiveInt(
+    args.priceMilliFec,
+    "priceMilliFec must be a positive integer."
   );
-}
-    const job = await this.repo.createJob({
-      clientId: args.clientId,
-      skillCategory: args.skillCategory.trim(),
-      state: args.state.trim(),
-      city: args.city.trim(),
-      lga: args.lga?.trim() ?? null,
-      area: args.area?.trim() ?? null,
-      priceMilliFec: args.priceMilliFec,
-      status: JobStatus.DRAFT,
-    });
 
-    if (Array.isArray(args.imagePaths) && args.imagePaths.length > 0) {
-      await this.repo.createJobImages(job.id, args.imagePaths.slice(0, 5));
-    }
+  await this.assertVerifiedUser(args.clientId);
 
-    await this.ledgerService.addEntry({
-      userId: args.clientId,
-      role: WalletRole.CLIENT,
-      type: "FEE",
-      direction: "DEBIT",
-      amountMilliFec: JOB_POST_FEE_MILLI_FEC,
-      idempotencyKey: `job_post_fee:${job.id}`,
-      reference: job.id,
-      metadata: {
-        kind: "JOB_POSTING_FEE",
-        jobId: job.id,
-      },
-    });
+  const job = await this.repo.createJob({
+    clientId: args.clientId,
+    skillCategory: args.skillCategory.trim(),
+    state: args.state.trim(),
+    city: args.city.trim(),
+    lga: args.lga?.trim() ?? null,
+    area: args.area?.trim() ?? null,
+    priceMilliFec: args.priceMilliFec,
+    status: JobStatus.DRAFT,
+  });
 
-    await this.platformWalletService.addEntry({
-      type: "JOB_POSTING_FEE",
-      direction: "CREDIT",
-      amountMilliFec: JOB_POST_FEE_MILLI_FEC,
-      idempotencyKey: `platform_job_post_fee:${job.id}`,
-      reference: job.id,
-      metadata: {
-        kind: "JOB_POSTING_FEE",
-        jobId: job.id,
-        clientId: args.clientId,
-      },
-    });
-
-    return this.repo.findJobById(job.id);
+  if (args.imagePaths?.length) {
+    await this.repo.createJobImages(job.id, args.imagePaths.slice(0, 5));
   }
+
+ const payment = await this.jobPaymentsService.createPostingPayment({
+  jobId: job.id,
+  clientId: args.clientId,
+});
+
+return {
+  jobId: job.id,
+  payment,
+};
+}
 
   async updateJob(args: {
     jobId: string;

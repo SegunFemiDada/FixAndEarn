@@ -198,30 +198,32 @@ model WebhookEvent {
 }
 
 model Job {
-  id                   String                @id @default(cuid())
-  clientId             String
-  skillCategory        String
-  state                String
-  city                 String
-  lga                  String?
-  area                 String?
-  priceMilliFec        Int
-  status               JobStatus             @default(OPEN)
-  lockedPriceMilliFec  Int?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  completedApprovedAt  DateTime?
-  completedRequestedAt DateTime?
-  fixerId              String?
-  payments             JobPayment?
-  conversations        Conversation[]
-  dispute              Dispute?
-  applications         JobApplication[]
-  completionRequest    JobCompletionRequest?
-  images               JobImage[]
-  review               JobReview?
-  client               User                  @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
-  fixer                User?                 @relation("UserJobsAssigned", fields: [fixerId], references: [id])
+  id                     String                @id @default(cuid())
+  clientId               String
+  skillCategory          String
+  state                  String
+  city                   String
+  lga                    String?
+  area                   String?
+  priceMilliFec          Int
+  status                 JobStatus             @default(OPEN)
+  lockedPriceMilliFec    Int?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  completedApprovedAt    DateTime?
+  completedRequestedAt   DateTime?
+  fixerId                String?
+  selectedConversationId String?
+  payments               JobPayment[]
+  conversations          Conversation[]
+  dispute                Dispute?
+  applications           JobApplication[]
+  completionRequest      JobCompletionRequest?
+  images                 JobImage[]
+  review                 JobReview?
+  client                 User                  @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
+  fixer                  User?                 @relation("UserJobsAssigned", fields: [fixerId], references: [id])
+  postingType            JobPostingType        @default(STANDARD)
 
   @@index([status])
   @@index([skillCategory])
@@ -540,16 +542,31 @@ model Deposit {
 }
 
 model JobPayment {
-  id                  String           @id @default(cuid())
-  jobId               String           @unique
-  reference           String           @unique
+  id                String @id @default(cuid())
+  jobId             String
+  paystackReference String @unique
+
+  type JobPaymentType
+
   amountMilliFec      Int
   paystackFeeMilliFec Int
+
   status              JobPaymentStatus @default(PENDING)
-  paidAt              DateTime?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  job                 Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  fixerId             String?
+  conversationId      String?
+  lockedPriceMilliFec Int?
+
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, type])
+  @@index([fixerId])
+  @@index([conversationId])
+  @@index([jobId, status])
 }
 
 enum DeletionRequestStatus {
@@ -702,4 +719,15 @@ enum JobPaymentStatus {
   PENDING
   SUCCESS
   FAILED
+}
+
+enum JobPostingType {
+  STANDARD
+  URGENT
+}
+
+enum JobPaymentType {
+  POSTING
+  URGENT
+  FINAL
 }

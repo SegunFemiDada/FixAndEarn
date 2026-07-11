@@ -157,7 +157,7 @@ export default function JobsPage() {
           ) : isLoading ? (
             <p className="text-[#6B7C99] dark:text-[#8FA0BC]">Checking verification…</p>
           ) : isError ? (
-            <p className="text-[#D9534F] dark:text-red-300">Verification error. Re-login.</p>
+            <p className="text-[#D9534F] dark:text-red-300">Not verified. Go to Verification.</p>
           ) : (
             <div className="space-y-2">
               <p className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Verification required</p>
