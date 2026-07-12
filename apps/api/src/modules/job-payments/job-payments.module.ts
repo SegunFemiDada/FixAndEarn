@@ -6,6 +6,7 @@ import { JobsModule } from "../jobs/jobs.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { JobPaymentsController } from "./job-payments.controller";
 import { JobPaymentsService } from "./job-payments.service";
+import { JobPaymentProcessorService } from "./job-payment-processor.service";
 
 @Module({
   imports: [
@@ -15,7 +16,14 @@ import { JobPaymentsService } from "./job-payments.service";
     forwardRef(() => JobsModule),
   ],
   controllers: [JobPaymentsController],
-  providers: [JobPaymentsService],
-  exports: [JobPaymentsService],
+  providers: [
+  JobPaymentsService,
+  JobPaymentProcessorService,
+],
+
+exports: [
+  JobPaymentsService,
+  JobPaymentProcessorService,
+],
 })
 export class JobPaymentsModule {}
