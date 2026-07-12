@@ -61,6 +61,7 @@ model User {
   roles                      UserRole[]
   wallets                    Wallet[]
   withdrawals                WithdrawalRequest[]
+  FixerEarning               FixerEarning[]
 
   @@map("users")
 }
@@ -224,6 +225,7 @@ model Job {
   client                 User                  @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
   fixer                  User?                 @relation("UserJobsAssigned", fields: [fixerId], references: [id])
   postingType            JobPostingType        @default(STANDARD)
+  FixerEarning           FixerEarning?
 
   @@index([status])
   @@index([skillCategory])
@@ -730,4 +732,31 @@ enum JobPaymentType {
   POSTING
   URGENT
   FINAL
+}
+
+model FixerEarning {
+  id String @id @default(cuid())
+
+  fixerId String
+  jobId   String @unique
+
+  grossMilliFec       Int
+  platformFeeMilliFec Int
+  availableMilliFec   Int
+
+  status FixerEarningStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fixer User @relation(fields: [fixerId], references: [id], onDelete: Cascade)
+  job   Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([fixerId])
+}
+
+enum FixerEarningStatus {
+  AVAILABLE
+  WITHDRAWAL_PENDING
+  PAID
 }

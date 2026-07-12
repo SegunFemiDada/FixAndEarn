@@ -2,7 +2,7 @@
 import "./globals.css";
 import Providers from "./providers";
 import PublicFooter from "@/components/layout/public-footer";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://fixandearn.com"),
@@ -24,7 +24,9 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
 
-  themeColor: "#2563EB",
+};
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

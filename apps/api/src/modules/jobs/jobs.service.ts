@@ -5,6 +5,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { JobStatus, NotificationType, Prisma, WalletRole } from "@prisma/client";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
@@ -26,6 +28,7 @@ export class JobsService {
   private readonly notifications: NotificationsService,
   private readonly platformWalletService: PlatformWalletService,
   private readonly prisma: PrismaService,
+  @Inject(forwardRef(() => JobPaymentsService))
   private readonly jobPaymentsService: JobPaymentsService,
 ) {}
 

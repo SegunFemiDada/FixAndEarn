@@ -274,8 +274,8 @@ const lockedPrice = payment.lockedPriceMilliFec;
     await this.notifications.create({
       userId: payment.job.clientId,
       type: NotificationType.SYSTEM_ANNOUNCEMENT,
-      title: "Payment received",
-      body: "Your job has started successfully.",
+      title: "Your payment has been secured.",
+      body: "The fixer can now start working on the job. Please communicate with the fixer through the chat. Release of funds only occurs after you approve Job completion.",
       idempotencyKey: `notif:job_started_client:${payment.jobId}`,
       data: {
         jobId: payment.jobId,
@@ -287,8 +287,8 @@ const lockedPrice = payment.lockedPriceMilliFec;
     await this.notifications.create({
       userId: fixerId,
       type: NotificationType.SYSTEM_ANNOUNCEMENT,
-      title: "You've been hired",
-      body: "The client completed payment. You can begin work.",
+      title: "You've been hired.",
+      body: "The client's payment has been secured. You can now start working on the job. Please communicate with the client through the chat. Your earnings will become available once the client approves Job completion Request.",
       idempotencyKey: `notif:job_started_fixer:${payment.jobId}`,
       data: {
         jobId: payment.jobId,
