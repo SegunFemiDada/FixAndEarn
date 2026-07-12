@@ -219,37 +219,20 @@ export class JobPaymentProcessorService {
     throw new NotFoundException("JOB_PAYMENT_NOT_FOUND");
   }
 
-  if (!payment.job.selectedConversationId) {
-    throw new NotFoundException(
-      "SELECTED_CONVERSATION_NOT_FOUND",
-    );
+  if (!payment.fixerId) {
+    throw new NotFoundException("FIXER_NOT_FOUND");
   }
 
-  const conversation =
-    await this.prisma.conversation.findUnique({
-      where: {
-        id: payment.job.selectedConversationId,
-      },
-      include: {
-        negotiation: true,
-      },
-    });
+  if (!payment.lockedPriceMilliFec) {
+    throw new NotFoundException("LOCKED_PRICE_NOT_FOUND");
+  }
 
-  if (!conversation) {
+  if (!payment.conversationId) {
     throw new NotFoundException("CONVERSATION_NOT_FOUND");
   }
-
-  if (
-    !conversation.negotiation ||
-    conversation.negotiation.lockedPriceMilliFec == null
-  ) {
-    throw new NotFoundException(
-      "NEGOTIATION_NOT_LOCKED",
-    );
-  }
-
-  const agreedPrice =
-    conversation.negotiation.lockedPriceMilliFec;
+  const conversationId = payment.conversationId;
+const fixerId = payment.fixerId;
+const lockedPrice = payment.lockedPriceMilliFec;
 
   await this.prisma.$transaction(async (tx) => {
     await tx.jobPayment.update({
@@ -267,17 +250,18 @@ export class JobPaymentProcessorService {
         id: payment.jobId,
       },
       data: {
+        fixerId: fixerId,
+        lockedPriceMilliFec:
+          lockedPrice,
         status: JobStatus.IN_PROGRESS,
-        fixerId: conversation.fixerId,
-        lockedPriceMilliFec: agreedPrice,
       },
     });
 
     await tx.conversation.updateMany({
       where: {
         jobId: payment.jobId,
-        id: {
-          not: conversation.id,
+        NOT: {
+          id: conversationId,
         },
       },
       data: {
@@ -290,22 +274,22 @@ export class JobPaymentProcessorService {
     await this.notifications.create({
       userId: payment.job.clientId,
       type: NotificationType.SYSTEM_ANNOUNCEMENT,
-      title: "Payment successful",
-      body:
-        "Your payment has been confirmed. Your job is now in progress.",
-      idempotencyKey: `notif:final-payment-client:${payment.jobId}`,
+      title: "Payment received",
+      body: "Your job has started successfully.",
+      idempotencyKey: `notif:job_started_client:${payment.jobId}`,
       data: {
         jobId: payment.jobId,
       },
     });
+  } catch {}
 
+  try {
     await this.notifications.create({
-      userId: conversation.fixerId,
+      userId: fixerId,
       type: NotificationType.SYSTEM_ANNOUNCEMENT,
       title: "You've been hired",
-      body:
-        "The client has completed payment. You can now begin work.",
-      idempotencyKey: `notif:final-payment-fixer:${payment.jobId}`,
+      body: "The client completed payment. You can begin work.",
+      idempotencyKey: `notif:job_started_fixer:${payment.jobId}`,
       data: {
         jobId: payment.jobId,
       },
