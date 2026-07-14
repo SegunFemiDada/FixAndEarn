@@ -11,7 +11,6 @@ import { ReconciliationService } from "./reconciliation.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { PaystackWebhookController } from "./paystack/paystack.webhook.controller";
 import { AdminModule } from "../../admin/admin.module";
-import { JobPaymentsModule } from "../job-payments/job-payments.module";
 
 @Module({
  imports: [
@@ -20,7 +19,6 @@ import { JobPaymentsModule } from "../job-payments/job-payments.module";
   ScheduleModule,
   forwardRef(() => AdminModule),
   forwardRef(() => WalletModule),
-  forwardRef(() => JobPaymentsModule),
 ],
   controllers: [PaymentsController, PaystackWebhookController], // ✅ removed AdminFinanceService
   providers: [

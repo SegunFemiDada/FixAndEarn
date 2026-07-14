@@ -19,6 +19,7 @@ import { JobsRepo } from "./jobs.repo";
 import { JobPaymentsService } from "../job-payments/job-payments.service";
 
 
+
 @Injectable()
 export class JobsService {
   constructor(
@@ -29,7 +30,7 @@ export class JobsService {
   private readonly platformWalletService: PlatformWalletService,
   private readonly prisma: PrismaService,
   @Inject(forwardRef(() => JobPaymentsService))
-  private readonly jobPaymentsService: JobPaymentsService,
+  private readonly jobPaymentsService: JobPaymentsService
 ) {}
 
   private ensurePositiveInt(n: number, msg: string) {

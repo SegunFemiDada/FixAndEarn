@@ -7,6 +7,7 @@ import { WalletService } from "../wallet/wallet.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PlatformWalletService } from "../wallet/platform-wallet.service";
 import { PrismaService } from "../../infra/prisma/prisma.service";
+import { JobPaymentsService } from "../job-payments/job-payments.service";
 
 describe("JobsService", () => {
   let service: JobsService;
@@ -40,6 +41,13 @@ describe("JobsService", () => {
             rejectCompletionRequest: jest.fn(async () => ({ ok: true, status: "REJECTED" })),
           },
         },
+        {
+  provide: JobPaymentsService,
+  useValue: {
+    createPostingPayment: jest.fn(),
+    createUrgentHirePayment: jest.fn(),
+  },
+},
         {
           provide: LedgerService,
           useValue: {

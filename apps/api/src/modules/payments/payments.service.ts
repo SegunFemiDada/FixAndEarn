@@ -14,7 +14,6 @@ import { LedgerService } from "../wallet/ledger.service";
 import { PAYSTACK_PROVIDER } from "./payments.constants";
 import { PaystackProvider } from "./paystack/paystack.provider";
 import { ModuleRef } from "@nestjs/core";
-import { JobPaymentProcessorService } from "../job-payments/job-payment-processor.service";
 
 @Injectable()
 export class PaymentsService {
@@ -27,7 +26,6 @@ export class PaymentsService {
     private readonly ledgerService: LedgerService,
     private readonly notifications: NotificationsService,
     private readonly moduleRef: ModuleRef,
-    private readonly jobPaymentProcessor: JobPaymentProcessorService,
   ) {}
 
   async initializeDeposit(userId: string, amountMilliFec: number) {
@@ -373,12 +371,7 @@ if (
   result.paymentType === "JOB_PAYMENT" &&
   "jobPaymentId" in result &&
   typeof result.jobPaymentId === "string"
-) {
-  await this.jobPaymentProcessor.handleSuccessfulPayment(
-    result.jobPaymentId,
-  );
-}
-
+) 
 return result;
   }
 }

@@ -1,7 +1,6 @@
 //path: apps/api/src/modules/job-payments/job-payments.service.ts
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { PaymentsService } from "../payments/payments.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PAYSTACK_PROVIDER } from "../payments/payments.constants";
 import { PaystackProvider } from "../payments/paystack/paystack.provider";
@@ -15,7 +14,6 @@ export class JobPaymentsService {
     private readonly paystack: PaystackProvider,
 
     private readonly prisma: PrismaService,
-    private readonly paymentsService: PaymentsService,
     private readonly notifications: NotificationsService,
   ) {}
 
