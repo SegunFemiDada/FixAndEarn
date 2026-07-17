@@ -1,7 +1,7 @@
 //path: apps/api/src/modules/jobs/jobs.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma, WalletRole, JobStatus } from "@prisma/client";
+import { Prisma, JobStatus } from "@prisma/client";
 @Injectable()
 export class JobsRepo {
   constructor(private readonly prisma: PrismaService) {}
@@ -240,63 +240,6 @@ listOpenJobs(query: {
     });
   }
 
-  private async ensureEscrowUserId(
-    tx: Prisma.TransactionClient
-  ): Promise<string> {
-    const key = "ESCROW_USER_ID";
-    const meta = await tx.appMeta.findUnique({ where: { key } });
-    if (meta?.value) return meta.value;
-
-    const escrowUser = await tx.user.create({
-      data: {
-        email: "escrow@fixandearn.internal",
-        fullName: "FixAndEarn Escrow",
-        passwordHash: "DISABLED",
-        isActive: true,
-      },
-    });
-
-    await tx.wallet.create({
-      data: {
-        userId: escrowUser.id,
-        role: WalletRole.SYSTEM,
-        balanceMilliFec: 0,
-      },
-    });
-
-    await tx.appMeta.upsert({
-      where: { key },
-      update: { value: escrowUser.id },
-      create: { key, value: escrowUser.id },
-    });
-
-    return escrowUser.id;
-  }
-
-  private async ensurePlatformWallet(
-    tx: Prisma.TransactionClient
-  ): Promise<{ id: string; balanceMilliFec: number }> {
-    let wallet = await tx.platformWallet.findFirst({
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        balanceMilliFec: true,
-      },
-    });
-
-    if (!wallet) {
-      wallet = await tx.platformWallet.create({
-        data: {},
-        select: {
-          id: true,
-          balanceMilliFec: true,
-        },
-      });
-    }
-
-    return wallet;
-  }
-
   private commissionMilliFec(gross: number): number {
     return Math.floor((gross * 10) / 100);
   }
@@ -324,191 +267,89 @@ listOpenJobs(query: {
     const fixerId = await this.findAgreedFixerIdForJob(jobId);
 
     const gross = job.lockedPriceMilliFec ?? job.priceMilliFec;
-    if (!gross || gross <= 0) throw new Error("INVALID_JOB_PRICE");
 
-    const commission = this.commissionMilliFec(gross);
-    const fixerNet = gross - commission;
-    if (fixerNet < 0) throw new Error("INVALID_COMMISSION_CALC");
-
-    const payKey = `job_payment:${jobId}`;
-    const payoutKey = `job_payout:${jobId}`;
-    const commissionKey = `job_commission:${jobId}`;
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const freshJob = await tx.job.findUnique({
-        where: { id: jobId },
-        select: { status: true, clientId: true },
-      });
-      if (!freshJob) throw new Error("JOB_NOT_FOUND");
-      if (freshJob.clientId !== clientId) throw new Error("ONLY_JOB_OWNER");
-      if (freshJob.status !== "IN_PROGRESS") throw new Error("JOB_NOT_IN_PROGRESS");
-
-      const completion = await tx.jobCompletionRequest.findUnique({
-        where: { jobId },
-      });
-      if (!completion) throw new Error("NO_COMPLETION_REQUEST");
-      if (completion.status !== "PENDING") {
-        throw new Error("INVALID_COMPLETION_STATUS");
-      }
-
-      const alreadyPaid = await tx.ledgerEntry.findUnique({
-        where: { idempotencyKey: payKey },
-      });
-
-      if (alreadyPaid) {
-        await tx.job.update({
-          where: { id: jobId },
-          data: {
-            status: "COMPLETED",
-            completedApprovedAt: new Date(),
-          },
-        });
-
-        await tx.jobCompletionRequest.update({
-          where: { jobId },
-          data: {
-            status: "APPROVED",
-            reviewedByClientId: clientId,
-            reviewedAt: new Date(),
-          },
-        });
-
-        await tx.jobReview.upsert({
-          where: { jobId },
-          update: { rating, comment: comment ?? null },
-          create: { jobId, clientId, fixerId, rating, comment: comment ?? null },
-        });
-
-        const agg = await tx.jobReview.aggregate({
-          where: { fixerId },
-          _avg: { rating: true },
-          _count: { rating: true },
-        });
-
-        await tx.user.update({
-          where: { id: fixerId },
-          data: {
-            averageRating: agg._avg.rating ?? 0,
-            totalRatings: agg._count.rating ?? 0,
-          },
-        });
-
-        await tx.conversation.updateMany({
-          where: { jobId, status: "OPEN" },
-          data: { status: "CLOSED" },
-        });
-
-        return {
-          ok: true,
-          status: "COMPLETED",
-          alreadyProcessed: true,
-          fixerId,
-        };
-      }
-
-      const escrowUserId = await this.ensureEscrowUserId(tx);
-
-const escrowWallet = await tx.wallet.findUnique({
-  where: {
-    userId_role: {
-      userId: escrowUserId,
-      role: WalletRole.SYSTEM,
-    },
-  },
-});
-if (!escrowWallet) throw new Error("ESCROW_WALLET_MISSING");
-if (escrowWallet.balanceMilliFec < gross) {
-  throw new Error("ESCROW_INSUFFICIENT_BALANCE");
+if (!gross || gross <= 0) {
+  throw new Error("INVALID_JOB_PRICE");
 }
 
-const fixerWallet = await tx.wallet.upsert({
-  where: {
-    userId_role: {
-      userId: fixerId,
-      role: WalletRole.FIXER,
+const platformFee = this.commissionMilliFec(gross);
+const fixerNet = gross - platformFee;
+
+if (fixerNet < 0) {
+  throw new Error("INVALID_COMMISSION_CALC");
+}
+
+const result = await this.prisma.$transaction(async (tx) => {
+  const freshJob = await tx.job.findUnique({
+    where: { id: jobId },
+    select: {
+      id: true,
+      clientId: true,
+      status: true,
     },
-  },
-  update: {},
-  create: {
-    userId: fixerId,
-    role: WalletRole.FIXER,
-    balanceMilliFec: 0,
+  });
+
+  if (!freshJob) {
+    throw new Error("JOB_NOT_FOUND");
+  }
+
+  if (freshJob.clientId !== clientId) {
+    throw new Error("ONLY_JOB_OWNER");
+  }
+
+  if (freshJob.status !== "IN_PROGRESS") {
+    throw new Error("JOB_NOT_IN_PROGRESS");
+  }
+
+  const completion = await tx.jobCompletionRequest.findUnique({
+    where: { jobId },
+  });
+
+  if (!completion) {
+    throw new Error("NO_COMPLETION_REQUEST");
+  }
+
+  if (completion.status !== "PENDING") {
+    throw new Error("INVALID_COMPLETION_STATUS");
+  }
+
+  const existingEarning = await tx.fixerEarning.findUnique({
+    where: {
+      jobId,
+    },
+  });
+
+  const existingRevenue = await tx.platformRevenue.findUnique({
+  where: {
+    jobId,
   },
 });
 
-const platformWallet = await this.ensurePlatformWallet(tx);
+if (existingEarning || existingRevenue) {
+  return {
+    ok: true,
+    alreadyProcessed: true,
+    fixerId,
+    status: "COMPLETED",
+  };
+}
 
-      await tx.ledgerEntry.create({
-        data: {
-          walletId: escrowWallet.id,
-          type: "JOB_PAYMENT",
-          direction: "DEBIT",
-          amountMilliFec: gross,
-          idempotencyKey: payKey,
-          reference: jobId,
-          metadata: {
-            jobId,
-            clientId,
-            fixerId,
-            grossAmountMilliFec: gross,
-            source: "ESCROW",
-          },
-        },
-      });
+      await tx.fixerEarning.create({
+  data: {
+    fixerId,
+    jobId,
+    availableMilliFec: fixerNet,
+    status: "AVAILABLE",
+  },
+});
 
-      await tx.wallet.update({
-        where: { id: escrowWallet.id },
-        data: { balanceMilliFec: { decrement: gross } },
-      });
-
-      await tx.ledgerEntry.create({
-        data: {
-          walletId: fixerWallet.id,
-          type: "JOB_PAYOUT",
-          direction: "CREDIT",
-          amountMilliFec: fixerNet,
-          idempotencyKey: payoutKey,
-          reference: jobId,
-          metadata: {
-            jobId,
-            clientId,
-            fixerId,
-            netAmountMilliFec: fixerNet,
-            commissionMilliFec: commission,
-            source: "ESCROW",
-          },
-        },
-      });
-
-      await tx.wallet.update({
-        where: { id: fixerWallet.id },
-        data: { balanceMilliFec: { increment: fixerNet } },
-      });
-
-      await tx.platformLedgerEntry.create({
-        data: {
-          platformWalletId: platformWallet.id,
-          type: "COMMISSION",
-          direction: "CREDIT",
-          amountMilliFec: commission,
-          idempotencyKey: commissionKey,
-          reference: jobId,
-          metadata: {
-            kind: "JOB_COMMISSION",
-            jobId,
-            clientId,
-            fixerId,
-            commissionMilliFec: commission,
-            grossAmountMilliFec: gross,
-            source: "ESCROW",
-          },
-        },
-      });
-
-      await tx.platformWallet.update({
-        where: { id: platformWallet.id },
-        data: { balanceMilliFec: { increment: commission } },
-      });
+await tx.platformRevenue.create({
+  data: {
+    jobId,
+    grossMilliFec: gross,
+    platformFeeMilliFec: platformFee,
+  },
+});
 
       await tx.jobCompletionRequest.update({
         where: { jobId },
@@ -557,7 +398,7 @@ const platformWallet = await this.ensurePlatformWallet(tx);
         status: "COMPLETED",
         alreadyProcessed: false,
         grossAmountMilliFec: gross,
-        commissionMilliFec: commission,
+        platformFeeMilliFec: platformFee,
         fixerNetMilliFec: fixerNet,
         fixerId,
       };

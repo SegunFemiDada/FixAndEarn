@@ -44,6 +44,7 @@ model User {
   phoneVerifyCodeExpiresAt   DateTime?
   sessionVersion             Int                    @default(1)
   deposits                   Deposit[]
+  FixerEarnings              FixerEarning[]
   reports                    Report[]
   bankDetails                BankDetails?
   chatAgreements             ChatAgreement[]
@@ -61,7 +62,6 @@ model User {
   roles                      UserRole[]
   wallets                    Wallet[]
   withdrawals                WithdrawalRequest[]
-  FixerEarning               FixerEarning[]
 
   @@map("users")
 }
@@ -168,25 +168,46 @@ model BankDetails {
 }
 
 model WithdrawalRequest {
-  id                        String           @id @default(uuid())
+  id                        String                 @id @default(uuid())
   userId                    String
   amountMilliFec            Int
-  status                    WithdrawalStatus @default(PENDING)
-  paystackTransferReference String?          @unique
+  status                    WithdrawalStatus       @default(PENDING)
+  paystackTransferReference String?                @unique
   paystackTransferCode      String?
   paystackTransferStatus    String?
   payoutMode                String?
+  earnings                  FixerEarning[]
+  allocations               WithdrawalAllocation[]
   failureReason             String?
   reviewedBy                String?
   reviewNote                String?
-  createdAt                 DateTime         @default(now())
-  updatedAt                 DateTime         @updatedAt
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
   reviewedAt                DateTime?
   paidAt                    DateTime?
-  user                      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("withdrawal_requests")
+}
+
+model WithdrawalAllocation {
+  id String @id @default(cuid())
+
+  withdrawalId String
+  earningId    String
+
+  amountMilliFec Int
+
+  createdAt DateTime @default(now())
+
+  withdrawal WithdrawalRequest @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  earning    FixerEarning      @relation(fields: [earningId], references: [id], onDelete: Cascade)
+
+  @@unique([withdrawalId, earningId])
+  @@index([withdrawalId])
+  @@index([earningId])
+  @@map("withdrawal_allocations")
 }
 
 model WebhookEvent {
@@ -214,7 +235,9 @@ model Job {
   completedApprovedAt    DateTime?
   completedRequestedAt   DateTime?
   fixerId                String?
+  postingType            JobPostingType        @default(STANDARD)
   selectedConversationId String?
+  earnings               FixerEarning?
   payments               JobPayment[]
   conversations          Conversation[]
   dispute                Dispute?
@@ -224,8 +247,7 @@ model Job {
   review                 JobReview?
   client                 User                  @relation("UserJobsPosted", fields: [clientId], references: [id], onDelete: Cascade)
   fixer                  User?                 @relation("UserJobsAssigned", fields: [fixerId], references: [id])
-  postingType            JobPostingType        @default(STANDARD)
-  FixerEarning           FixerEarning?
+  PlatformRevenue        PlatformRevenue?
 
   @@index([status])
   @@index([skillCategory])
@@ -544,31 +566,65 @@ model Deposit {
 }
 
 model JobPayment {
-  id                String @id @default(cuid())
-  jobId             String
-  paystackReference String @unique
-
-  type JobPaymentType
-
+  id                  String           @id @default(cuid())
+  jobId               String
   amountMilliFec      Int
   paystackFeeMilliFec Int
-
   status              JobPaymentStatus @default(PENDING)
-  fixerId             String?
+  paidAt              DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  paystackReference   String           @unique
+  type                JobPaymentType
   conversationId      String?
+  fixerId             String?
   lockedPriceMilliFec Int?
-
-  paidAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job                 Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, type])
   @@index([fixerId])
   @@index([conversationId])
   @@index([jobId, status])
+}
+
+model FixerEarning {
+  id String @id @default(cuid())
+
+  fixerId String
+  jobId   String @unique
+
+  availableMilliFec Int
+
+  status FixerEarningStatus @default(AVAILABLE)
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  fixer               User                   @relation(fields: [fixerId], references: [id], onDelete: Cascade)
+  job                 Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  allocations         WithdrawalAllocation[]
+  WithdrawalRequest   WithdrawalRequest?     @relation(fields: [withdrawalRequestId], references: [id])
+  withdrawalRequestId String?
+
+  @@index([fixerId])
+  @@index([status])
+  @@map("fixer_earnings")
+}
+
+model PlatformRevenue {
+  id String @id @default(cuid())
+
+  jobId String @unique
+
+  grossMilliFec       Int
+  platformFeeMilliFec Int
+
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("platform_revenue")
 }
 
 enum DeletionRequestStatus {
@@ -734,29 +790,9 @@ enum JobPaymentType {
   FINAL
 }
 
-model FixerEarning {
-  id String @id @default(cuid())
-
-  fixerId String
-  jobId   String @unique
-
-  grossMilliFec       Int
-  platformFeeMilliFec Int
-  availableMilliFec   Int
-
-  status FixerEarningStatus
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  fixer User @relation(fields: [fixerId], references: [id], onDelete: Cascade)
-  job   Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@index([fixerId])
-}
-
 enum FixerEarningStatus {
   AVAILABLE
-  WITHDRAWAL_PENDING
+  PARTIALLY_WITHDRAWN
   PAID
+  CANCELLED
 }

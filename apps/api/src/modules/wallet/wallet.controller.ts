@@ -89,31 +89,74 @@ export class WalletController {
   // ==========================
 
   @Get("balance")
-  async balance(@CurrentUser() user: { userId: string }, @Query("role") role?: string) {
-    const walletRole = await this.resolveBalanceRole(user.userId, role);
-    const wallet = await this.walletService.getOrCreateWallet(user.userId, walletRole);
+async balance(
+  @CurrentUser() user: { userId: string },
+  @Query("role") role?: string,
+) {
+  const walletRole = await this.resolveBalanceRole(user.userId, role);
+
+  // Client balance still comes from wallet
+  if (walletRole === WalletRole.CLIENT) {
+    const wallet = await this.walletService.getOrCreateWallet(
+      user.userId,
+      WalletRole.CLIENT,
+    );
 
     return {
-      role: walletRole,
+      role: WalletRole.CLIENT,
       balanceMilliFec: wallet.balanceMilliFec,
       balanceFec: wallet.balanceMilliFec / 1000,
     };
   }
 
+  // Fixer balance comes from earnings
+  const aggregate = await this.prisma.fixerEarning.aggregate({
+    where: {
+      fixerId: user.userId,
+      status: {
+        in: ["AVAILABLE", "PARTIALLY_WITHDRAWN"],
+      },
+    },
+    _sum: {
+      availableMilliFec: true,
+    },
+  });
+
+  const balance = aggregate._sum.availableMilliFec ?? 0;
+
+  return {
+    role: WalletRole.FIXER,
+    balanceMilliFec: balance,
+    balanceFec: balance / 1000,
+  };
+}
+
   @Get("withdrawable-balance")
-  @Roles("FIXER")
-  async withdrawableBalance(@CurrentUser() user: { userId: string }) {
-    const wallet = await this.walletService.getOrCreateWallet(user.userId, WalletRole.FIXER);
-    const locked = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
+@Roles("FIXER")
+async withdrawableBalance(@CurrentUser() user: { userId: string }) {
+  const aggregate = await this.prisma.fixerEarning.aggregate({
+    where: {
+      fixerId: user.userId,
+      status: {
+  in: [
+    "AVAILABLE",
+    "PARTIALLY_WITHDRAWN",
+  ],
+},
+    },
+    _sum: {
+      availableMilliFec: true,
+    },
+  });
 
-    const available = Math.max(0, wallet.balanceMilliFec - locked);
+  const available = aggregate._sum.availableMilliFec ?? 0;
 
-    return {
-      role: WalletRole.FIXER,
-      withdrawableBalanceMilliFec: available,
-      withdrawableBalanceFec: available / 1000,
-    };
-  }
+  return {
+    role: WalletRole.FIXER,
+    withdrawableBalanceMilliFec: available,
+    withdrawableBalanceFec: available / 1000,
+  };
+}
 
   // ==========================
   // Deposit
@@ -407,7 +450,6 @@ async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: 
   @Post("withdrawals/request")
   @Roles("FIXER")
   async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
-    const wallet = await this.walletService.getOrCreateWallet(user.userId, WalletRole.FIXER);
 
     const bank = await this.prisma.bankDetails.findUnique({
       where: { userId: user.userId },
@@ -422,12 +464,29 @@ async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: 
   const pinValid = await argon2.verify(userRecord.withdrawalPinHash, dto.pin);
   if (!pinValid) throw new BadRequestException("INCORRECT PIN");
 
-    const locked = await this.escrowLock.getLockedEscrowAmountForFixer(user.userId);
-    const available = Math.max(0, wallet.balanceMilliFec - locked);
+  const earnings = await this.prisma.fixerEarning.findMany({
+  where: {
+  fixerId: user.userId,
+  status: {
+    in: [
+      "AVAILABLE",
+      "PARTIALLY_WITHDRAWN",
+    ],
+  },
+},
+  orderBy: {
+    createdAt: "asc",
+  },
+});
 
-    if (dto.amountMilliFec > available) {
-      throw new BadRequestException("INSUFFICIENT_BALANCE");
-    }
+const available = earnings.reduce(
+  (sum, earning) => sum + earning.availableMilliFec,
+  0,
+);
+
+if (dto.amountMilliFec > available) {
+  throw new BadRequestException("INSUFFICIENT_BALANCE");
+}
 
     const req = await this.prisma.withdrawalRequest.create({
       data: {
@@ -437,15 +496,40 @@ async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: 
       },
     });
 
-    await this.ledgerService.addEntry({
-      userId: user.userId,
-      role: WalletRole.FIXER,
-      type: "WITHDRAWAL_REQUEST",
-      direction: "DEBIT",
-      amountMilliFec: dto.amountMilliFec,
-      idempotencyKey: `withdraw:${req.id}`,
-      reference: req.id,
-    });
+    let remaining = dto.amountMilliFec;
+
+for (const earning of earnings) {
+  if (remaining <= 0) {
+    break;
+  }
+
+  if (earning.availableMilliFec <= remaining) {
+  await this.prisma.fixerEarning.update({
+    where: {
+      id: earning.id,
+    },
+    data: {
+      availableMilliFec: 0,
+      status: "PAID",
+      paidAt: null, // This will be set when the payment is actually made
+    },
+  });
+
+  remaining -= earning.availableMilliFec;
+} else {
+  await this.prisma.fixerEarning.update({
+    where: {
+      id: earning.id,
+    },
+    data: {
+      availableMilliFec: earning.availableMilliFec - remaining,
+      status: "PARTIALLY_WITHDRAWN",
+    },
+  });
+
+  remaining = 0;
+}
+}
 
     await this.notifications.create({
       userId: user.userId,

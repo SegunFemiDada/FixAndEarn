@@ -27,6 +27,7 @@ import { ReportsModule } from "./modules/reports/reports.module";
 import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
 import { StorageModule } from "./common/storage/storage.module";
 import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
+import { EarningsModule } from "./modules/earnings/earnings.module";
 
 
 
@@ -61,6 +62,7 @@ import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
     ReportsModule,
     SupportModule,
     StorageModule,
+    EarningsModule,
     ScheduleModule.forRoot(),
   ],
   providers: [

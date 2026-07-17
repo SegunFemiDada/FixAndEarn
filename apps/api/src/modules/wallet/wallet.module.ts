@@ -11,9 +11,10 @@ import { EscrowLockService } from "./escrow-lock.service";
 import { WithdrawalReversalService } from "./withdrawal-reversal.service";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PlatformWalletService } from "./platform-wallet.service";
+import { EarningsModule } from "../earnings/earnings.module";
 
 @Module({
-  imports: [forwardRef(() => PaymentsModule), AuthModule, NotificationsModule],
+  imports: [forwardRef(() => PaymentsModule), AuthModule, NotificationsModule, EarningsModule],
   providers: [
     WalletService,
     LedgerService,
