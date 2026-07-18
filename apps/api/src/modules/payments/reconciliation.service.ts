@@ -3,8 +3,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { WalletRole, WithdrawalStatus } from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { PAYSTACK_PROVIDER } from "./payments.constants";
-import { PaystackProvider } from "./paystack/paystack.provider";
+import { PAYMENT_PROVIDER } from "./payments.constants";
 
 @Injectable()
 export class ReconciliationService {
@@ -12,8 +11,8 @@ export class ReconciliationService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(PAYSTACK_PROVIDER)
-    private readonly paystack: PaystackProvider
+    @Inject(PAYMENT_PROVIDER)
+    private readonly paymentProvider: any
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
@@ -48,7 +47,7 @@ export class ReconciliationService {
           continue;
         }
 
-        const transfer = await this.paystack.fetchTransfer(reference);
+        const transfer = await this.paymentProvider.fetchTransfer(reference);
         const status = String(transfer?.status ?? "").toLowerCase();
 
         if (status === "failed" || status === "reversed") {

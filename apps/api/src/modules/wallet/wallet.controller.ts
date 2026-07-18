@@ -18,8 +18,7 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
 import { CryptoService } from "../../common/crypto/crypto.service";
-import { PAYSTACK_PROVIDER } from "../payments/payments.constants";
-import { PaystackProvider } from "../payments/paystack/paystack.provider";
+import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import { LedgerService } from "./ledger.service";
 import { WalletService } from "./wallet.service";
 import { InitiateDepositDto } from "./dto/initiate-deposit.dto";
@@ -47,7 +46,7 @@ export class WalletController {
     private readonly crypto: CryptoService,
     private readonly escrowLock: EscrowLockService,
     private readonly notifications: NotificationsService,
-    @Inject(PAYSTACK_PROVIDER) private readonly paystack: PaystackProvider
+    @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: any
   ) {}
 
   // ==========================
@@ -203,7 +202,7 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
       },
     });
 
-    const init = await this.paystack.initializeTransaction({
+    const init = await this.paymentProvider.initializeTransaction({
       email: dbUser.email,
       amountKobo: chargeKobo,
       reference,
@@ -310,7 +309,7 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
   const payoutsEnabled = process.env.PAYSTACK_PAYOUTS_ENABLED === "true";
   if (payoutsEnabled && dto.bankCode) {
     try {
-      const recipient = await this.paystack.createTransferRecipient({
+      const recipient = await this.paymentProvider.createTransferRecipient({
         name: dto.accountName,
         accountNumber: dto.accountNumber,
         bankCode: dto.bankCode,

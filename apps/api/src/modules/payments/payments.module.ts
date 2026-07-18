@@ -1,34 +1,42 @@
 // Path: apps/api/src/modules/payments/payments.module.ts
 import { Module, forwardRef } from "@nestjs/common";
-import { PaymentsService } from "./payments.service";
-import { PaymentsController } from "./payments.controller";
+import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "../../infra/prisma/prisma.module";
+import { AdminModule } from "../../admin/admin.module";
 import { WalletModule } from "../wallet/wallet.module";
 import { NotificationsModule } from "../notifications/notifications.module";
-import { PAYSTACK_PROVIDER } from "./payments.constants";
-import { PaystackHttpProvider } from "./paystack/paystack.http.provider";
+import { PaymentsController } from "./payments.controller";
+import { PaymentsService } from "./payments.service";
 import { ReconciliationService } from "./reconciliation.service";
-import { ScheduleModule } from "@nestjs/schedule";
-import { PaystackWebhookController } from "./paystack/paystack.webhook.controller";
-import { AdminModule } from "../../admin/admin.module";
-
+import { PAYMENT_PROVIDER } from "./payments.constants";
+import { MonnifyHttpProvider } from "./monnify/monnify.http.provider";
+import { MonnifyWebhookController } from "./monnify/monnify.webhook.controller";
 @Module({
- imports: [
-  PrismaModule,
-  NotificationsModule,
-  ScheduleModule,
-  forwardRef(() => AdminModule),
-  forwardRef(() => WalletModule),
-],
-  controllers: [PaymentsController, PaystackWebhookController], // ✅ removed AdminFinanceService
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+    ScheduleModule,
+    forwardRef(() => AdminModule),
+    forwardRef(() => WalletModule),
+  ],
+
+  controllers: [
+    PaymentsController,
+    MonnifyWebhookController,
+  ],
+
   providers: [
     PaymentsService,
     ReconciliationService,
     {
-      provide: PAYSTACK_PROVIDER,
-      useClass: PaystackHttpProvider,
+      provide: PAYMENT_PROVIDER,
+      useClass: MonnifyHttpProvider,
     },
   ],
-  exports: [PAYSTACK_PROVIDER, PaymentsService], // ✅ added PaymentsService
+
+  exports: [
+    PAYMENT_PROVIDER,
+    PaymentsService,
+  ],
 })
 export class PaymentsModule {}

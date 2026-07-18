@@ -11,8 +11,8 @@ import { randomUUID } from "crypto";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { LedgerService } from "../wallet/ledger.service";
-import { PAYSTACK_PROVIDER } from "./payments.constants";
-import { PaystackProvider } from "./paystack/paystack.provider";
+import { PAYMENT_PROVIDER } from "./payments.constants";
+import { PaymentProvider } from "./payment.provider";
 import { ModuleRef } from "@nestjs/core";
 
 @Injectable()
@@ -20,8 +20,8 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
-    @Inject(PAYSTACK_PROVIDER)
-    private readonly paystack: PaystackProvider,
+    @Inject(PAYMENT_PROVIDER)
+    private readonly paymentProvider: PaymentProvider,
     private readonly prisma: PrismaService,
     private readonly ledgerService: LedgerService,
     private readonly notifications: NotificationsService,
@@ -54,7 +54,7 @@ export class PaymentsService {
       },
     });
 
-    return this.paystack.initializeTransaction({
+    return this.paymentProvider.initializeTransaction({
       email: user.email,
       amountKobo,
       reference,
@@ -81,9 +81,17 @@ export class PaymentsService {
     }
 
     const bank = withdrawal.user.bankDetails;
-    if (!bank?.paystackRecipientCode) {
-      throw new Error("BANK_DETAILS_INCOMPLETE");
-    }
+
+if (
+  !bank ||
+  !bank.accountNumber ||
+  !bank.bankCode ||
+  !bank.accountName
+) {
+  throw new Error(
+    "BANK_DETAILS_INCOMPLETE",
+  );
+}
 
     const amountKobo = Math.round((withdrawal.amountMilliFec / 1000) * 100);
     if (amountKobo <= 0) {
@@ -91,17 +99,19 @@ export class PaymentsService {
     }
 
     const reference = `WDR_${withdrawal.id}`;
-    await this.paystack.initiateTransfer({
-      amountKobo,
-      recipientCode: bank.paystackRecipientCode,
-      reference,
-      reason: "Withdrawal payout",
-    });
+    await this.paymentProvider.initiateTransfer({
+  amountKobo,
+  accountNumber: bank.accountNumber,
+  bankCode: bank.bankCode,
+  accountName: bank.accountName,
+  reference,
+  reason: "Withdrawal payout",
+});
 
     return { ok: true, reference };
   }
 
-  async handlePaystackTransferSuccess(reference: string) {
+  async handleTransferSuccess(reference: string) {
     const adminFinance = this.moduleRef.get("AdminFinanceService", {
       strict: false,
     });
@@ -147,7 +157,7 @@ export class PaymentsService {
           paidAt: new Date(),
           paystackTransferReference: reference,
           paystackTransferCode: transferCode,
-          payoutMode: "PAYSTACK",
+          payoutMode: "BANK_TRANSFER",
         },
       });
 
@@ -163,7 +173,7 @@ export class PaymentsService {
             amountMilliFec: withdrawal.amountMilliFec,
             reference,
             transferCode,
-            mode: "PAYSTACK",
+            mode: "BANK_TRANSFER",
           },
         });
       } catch {}
@@ -190,7 +200,7 @@ export class PaymentsService {
               paidAt: null,
               paystackTransferReference: reference,
               paystackTransferCode: transferCode,
-              payoutMode: "PAYSTACK",
+              payoutMode: "BANK_TRANSFER",
             },
           });
           return;
@@ -241,7 +251,7 @@ export class PaymentsService {
             paidAt: null,
             paystackTransferReference: reference,
             paystackTransferCode: transferCode,
-            payoutMode: "PAYSTACK",
+            payoutMode: "BANK_TRANSFER",
           },
         });
       });
@@ -253,13 +263,28 @@ export class PaymentsService {
   }
 
   async handleWebhook(rawBody: Buffer, signature?: string) {
-    const isValid = this.paystack.verifyWebhookSignature(rawBody, signature);
-    if (!isValid) {
-      throw new BadRequestException("INVALID_SIGNATURE");
-    }
+    const isValid =
+  this.paymentProvider.verifyWebhookSignature(
+    rawBody,
+    signature,
+  );
 
-    const event = JSON.parse(rawBody.toString());
-    const reference = event?.data?.reference ?? event?.data?.transfer_reference ?? null;
+if (!isValid) {
+  throw new BadRequestException(
+    "INVALID_SIGNATURE",
+  );
+}
+
+const event = JSON.parse(
+  rawBody.toString(),
+);
+
+const reference =
+  event?.eventData?.paymentReference ??
+  event?.eventData?.transactionReference ??
+  event?.data?.reference ??
+  event?.data?.transfer_reference ??
+  null;
     if (!reference) {
       throw new BadRequestException("MISSING_REFERENCE");
     }
@@ -279,7 +304,11 @@ export class PaymentsService {
         data: { reference, eventType: event.event },
       });
 
-      if (event?.event === "charge.success") {
+      if (
+  event?.event === "charge.success" ||
+  event?.eventType ===
+    "SUCCESSFUL_TRANSACTION"
+) {
   const deposit = await tx.deposit.findUnique({
     where: { reference },
   });

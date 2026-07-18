@@ -2,16 +2,15 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
-import { PAYSTACK_PROVIDER } from "../payments/payments.constants";
-import { PaystackProvider } from "../payments/paystack/paystack.provider";
+import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import * as crypto from "crypto";
 
 
 @Injectable()
 export class JobPaymentsService {
   constructor(
-    @Inject(PAYSTACK_PROVIDER)
-    private readonly paystack: PaystackProvider,
+    @Inject(PAYMENT_PROVIDER)
+    private readonly paymentProvider: any,
 
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
@@ -311,7 +310,7 @@ async createUrgentHirePayment(args: {
   }) {
     const amountKobo = Math.round((args.amountMilliFec / 1000) * 100);
 
-    return this.paystack.initializeTransaction({
+    return this.paymentProvider.initializeTransaction({
       email: args.email,
       amountKobo,
       reference: args.reference,
