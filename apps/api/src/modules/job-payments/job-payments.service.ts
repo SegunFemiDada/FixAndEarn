@@ -62,7 +62,7 @@ export class JobPaymentsService {
     },
   });
 
-  return this.initializePaystackPayment({
+  return this.initializeGatewayPayment({
     email: user.email,
     amountMilliFec: 1000,
     reference: paystackReference,
@@ -140,7 +140,7 @@ async createUrgentHirePayment(args: {
     },
   });
 
-  return this.initializePaystackPayment({
+  return this.initializeGatewayPayment({
     email: user.email,
     amountMilliFec: 2000,
     reference: paystackReference,
@@ -250,7 +250,7 @@ async createUrgentHirePayment(args: {
     },
   });
 
-  return this.initializePaystackPayment({
+  return this.initializeGatewayPayment({
     email: user.email,
     amountMilliFec:
       negotiation.lockedPriceMilliFec,
@@ -302,13 +302,13 @@ async createUrgentHirePayment(args: {
   };
 }
 
-  async initializePaystackPayment(args: {
+  async initializeGatewayPayment(args: {
     email: string;
     amountMilliFec: number;
     reference: string;
     metadata?: Record<string, unknown>;
   }) {
-    const amountKobo = Math.round((args.amountMilliFec / 1000) * 100);
+    const amountKobo = args.amountMilliFec * 100;
 
     return this.paymentProvider.initializeTransaction({
       email: args.email,
