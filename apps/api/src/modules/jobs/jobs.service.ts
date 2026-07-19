@@ -171,11 +171,14 @@ export class JobsService {
       });
 
       const payment =
-  await this.jobPaymentsService.createUrgentHirePayment({
-    jobId: job.id,
-    clientId: args.clientId,
-    fixerId,
-  });
+  await this.jobPaymentsService.createUrgentHirePayment(
+    {
+      jobId: job.id,
+      clientId: args.clientId,
+      fixerId,
+    },
+    tx,
+  );
 
       return {
   ok: true,

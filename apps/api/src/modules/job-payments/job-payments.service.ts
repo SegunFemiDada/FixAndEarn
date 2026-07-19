@@ -1,9 +1,10 @@
 //path: apps/api/src/modules/job-payments/job-payments.service.ts
 import { Inject, Injectable } from "@nestjs/common";
-import { PrismaService } from "../../infra/prisma/prisma.service";
+import { PrismaService, } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import * as crypto from "crypto";
+import { Prisma } from "@prisma/client";
 
 
 @Injectable()
@@ -73,12 +74,17 @@ export class JobPaymentsService {
   });
 }
 
-async createUrgentHirePayment(args: {
-  jobId: string;
-  clientId: string;
-  fixerId: string;
-}) {
-  const user = await this.prisma.user.findUnique({
+async createUrgentHirePayment(
+  args: {
+    jobId: string;
+    clientId: string;
+    fixerId: string;
+  },
+  tx?: Prisma.TransactionClient,
+) {
+  const db = tx ?? this.prisma;
+
+  const user = await db.user.findUnique({
     where: {
       id: args.clientId,
     },
@@ -91,7 +97,7 @@ async createUrgentHirePayment(args: {
     throw new Error("CLIENT_NOT_FOUND");
   }
 
-  const job = await this.prisma.job.findUnique({
+  const job = await db.job.findUnique({
     where: {
       id: args.jobId,
     },
@@ -110,7 +116,7 @@ async createUrgentHirePayment(args: {
 
   const paystackReference = crypto.randomUUID();
 
-  await this.prisma.jobPayment.upsert({
+  await db.jobPayment.upsert({
     where: {
       jobId_type: {
         jobId: args.jobId,
