@@ -404,10 +404,76 @@ const result = await this.prisma.$transaction(async (tx) => {
           });
           break;
 
-        case "URGENT":
-          // Payment only unlocks the urgent-hire workflow.
-          break;
+       case "URGENT": {
+  const conversation = await tx.conversation.upsert({
+    where: {
+      jobId_fixerId: {
+        jobId: jobPayment.jobId,
+        fixerId: jobPayment.fixerId!,
+      },
+    },
+    update: {
+      status: "OPEN",
+    },
+    create: {
+      jobId: jobPayment.jobId,
+      fixerId: jobPayment.fixerId!,
+      status: "OPEN",
+    },
+  });
 
+  await tx.jobApplication.upsert({
+    where: {
+      jobId_fixerId: {
+        jobId: jobPayment.jobId,
+        fixerId: jobPayment.fixerId!,
+      },
+    },
+    update: {
+      status: "APPLIED",
+    },
+    create: {
+      jobId: jobPayment.jobId,
+      fixerId: jobPayment.fixerId!,
+      status: "APPLIED",
+    },
+  });
+
+  await tx.jobPayment.update({
+    where: {
+      id: jobPayment.id,
+    },
+    data: {
+      conversationId: conversation.id,
+    },
+  });
+
+  await tx.job.update({
+    where: {
+      id: jobPayment.jobId,
+    },
+    data: {
+      status: "OPEN",
+    },
+  });
+
+  try {
+    await this.notifications.create({
+      userId: jobPayment.fixerId!,
+      type: NotificationType.SYSTEM_ANNOUNCEMENT,
+      title: "Urgent hire request",
+      body: "A client has started an urgent hire with you. Open the conversation to continue.",
+      idempotencyKey: `notif:urgent_hire:${jobPayment.jobId}:${jobPayment.fixerId}`,
+      data: {
+        jobId: jobPayment.jobId,
+        conversationId: conversation.id,
+      },
+      prisma: tx,
+    });
+  } catch {}
+
+  break;
+}
         case "FINAL":
           await tx.job.update({
             where: {
