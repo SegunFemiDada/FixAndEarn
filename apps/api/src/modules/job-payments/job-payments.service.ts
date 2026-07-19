@@ -77,7 +77,6 @@ async createUrgentHirePayment(args: {
   jobId: string;
   clientId: string;
   fixerId: string;
-  conversationId: string;
 }) {
   const user = await this.prisma.user.findUnique({
     where: {
@@ -123,7 +122,7 @@ async createUrgentHirePayment(args: {
       amountMilliFec: 2000,
       paystackFeeMilliFec: 0,
       fixerId: args.fixerId,
-      conversationId: args.conversationId,
+      conversationId: null,
       lockedPriceMilliFec: null,
       status: "PENDING",
       paidAt: null,
@@ -135,7 +134,7 @@ async createUrgentHirePayment(args: {
       amountMilliFec: 2000,
       paystackFeeMilliFec: 0,
       fixerId: args.fixerId,
-      conversationId: args.conversationId,
+      conversationId: null,
       status: "PENDING",
     },
   });
@@ -147,7 +146,7 @@ async createUrgentHirePayment(args: {
     metadata: {
       paymentType: "URGENT",
       jobId: args.jobId,
-      conversationId: args.conversationId,
+      fixerId: args.fixerId,
     },
   });
 }

@@ -8,7 +8,7 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common";
-import { JobStatus, NotificationType, Prisma, WalletRole } from "@prisma/client";
+import { JobStatus, NotificationType, Prisma } from "@prisma/client";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -129,18 +129,7 @@ export class JobsService {
       throw new BadRequestException("CITY_REQUIRED");
     }
 
-    const URGENT_FEE_MILLI_FEC = 2000;
-
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const clientWallet = await this.walletService.getOrCreateWallet(
-        args.clientId,
-        WalletRole.CLIENT,
-        tx
-      );
-
-      if (clientWallet.balanceMilliFec < URGENT_FEE_MILLI_FEC) {
-        throw new ForbiddenException("INSUFFICIENT_FUNDS_FOR_URGENT_HIRE");
-      }
 
       const fixer = await tx.user.findFirst({
         where: {
@@ -177,60 +166,20 @@ export class JobsService {
           lga,
           area,
           priceMilliFec: 1,
-          status: "OPEN",
+          status: "DRAFT",
         },
       });
 
-      await tx.jobApplication.create({
-        data: {
-          jobId: job.id,
-          fixerId,
-          status: "APPLIED",
-        },
-      });
-
-      const conversation = await tx.conversation.upsert({
-        where: {
-          jobId_fixerId: {
-            jobId: job.id,
-            fixerId,
-          },
-        },
-        update: { status: "OPEN" },
-        create: {
-          jobId: job.id,
-          fixerId,
-          status: "OPEN",
-        },
-      });
       const payment =
   await this.jobPaymentsService.createUrgentHirePayment({
     jobId: job.id,
     clientId: args.clientId,
     fixerId,
-    conversationId: conversation.id,
   });
-
-      try {
-        await this.notifications.create({
-          userId: fixerId,
-          type: NotificationType.SYSTEM_ANNOUNCEMENT,
-          title: "Urgent hire request",
-          body: "A client opened an urgent hire chat with you.",
-          idempotencyKey: `notif:urgent_hire:${job.id}:${fixerId}`,
-          data: {
-            jobId: job.id,
-            conversationId: conversation.id,
-            clientId: args.clientId,
-          },
-          prisma: tx,
-        });
-      } catch {}
 
       return {
   ok: true,
   jobId: job.id,
-  conversationId: conversation.id,
   payment,
 };
     });

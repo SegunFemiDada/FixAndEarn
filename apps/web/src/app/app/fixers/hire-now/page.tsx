@@ -127,6 +127,7 @@ export default function HireNowPage() {
   }, [skill, state, city, minRating]);
 
   const { data, isLoading, isError, error } = useDiscoverFixers(params, true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const items = (data ?? []) as FixerItem[];
 
   const filteredItems = useMemo(() => {
