@@ -299,73 +299,128 @@ const reference =
     }
 
     // Process within a transaction, creating the webhook record atomically
-    const result = await this.prisma.$transaction(async (tx) => {
-      await tx.webhookEvent.create({
-        data: { reference, eventType: event.event },
-      });
+    // Process within a transaction, creating the webhook record atomically
+const result = await this.prisma.$transaction(async (tx) => {
+  const eventType =
+    event?.eventType ??
+    event?.event ??
+    "UNKNOWN";
 
-      if (
-  event?.event === "charge.success" ||
-  event?.eventType ===
-    "SUCCESSFUL_TRANSACTION"
-) {
-  const deposit = await tx.deposit.findUnique({
-    where: { reference },
+  await tx.webhookEvent.create({
+    data: {
+      reference,
+      eventType,
+    },
   });
 
-  if (deposit) {
-    if (deposit.status === "SUCCEEDED") {
-      return { ok: true };
-    }
-
-    await tx.deposit.update({
-      where: { id: deposit.id },
-      data: {
-        status: "SUCCEEDED",
+  if (
+    eventType === "charge.success" ||
+    eventType === "SUCCESSFUL_TRANSACTION"
+  ) {
+    const deposit = await tx.deposit.findUnique({
+      where: {
+        reference,
       },
     });
 
-    await this.ledgerService.addEntry({
-      userId: deposit.userId,
-      role: WalletRole.CLIENT,
-      type: "DEPOSIT",
-      direction: "CREDIT",
-      amountMilliFec: deposit.amountMilliFec,
-      idempotencyKey: `deposit:${reference}`,
-      reference,
-      prisma: tx,
+    if (deposit) {
+      if (deposit.status !== "SUCCEEDED") {
+        await tx.deposit.update({
+          where: {
+            id: deposit.id,
+          },
+          data: {
+            status: "SUCCEEDED",
+          },
+        });
+
+        await this.ledgerService.addEntry({
+          userId: deposit.userId,
+          role: WalletRole.CLIENT,
+          type: "DEPOSIT",
+          direction: "CREDIT",
+          amountMilliFec: deposit.amountMilliFec,
+          idempotencyKey: `deposit:${reference}`,
+          reference,
+          prisma: tx,
+        });
+
+        try {
+          await this.notifications.create({
+            userId: deposit.userId,
+            type: NotificationType.DEPOSIT_SUCCEEDED,
+            title: "Deposit received",
+            body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
+            idempotencyKey: `notif:deposit:${deposit.reference}`,
+            data: {
+              reference: deposit.reference,
+              amountMilliFec: deposit.amountMilliFec,
+            },
+          });
+        } catch {}
+      }
+
+      return {
+        ok: true,
+        paymentType: "DEPOSIT",
+      };
+    }
+
+    const jobPayment = await tx.jobPayment.findUnique({
+      where: {
+        paystackReference: reference,
+      },
+      include: {
+        job: true,
+      },
     });
 
-    try {
-      await this.notifications.create({
-        userId: deposit.userId,
-        type: NotificationType.DEPOSIT_SUCCEEDED,
-        title: "Deposit received",
-        body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
-        idempotencyKey: `notif:deposit:${deposit.reference}`,
+    if (!jobPayment) {
+      return {
+        ok: true,
+      };
+    }
+
+    if (jobPayment.status !== "SUCCESS") {
+      await tx.jobPayment.update({
+        where: {
+          id: jobPayment.id,
+        },
         data: {
-          reference: deposit.reference,
-          amountMilliFec: deposit.amountMilliFec,
+          status: "SUCCESS",
+          paidAt: new Date(),
         },
       });
-    } catch {}
 
-    return {
-      ok: true,
-      paymentType: "DEPOSIT",
-    };
-  }
+      switch (jobPayment.type) {
+        case "POSTING":
+          await tx.job.update({
+            where: {
+              id: jobPayment.jobId,
+            },
+            data: {
+              status: "OPEN",
+            },
+          });
+          break;
 
-  const jobPayment = await tx.jobPayment.findUnique({
-    where: {
-      paystackReference: reference,
-    },
-    select: {
-      id: true,
-    },
-  });
+        case "URGENT":
+          // Payment only unlocks the urgent-hire workflow.
+          break;
 
-  if (jobPayment) {
+        case "FINAL":
+          await tx.job.update({
+            where: {
+              id: jobPayment.jobId,
+            },
+            data: {
+              status: "IN_PROGRESS",
+            },
+          });
+          break;
+      }
+    }
+
     return {
       ok: true,
       paymentType: "JOB_PAYMENT",
@@ -373,34 +428,30 @@ const reference =
     };
   }
 
-  return { ok: true };
-}
+  if (
+    eventType === "transfer.success" ||
+    eventType === "transfer.failed" ||
+    eventType === "transfer.reversed"
+  ) {
+    return {
+      ok: true,
+      transferEvent: true,
+    };
+  }
 
-      if (
-        event?.event === "transfer.success" ||
-        event?.event === "transfer.failed" ||
-        event?.event === "transfer.reversed"
-      ) {
-        // Delegate to handleTransferWebhook but inside the same transaction? 
-        // The original handleTransferWebhook uses its own transactions. To keep it simple,
-        // we call it outside the transaction because it already handles its own idempotency.
-        // However, we already created the webhookEvent record, so subsequent calls will be ignored.
-        // This is safe.
-        await this.handleTransferWebhook(event);
-        return { ok: true };
-      }
-
-      return { ok: true };
-    });
+  return {
+    ok: true,
+  };
+});
 
 if (
   result &&
   typeof result === "object" &&
-  "paymentType" in result &&
-  result.paymentType === "JOB_PAYMENT" &&
-  "jobPaymentId" in result &&
-  typeof result.jobPaymentId === "string"
-) 
+  "transferEvent" in result
+) {
+  await this.handleTransferWebhook(event);
+}
+
 return result;
   }
 }
