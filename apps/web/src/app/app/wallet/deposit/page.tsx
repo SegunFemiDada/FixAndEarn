@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useMyVerification } from "@/lib/verification/queries";
 import { useInitiateDeposit, useSimulateDepositWebhook, useWalletBalance } from "@/lib/wallet/queries";
-import { backendMessage, formatFecFromMilli } from "@/lib/wallet/ui";
+import { formatFecFromMilli } from "@/lib/wallet/ui";
 import { getActiveRole, getToken } from "@/lib/auth/session";
 
 const depositSchema = z.object({
@@ -93,7 +93,7 @@ export default function WalletDepositPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-5">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-5">
       <div className="mx-auto w-full max-w-md space-y-4">
         <div className="mb-4">
           <div className="flex items-center justify-between">
@@ -238,7 +238,7 @@ export default function WalletDepositPage() {
                     rel="noreferrer"
                     className="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-300"
                   >
-                    Open Paystack checkout
+                    Open Payment checkout
                   </a>
                 </div>
               )}

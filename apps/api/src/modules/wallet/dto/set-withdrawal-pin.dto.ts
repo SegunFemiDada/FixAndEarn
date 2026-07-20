@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/wallet/dto/set-withdrawal-pin.dto.ts
 import { IsString, MinLength, IsOptional } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
 

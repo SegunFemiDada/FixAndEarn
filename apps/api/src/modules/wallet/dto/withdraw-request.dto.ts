@@ -1,3 +1,4 @@
+//path: apps/api/src/modules/wallet/dto/withdraw-request.dto.ts
 import { ApiProperty } from "@nestjs/swagger";
 import { IsInt, Min, IsString, MinLength } from "class-validator";
 

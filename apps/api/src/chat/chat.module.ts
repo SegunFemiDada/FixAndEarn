@@ -11,12 +11,12 @@ import { WalletModule } from "../modules/wallet/wallet.module";
 import { NotificationsModule } from "../modules/notifications/notifications.module";
 import { ConfigModule } from "@nestjs/config";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
-import { PaymentsModule } from "src/modules/payments/payments.module";
 import { AuthModule } from "src/modules/auth/auth.module";
 import { ChatGateway } from "./chat.gateway";
+import { JobPaymentsModule } from "../modules/job-payments/job-payments.module";
 
 @Module({
-  imports: [UsersModule, NotificationsModule, ConfigModule, forwardRef(() => WalletModule), forwardRef(() => PaymentsModule), AuthModule, NotificationsModule],
+  imports: [UsersModule, NotificationsModule, ConfigModule, forwardRef(() => WalletModule), forwardRef(() => JobPaymentsModule), AuthModule],
   controllers: [
     ChatController,
     ChatQueryController,

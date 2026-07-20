@@ -4,7 +4,8 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
+  Inject, forwardRef
 } from "@nestjs/common";
 import { ChatRepo } from "./chat.repo";
 import { ChatModerationService } from "./moderation/chat-moderation.service";
@@ -17,12 +18,10 @@ import { PrismaService } from "../infra/prisma/prisma.service";
 import { ListMyConversationsDto } from "./dto/list-my-conversations.dto";
 import { ListJobConversationsDto } from "./dto/list-job-conversations.dto";
 import { ListModerationFlagsDto } from "./dto/list-moderation-flags.dto";
-import { WalletService } from "../modules/wallet/wallet.service";
-import { LedgerService } from "../modules/wallet/ledger.service";
-import { WalletRole } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { NotificationsService } from "../modules/notifications/notifications.service";
 import { ChatRealtimeService } from "./realtime/chat-realtime.service";
+import { JobPaymentsService } from "../modules/job-payments/job-payments.service";
 
 type ActorRole = "CLIENT" | "FIXER";
 
@@ -32,8 +31,8 @@ export class ChatService {
     private readonly repo: ChatRepo,
     private readonly moderation: ChatModerationService,
     private readonly prisma: PrismaService,
-    private readonly walletService: WalletService,
-    private readonly ledgerService: LedgerService,
+    @Inject(forwardRef(() => JobPaymentsService))
+    private readonly jobPaymentsService: JobPaymentsService,
     private readonly notifications: NotificationsService,
     private readonly realtime: ChatRealtimeService
   ) {}
@@ -95,34 +94,6 @@ export class ChatService {
     }
   }
 
-  private async getOrCreateWalletForUser(
-    userId: string,
-    role: WalletRole,
-    tx?: PrismaService | Prisma.TransactionClient
-  ) {
-    const db = tx ?? this.prisma;
-
-    let wallet = await db.wallet.findUnique({
-      where: {
-        userId_role: {
-          userId,
-          role
-        }
-      }
-    });
-
-    if (!wallet) {
-      wallet = await db.wallet.create({
-        data: {
-          userId,
-          role,
-          balanceMilliFec: 0
-        }
-      });
-    }
-
-    return wallet;
-  }
 
   private assertPositiveInt(n: number, msg: string) {
     if (!Number.isInteger(n) || n <= 0) {
@@ -130,73 +101,6 @@ export class ChatService {
     }
   }
 
-  private async assertClientCanAffordPricePlusPostFee(
-    clientId: string,
-    priceMilliFec: number,
-    tx?: PrismaService | Prisma.TransactionClient
-  ) {
-    this.assertPositiveInt(
-      priceMilliFec,
-      "priceMilliFec must be a positive integer (milliFEC)."
-    );
-
-    const wallet = await this.getOrCreateWalletForUser(
-      clientId,
-      WalletRole.CLIENT,
-      tx
-    );
-
-    const required =
-      priceMilliFec + ChatService.JOB_POST_FEE_MILLI_FEC;
-
-    if (wallet.balanceMilliFec < required) {
-      throw new ForbiddenException(
-        "CLIENT_INSUFFICIENT_WALLET_FOR_PRICE"
-      );
-    }
-  }
-
-  private async ensureEscrowUserId(
-    tx: Prisma.TransactionClient
-  ): Promise<string> {
-    const key = "ESCROW_USER_ID";
-
-    const meta = await tx.appMeta.findUnique({
-      where: { key }
-    });
-
-    if (meta?.value) {
-      return meta.value;
-    }
-
-    const escrowUser = await tx.user.create({
-      data: {
-        email: "escrow@fixandearn.internal",
-        fullName: "FixAndEarn Escrow",
-        passwordHash: "DISABLED",
-        isActive: true
-      }
-    });
-
-    await tx.wallet.create({
-      data: {
-        userId: escrowUser.id,
-        role: WalletRole.SYSTEM,
-        balanceMilliFec: 0
-      }
-    });
-
-    await tx.appMeta.upsert({
-      where: { key },
-      update: { value: escrowUser.id },
-      create: {
-        key,
-        value: escrowUser.id
-      }
-    });
-
-    return escrowUser.id;
-  }
 
   private async ensureAdminLiaisonUserId(
     tx?: Prisma.TransactionClient
@@ -234,182 +138,70 @@ export class ChatService {
     return adminUser.id;
   }
 
-  private async escrowLockFunds(args: {
-    tx: Prisma.TransactionClient;
-    jobId: string;
-    conversationId: string;
-    clientId: string;
-    fixerId: string;
-    amountMilliFec: number;
-  }) {
-    const {
-      tx,
-      jobId,
-      conversationId,
-      clientId,
-      fixerId,
-      amountMilliFec
-    } = args;
-
-    const escrowUserId = await this.ensureEscrowUserId(tx);
-
-    const debitKey = `escrow_lock:${jobId}:debit`;
-    const creditKey = `escrow_lock:${jobId}:credit`;
-
-    const [alreadyDebited, alreadyCredited] =
-      await Promise.all([
-        tx.ledgerEntry.findUnique({
-          where: { idempotencyKey: debitKey }
-        }),
-        tx.ledgerEntry.findUnique({
-          where: { idempotencyKey: creditKey }
-        })
-      ]);
-
-    if (alreadyDebited || alreadyCredited) {
-      if (!(alreadyDebited && alreadyCredited)) {
-        throw new BadRequestException(
-          "ESCROW_LOCK_INCONSISTENT_STATE"
-        );
-      }
-
-      return;
-    }
-
-    await this.ledgerService.addEntry({
-      userId: clientId,
-      role: WalletRole.CLIENT,
-      type: "ADJUSTMENT",
-      direction: "DEBIT",
-      amountMilliFec,
-      idempotencyKey: debitKey,
-      reference: jobId,
-      metadata: {
-        kind: "ESCROW_LOCK_DEBIT",
-        jobId,
-        conversationId,
-        clientId,
-        fixerId
-      },
-      prisma: tx
-    });
-
-    await this.ledgerService.addEntry({
-      userId: escrowUserId,
-      role: WalletRole.SYSTEM,
-      type: "ADJUSTMENT",
-      direction: "CREDIT",
-      amountMilliFec,
-      idempotencyKey: creditKey,
-      reference: jobId,
-      metadata: {
-        kind: "ESCROW_LOCK_CREDIT",
-        jobId,
-        conversationId,
-        clientId,
-        fixerId
-      },
-      prisma: tx
-    });
-  }
+  
 
   private async finalizeNegotiationAgreement(args: {
-    tx: Prisma.TransactionClient;
-    job: any;
-    fixerId: string;
-    conversationId: string;
-    price: number;
-    lockedByUserId: string;
-  }) {
-    const {
-      tx,
-      job,
-      fixerId,
+  tx: Prisma.TransactionClient;
+  job: any;
+  fixerId: string;
+  conversationId: string;
+  price: number;
+}) {
+  const {
+    tx,
+    job,
+    fixerId,
+    conversationId,
+    price,
+  } = args;
+
+  // Mark the negotiation as agreed.
+  await tx.negotiation.update({
+    where: {
       conversationId,
-      price,
-      lockedByUserId
-    } = args;
+    },
+    data: {
+      status: "AGREED",
+      agreedAt: new Date(),
+    },
+  });
 
-    await this.assertClientCanAffordPricePlusPostFee(
-      job.clientId,
-      price,
-      tx
-    );
+  // Save the agreed fixer and locked price.
+  // Do NOT move the job to IN_PROGRESS yet.
+  // The Paystack webhook will do that after payment succeeds.
+  await tx.job.update({
+    where: {
+      id: job.id,
+    },
+    data: {
+      fixerId,
+      lockedPriceMilliFec: price,
+    },
+  });
 
-    await this.escrowLockFunds({
-      tx,
+  // Close every competing conversation.
+  await tx.conversation.updateMany({
+    where: {
       jobId: job.id,
-      conversationId,
-      clientId: job.clientId,
-      fixerId,
-      amountMilliFec: price
-    });
-
-    await tx.negotiation.update({
-      where: {
-        conversationId
+      id: {
+        not: conversationId,
       },
-      data: {
-        status: "AGREED",
-        agreedAt: new Date()
-      }
-    });
+      status: "OPEN",
+    },
+    data: {
+      status: "CLOSED",
+    },
+  });
 
-    await tx.job.update({
-      where: {
-        id: job.id
-      },
-      data: {
-        status: "IN_PROGRESS",
-        lockedPriceMilliFec: price,
-        fixerId
-      }
-    });
-
-    await tx.conversation.updateMany({
-      where: {
-        jobId: job.id,
-        id: {
-          not: conversationId
-        },
-        status: "OPEN"
-      },
-      data: {
-        status: "CLOSED"
-      }
-    });
-
-    await this.notifications.create({
-      userId: job.clientId,
-      type: "ESCROW_LOCKED",
-      title: "Funds secured in escrow",
-      body: "Job price has been locked and secured in escrow.",
-      idempotencyKey: `notify:escrow_locked:${job.id}:${conversationId}:client`,
-      data: {
-        jobId: job.id,
-        fixerId,
-        amountMilliFec: price,
-        conversationId,
-        lockedByUserId
-      },
-      prisma: tx
-    });
-
-    await this.notifications.create({
-      userId: fixerId,
-      type: "ESCROW_LOCKED",
-      title: "Funds secured in escrow",
-      body: "Job price has been locked and secured in escrow.",
-      idempotencyKey: `notify:escrow_locked:${job.id}:${conversationId}:fixer`,
-      data: {
-        jobId: job.id,
-        amountMilliFec: price,
-        conversationId,
-        lockedByUserId
-      },
-      prisma: tx
-    });
-  }
+  // Create the FINAL payment.
+  // This generates the Paystack authorization URL that the client
+  // must complete before the job becomes IN_PROGRESS.
+  return this.jobPaymentsService.createFinalPayment({
+    jobId: job.id,
+    clientId: job.clientId,
+    conversationId,
+  });
+}
 
   async listJobConversations(
     jobId: string,
@@ -664,11 +456,6 @@ if (!convo.active) {
 
     this.assertJobNegotiationAllowed(job);
 
-    await this.assertClientCanAffordPricePlusPostFee(
-      job.clientId,
-      proposedPriceMilliFec
-    );
-
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId
@@ -781,10 +568,6 @@ if (!convo.active) {
 
     this.assertJobNegotiationAllowed(job);
 
-    await this.assertClientCanAffordPricePlusPostFee(
-      job.clientId,
-      lockedPriceMilliFec
-    );
 
     const user = await this.prisma.user.findUnique({
       where: {
@@ -884,161 +667,164 @@ if (!convo.active) {
   }
 
   async respondToLockedPrice(
-    jobId: string,
-    fixerId: string,
-    userId: string,
-    accept: boolean
-  ) {
-    const job = await this.repo.getJobWithApplicant(
-      jobId,
-      fixerId
-    );
+  jobId: string,
+  fixerId: string,
+  userId: string,
+  accept: boolean
+) {
+  const job = await this.repo.getJobWithApplicant(
+    jobId,
+    fixerId
+  );
 
-    if (!job) {
-      throw new NotFoundException("JOB_NOT_FOUND");
+  if (!job) {
+    throw new NotFoundException("JOB_NOT_FOUND");
+  }
+
+  const role = this.assertMembership(
+    job,
+    userId,
+    fixerId
+  );
+
+  const user = await this.prisma.user.findUnique({
+    where: {
+      id: userId
+    },
+    select: {
+      isActive: true
     }
+  });
 
-    const role = this.assertMembership(
-      job,
-      userId,
-      fixerId
+  this.assertUserActive(user);
+
+  if (role === "FIXER") {
+    this.assertFixerApplied(job, fixerId);
+  }
+
+  const convo = await this.repo.upsertConversation(
+    jobId,
+    fixerId
+  );
+
+  const neg = await this.repo.ensureNegotiation(
+    convo.id
+  );
+
+  if (neg.status !== "LOCKED") {
+    throw new BadRequestException(
+      "PRICE_NOT_LOCKED"
     );
+  }
 
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId
-      },
-      select: {
-        isActive: true
-      }
-    });
-
-    this.assertUserActive(user);
-
-    if (role === "FIXER") {
-      this.assertFixerApplied(job, fixerId);
-    }
-
-    const convo = await this.repo.upsertConversation(
-      jobId,
-      fixerId
+  if (neg.lockedByUserId === userId) {
+    throw new ForbiddenException(
+      "LOCKER_ALREADY_AUTO_ACCEPTED"
     );
+  }
 
-    const neg = await this.repo.ensureNegotiation(
-      convo.id
-    );
-
-    if (neg.status !== "LOCKED") {
-      throw new BadRequestException(
-        "PRICE_NOT_LOCKED"
-      );
-    }
-
-    if (neg.lockedByUserId === userId) {
-      throw new ForbiddenException(
-        "LOCKER_ALREADY_AUTO_ACCEPTED"
-      );
-    }
-
-    const next = respondToLockedPrice(
-      {
-        status: neg.status,
-        proposedPriceMilliFec:
-          neg.proposedPriceMilliFec,
-        lockedPriceMilliFec:
-          neg.lockedPriceMilliFec,
-        lockedByUserId: neg.lockedByUserId,
-        clientAcceptedAt:
-          neg.clientAcceptedAt,
-        fixerAcceptedAt:
-          neg.fixerAcceptedAt,
-        agreedAt: neg.agreedAt,
-        rejectedAt: neg.rejectedAt,
-        rejectedByUserId:
-          neg.rejectedByUserId
-      },
-      role,
-      userId,
-      accept
-    );
-
-    await this.repo.updateNegotiation(convo.id, {
-      status: next.status,
+  const next = respondToLockedPrice(
+    {
+      status: neg.status,
+      proposedPriceMilliFec:
+        neg.proposedPriceMilliFec,
+      lockedPriceMilliFec:
+        neg.lockedPriceMilliFec,
+      lockedByUserId: neg.lockedByUserId,
       clientAcceptedAt:
-        next.clientAcceptedAt,
+        neg.clientAcceptedAt,
       fixerAcceptedAt:
-        next.fixerAcceptedAt,
-      agreedAt: next.agreedAt,
-      rejectedAt: next.rejectedAt,
+        neg.fixerAcceptedAt,
+      agreedAt: neg.agreedAt,
+      rejectedAt: neg.rejectedAt,
       rejectedByUserId:
-        next.rejectedByUserId
-    });
+        neg.rejectedByUserId
+    },
+    role,
+    userId,
+    accept
+  );
 
-    const room = this.realtime.roomFor(
+  await this.repo.updateNegotiation(convo.id, {
+    status: next.status,
+    clientAcceptedAt:
+      next.clientAcceptedAt,
+    fixerAcceptedAt:
+      next.fixerAcceptedAt,
+    agreedAt: next.agreedAt,
+    rejectedAt: next.rejectedAt,
+    rejectedByUserId:
+      next.rejectedByUserId
+  });
+
+  const room = this.realtime.roomFor(
+    jobId,
+    fixerId
+  );
+
+  this.realtime.emitToRoom(
+    room,
+    "negotiation:response",
+    {
       jobId,
-      fixerId
-    );
+      fixerId,
+      conversationId: convo.id,
+      userId,
+      accept,
+      status: next.status
+    }
+  );
+
+  let payment: any = null;
+
+  if (next.status === "AGREED") {
+    const price = next.lockedPriceMilliFec;
+
+    if (!price) {
+      throw new BadRequestException(
+        "MISSING_LOCKED_PRICE"
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      payment = await this.finalizeNegotiationAgreement({
+        tx,
+        job,
+        fixerId,
+        conversationId: convo.id,
+        price
+      });
+    });
 
     this.realtime.emitToRoom(
       room,
-      "negotiation:response",
+      "negotiation:agreed",
       {
         jobId,
         fixerId,
         conversationId: convo.id,
-        userId,
-        accept,
-        status: next.status
+        amountMilliFec: price
       }
     );
 
-    if (next.status === "AGREED") {
-      const price = next.lockedPriceMilliFec;
-
-      if (!price) {
-        throw new BadRequestException(
-          "MISSING_LOCKED_PRICE"
-        );
+    // The job will become IN_PROGRESS only after the
+    // FINAL payment webhook succeeds.
+    this.realtime.emitToRoom(
+      room,
+      "job:awaiting-payment",
+      {
+        jobId,
+        conversationId: convo.id,
       }
-
-      await this.prisma.$transaction(async (tx) => {
-        await this.finalizeNegotiationAgreement({
-          tx,
-          job,
-          fixerId,
-          conversationId: convo.id,
-          price,
-          lockedByUserId:
-            next.lockedByUserId ?? userId
-        });
-      });
-
-      this.realtime.emitToRoom(
-        room,
-        "negotiation:agreed",
-        {
-          jobId,
-          fixerId,
-          conversationId: convo.id,
-          amountMilliFec: price
-        }
-      );
-
-      this.realtime.emitToRoom(
-        room,
-        "job:status",
-        {
-          jobId,
-          status: "IN_PROGRESS"
-        }
-      );
-    }
-
-    return {
-      ok: true,
-      status: next.status
-    };
+    );
   }
+
+  return {
+    ok: true,
+    status: next.status,
+    payment,
+  };
+}
 
   async getConversationDetail(
     jobId: string,

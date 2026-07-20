@@ -21,8 +21,6 @@ import { CryptoService } from "../../common/crypto/crypto.service";
 import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import { LedgerService } from "./ledger.service";
 import { WalletService } from "./wallet.service";
-import { InitiateDepositDto } from "./dto/initiate-deposit.dto";
-import { WebhookSimulateDto } from "./dto/webhook-simulate.dto";
 import { SaveBankDetailsDto } from "./dto/save-bank-details.dto";
 import { WithdrawRequestDto } from "./dto/withdraw-request.dto";
 import { Public } from "../../common/auth/public.decorator";
@@ -163,58 +161,12 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
 
   @Post("deposits/initiate")
   @Roles("CLIENT")
-  async initiateDeposit(@CurrentUser() user: { userId: string }, @Body() dto: InitiateDepositDto) {
-    const dbUser = await this.prisma.user.findUnique({
-      where: { id: user.userId },
-      select: { email: true },
-    });
-
-    if (!dbUser) throw new BadRequestException("USER_NOT_FOUND");
-
-    const succeeded = await this.prisma.deposit.count({
-      where: { userId: user.userId, status: "SUCCEEDED" },
-    });
-
-    // First deposit limits
-    if (succeeded === 0) {
-      if (dto.amountMilliFec < 1000) {
-        throw new BadRequestException("FIRST_DEPOSIT_MIN_1000");
-      }
-      if (dto.amountMilliFec > 2000) {
-        throw new BadRequestException("FIRST_DEPOSIT_MAX_2000");
-      }
-    }
-
-    const base = dto.amountMilliFec;
-    const fee = Math.ceil(base * 0.015);
-    const absorbed = base > 2500 ? 100 : 0;
-
-    const chargeKobo = (base + fee) * 100;
-
-    const reference = `ps_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-
-    await this.prisma.deposit.create({
-      data: {
-        userId: user.userId,
-        amountMilliFec: base,
-        reference,
-        status: "PENDING",
-      },
-    });
-
-    const init = await this.paymentProvider.initializeTransaction({
-      email: dbUser.email,
-      amountKobo: chargeKobo,
-      reference,
-      metadata: { base, fee, absorbed },
-    });
-
-    return {
-      reference: init.reference,
-      authorizationUrl: init.authorizationUrl,
-      amountMilliFec: base,
-      fee: { clientFeeNaira: fee, platformAbsorbedExtraNaira: absorbed },
-    };
+  async initiateDeposit() {
+    
+    throw new BadRequestException(
+  "CLIENT_WALLET_DEPOSITS_DISABLED",
+);
+    
   }
 
   // ==========================
@@ -223,50 +175,11 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
 
   @Public()
   @Post("deposits/webhook-simulate")
-  async webhookSimulate(@Body() dto: WebhookSimulateDto) {
-    const deposit = await this.prisma.deposit.findUnique({
-      where: { reference: dto.reference },
-    });
-
-    if (!deposit) throw new BadRequestException("DEPOSIT_NOT_FOUND");
-    if (deposit.status !== "PENDING") return { ok: true, status: deposit.status };
-
-    if (dto.status === "failed") {
-      await this.prisma.deposit.update({
-        where: { reference: dto.reference },
-        data: { status: "FAILED" },
-      });
-      return { ok: true, status: "FAILED" };
-    }
-
-    await this.prisma.deposit.update({
-      where: { reference: dto.reference },
-      data: { status: "SUCCEEDED" },
-    });
-
-    await this.ledgerService.addEntry({
-      userId: deposit.userId,
-      role: WalletRole.CLIENT,
-      type: "DEPOSIT",
-      direction: "CREDIT",
-      amountMilliFec: deposit.amountMilliFec,
-      idempotencyKey: `deposit:${deposit.reference}`,
-      reference: deposit.reference,
-    });
-
-    await this.notifications.create({
-      userId: deposit.userId,
-      type: NotificationType.DEPOSIT_SUCCEEDED,
-      title: "Deposit received",
-      body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
-      idempotencyKey: `notif:deposit:${deposit.reference}`,
-      data: {
-        reference: deposit.reference,
-        amountMilliFec: deposit.amountMilliFec,
-      },
-    });
-
-    return { ok: true, status: "SUCCEEDED" };
+  async webhookSimulate() {
+    throw new BadRequestException(
+  "CLIENT_WALLET_DEPOSITS_DISABLED",
+);
+    
   }
 
   // ==========================
@@ -361,22 +274,11 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
 
   @Get("deposits/history")
   @Roles("CLIENT")
-  async depositHistory(@CurrentUser() user: { userId: string }): Promise<WalletHistoryResponse> {
-    const rows = await this.prisma.deposit.findMany({
-      where: { userId: user.userId },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
-
-    return {
-      items: rows.map((r) => ({
-        id: r.id,
-        amountMilliFec: r.amountMilliFec,
-        reference: r.reference,
-        status: r.status,
-        createdAt: r.createdAt.toISOString(),
-      })),
-    };
+  async depositHistory(): Promise<WalletHistoryResponse> {
+    throw new BadRequestException(
+  "CLIENT_WALLET_DEPOSITS_DISABLED",
+);
+    
   }
 
   @Get("withdrawals/history")
