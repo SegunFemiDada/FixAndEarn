@@ -266,7 +266,7 @@ async markPaid(args: { withdrawalId: string; adminId: string; note?: string }) {
   /**
    * Webhook SUCCESS → PROCESSING → PAID
    */
-  async handlePaystackSuccess(reference: string) {
+  async handleTransferSuccess(reference: string) {
     const wr = await this.prisma.withdrawalRequest.findFirst({
       where: { paystackTransferReference: reference },
     });

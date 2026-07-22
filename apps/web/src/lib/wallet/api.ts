@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/wallet/api.ts
 import apiClient from "@/lib/apiClient";
 
 export async function getWalletBalance(

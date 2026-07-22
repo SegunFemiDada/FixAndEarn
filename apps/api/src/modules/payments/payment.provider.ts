@@ -16,10 +16,6 @@ export interface ResolveAccountResponse {
 }
 
 
-export interface CreateRecipientResponse {
-  recipientCode: string;
-}
-
 export interface InitiateTransferRequest {
   amountKobo: number;
   accountNumber: string;

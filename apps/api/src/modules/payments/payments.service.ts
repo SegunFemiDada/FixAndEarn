@@ -112,22 +112,28 @@ if (
   }
 
   async handleTransferSuccess(reference: string) {
-    const adminFinance = this.moduleRef.get("AdminFinanceService", {
-      strict: false,
-    });
-    if (!adminFinance) {
-      throw new Error("ADMIN_FINANCE_SERVICE_NOT_AVAILABLE");
-    }
-    await adminFinance.handlePaystackSuccess(reference);
+  const adminFinance = this.moduleRef.get("AdminFinanceService", {
+    strict: false,
+  });
+
+  if (!adminFinance) {
+    throw new Error("ADMIN_FINANCE_SERVICE_NOT_AVAILABLE");
   }
+
+  await adminFinance.handleTransferSuccess(reference);
+}
 
   async handleTransferWebhook(event: any) {
     const data = event?.data;
     const reference =
       typeof data?.reference === "string" ? data.reference.trim() : "";
     const transferCode =
-      typeof data?.transfer_code === "string" ? data.transfer_code.trim() : null;
-
+  typeof data?.transfer_code === "string"
+    ? data.transfer_code.trim()
+    : typeof data?.transferCode === "string"
+      ? data.transferCode.trim()
+      : null;
+      
     if (!reference || !reference.startsWith("WDR_")) {
       return { ok: true };
     }
@@ -226,9 +232,9 @@ if (
               idempotencyKey: `withdrawal_reversal:${withdrawalId}`,
               reference: withdrawalId,
               metadata: {
-                source: "PAYSTACK_TRANSFER_WEBHOOK",
+                source: "PAYMENT_TRANSFER_WEBHOOK",
                 event: event.event,
-                originalReference: reference,
+                paymentReference: reference,
                 transferCode,
               },
             },
@@ -366,14 +372,16 @@ const result = await this.prisma.$transaction(async (tx) => {
       };
     }
 
-    const jobPayment = await tx.jobPayment.findUnique({
-      where: {
-        paystackReference: reference,
-      },
-      include: {
-        job: true,
-      },
-    });
+    const paymentReference = reference;
+
+const jobPayment = await tx.jobPayment.findUnique({
+  where: {
+    paystackReference: paymentReference,
+  },
+  include: {
+    job: true,
+  },
+});
 
     if (!jobPayment) {
       return {
@@ -474,17 +482,50 @@ const result = await this.prisma.$transaction(async (tx) => {
 
   break;
 }
-        case "FINAL":
-          await tx.job.update({
-            where: {
-              id: jobPayment.jobId,
-            },
-            data: {
-              status: "IN_PROGRESS",
-            },
-          });
-          break;
-      }
+        case "FINAL": {
+  await tx.job.update({
+    where: {
+      id: jobPayment.jobId,
+    },
+    data: {
+      fixerId: jobPayment.fixerId,
+      lockedPriceMilliFec: jobPayment.lockedPriceMilliFec,
+      status: "IN_PROGRESS",
+    },
+  });
+
+  try {
+    await this.notifications.create({
+      userId: jobPayment.job.clientId,
+      type: NotificationType.SYSTEM_ANNOUNCEMENT,
+      title: "Payment received",
+      body: "Your payment has been confirmed. The fixer can now begin working on your job.",
+      idempotencyKey: `notif:job_started_client:${jobPayment.id}`,
+      data: {
+        jobId: jobPayment.jobId,
+      },
+      prisma: tx,
+    });
+  } catch {}
+
+  if (jobPayment.fixerId) {
+    try {
+      await this.notifications.create({
+        userId: jobPayment.fixerId,
+        type: NotificationType.SYSTEM_ANNOUNCEMENT,
+        title: "Work can begin",
+        body: "The client's payment has been confirmed. You may now begin working on the job.",
+        idempotencyKey: `notif:job_started_fixer:${jobPayment.id}`,
+        data: {
+          jobId: jobPayment.jobId,
+        },
+        prisma: tx,
+      });
+    } catch {}
+  }
+
+  break;
+}}
     }
 
     return {
