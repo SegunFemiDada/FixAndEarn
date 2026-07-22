@@ -5,17 +5,19 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import * as crypto from "crypto";
 import { Prisma } from "@prisma/client";
+import { JobPaymentProcessorService } from "./job-payment-processor.service";
 
 
 @Injectable()
 export class JobPaymentsService {
   constructor(
-    @Inject(PAYMENT_PROVIDER)
-    private readonly paymentProvider: any,
+  @Inject(PAYMENT_PROVIDER)
+  private readonly paymentProvider: any,
 
-    private readonly prisma: PrismaService,
-    private readonly notifications: NotificationsService,
-  ) {}
+  private readonly prisma: PrismaService,
+  private readonly notifications: NotificationsService,
+  private readonly processor: JobPaymentProcessorService,
+) {}
 
   async createPostingPayment(args: {
   jobId: string;
@@ -268,13 +270,14 @@ async createUrgentHirePayment(
   });
 }
 
-  async handleSuccessfulPayment() {
-    throw new Error("Not implemented.");
-  }
+  async handleSuccessfulPayment(jobPaymentId: string) {
+  return this.processor.handleSuccessfulPayment(jobPaymentId);
+}
 
-  async handleFailedPayment() {
-    throw new Error("Not implemented.");
-  }
+async handleFailedPayment(jobPaymentId: string) {
+  return this.processor.handleFailedPayment(jobPaymentId);
+}
+
   async getJobPayments(jobId: string) {
   const payments = await this.prisma.jobPayment.findMany({
     where: {

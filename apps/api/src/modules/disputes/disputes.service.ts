@@ -10,18 +10,18 @@ import {
   DisputeResolutionType,
   DisputeStatus,
   JobStatus,
+  Prisma,
   NotificationType,
   WalletRole,
 } from "@prisma/client";
-import { LedgerService } from "../wallet/ledger.service";
 import { NotificationsService } from "../notifications/notifications.service";
-import type { Prisma } from "@prisma/client";
+import { JobCompletionRepo } from "../job-completion/job-completion.repo";
 
 @Injectable()
 export class DisputesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ledger: LedgerService,
+    private readonly jobCompletionRepo: JobCompletionRepo,
     private readonly notifications: NotificationsService
   ) {}
 
@@ -340,42 +340,45 @@ export class DisputesService {
     };
   }
 
-  private async ensureEscrowUserId(tx: Prisma.TransactionClient): Promise<string> {
-    const key = "ESCROW_USER_ID";
-    const meta = await tx.appMeta.findUnique({ where: { key } });
-    if (meta?.value) return meta.value;
+  private async ensureEscrowUserId(
+  tx: Prisma.TransactionClient,
+): Promise<string> {
+  const key = "ESCROW_USER_ID";
 
-    const escrowUser = await tx.user.create({
-      data: {
-        email: "escrow@fixandearn.internal",
-        fullName: "FixAndEarn Escrow",
-        passwordHash: "DISABLED",
-        isActive: true,
-      },
-    });
+  const meta = await tx.appMeta.findUnique({
+    where: { key },
+  });
 
-    await tx.wallet.create({
-      data: {
-        userId: escrowUser.id,
-        role: WalletRole.SYSTEM,
-        balanceMilliFec: 0,
-      },
-    });
-
-    await tx.appMeta.upsert({
-      where: { key },
-      update: { value: escrowUser.id },
-      create: { key, value: escrowUser.id },
-    });
-
-    return escrowUser.id;
+  if (meta?.value) {
+    return meta.value;
   }
 
-  private async getOrCreatePlatformWallet(tx: Prisma.TransactionClient) {
-    let pw = await tx.platformWallet.findFirst();
-    if (!pw) pw = await tx.platformWallet.create({ data: {} });
-    return pw;
-  }
+  const escrowUser = await tx.user.create({
+    data: {
+      email: "escrow@fixandearn.internal",
+      fullName: "FixAndEarn Settlement",
+      passwordHash: "DISABLED",
+      isActive: true,
+    },
+  });
+
+  await tx.wallet.create({
+    data: {
+      userId: escrowUser.id,
+      role: WalletRole.SYSTEM,
+      balanceMilliFec: 0,
+    },
+  });
+
+  await tx.appMeta.create({
+    data: {
+      key,
+      value: escrowUser.id,
+    },
+  });
+
+  return escrowUser.id;
+}
 
   async resolveDispute(args: {
     disputeId: string;
@@ -400,12 +403,8 @@ export class DisputesService {
       if (!job.lockedPriceMilliFec) throw new BadRequestException("JOB_HAS_NO_LOCKED_PRICE");
 
       const amountMilliFec = job.lockedPriceMilliFec;
-      const escrowUserId = await this.ensureEscrowUserId(tx);
 
       const escrowDebitKey = `dispute_resolve:${disputeId}:escrow_debit`;
-      const clientCreditKey = `dispute_resolve:${disputeId}:client_credit`;
-      const fixerCreditKey = `dispute_resolve:${disputeId}:fixer_credit`;
-      const platformCommissionKey = `dispute_resolve:${disputeId}:platform_commission`;
 
       const already = await tx.ledgerEntry.findUnique({ where: { idempotencyKey: escrowDebitKey } });
       if (already) {
@@ -422,90 +421,58 @@ export class DisputesService {
       }
 
       if (resolutionType === DisputeResolutionType.RELEASE_TO_FIXER) {
-        const commission = Math.floor(amountMilliFec * 0.1);
-        const payout = amountMilliFec - commission;
+        await tx.dispute.update({
+  where: {
+    id: disputeId,
+  },
+  data: {
+    status: DisputeStatus.RESOLVED,
+    resolutionType,
+    resolvedByAdminId: adminUserId,
+    resolvedAt: new Date(),
+  },
+});
 
-        await this.ledger.addEntry({
-          userId: escrowUserId,
-          role: WalletRole.SYSTEM,
-          type: "ADJUSTMENT",
-          direction: "DEBIT",
-          amountMilliFec,
-          idempotencyKey: escrowDebitKey,
-          reference: job.id,
-          metadata: { kind: "DISPUTE_RELEASE_TO_FIXER", jobId: job.id, disputeId },
-          prisma: tx,
-        });
+await this.jobCompletionRepo.approveAndSettle({
+  jobId: job.id,
+  clientId: job.clientId,
+  fixerId: job.fixerId,
+  amountMilliFec: amountMilliFec,
+  stars: 5,
+  comment: "Resolved by admin after dispute.",
+});
+   
 
-        await this.ledger.addEntry({
-          userId: job.fixerId,
-          role: WalletRole.FIXER,
-          type: "JOB_PAYOUT",
-          direction: "CREDIT",
-          amountMilliFec: payout,
-          idempotencyKey: fixerCreditKey,
-          reference: job.id,
-          metadata: {
-            kind: "DISPUTE_RELEASE_TO_FIXER",
-            jobId: job.id,
-            disputeId,
-            commissionMilliFec: commission,
-          },
-          prisma: tx,
-        });
+  await tx.jobPayment.updateMany({
+  where: {
+    jobId: job.id,
+    type: "FINAL",
+  },
+  data: {
+    status: "SUCCESS",
+  },
+});
 
-        const platformWallet = await this.getOrCreatePlatformWallet(tx);
-        await tx.platformLedgerEntry.create({
-          data: {
-            platformWalletId: platformWallet.id,
-            type: "COMMISSION",
-            direction: "CREDIT",
-            amountMilliFec: commission,
-            idempotencyKey: platformCommissionKey,
-            reference: job.id,
-            metadata: {
-              kind: "DISPUTE_RELEASE_TO_FIXER",
-              jobId: job.id,
-              disputeId,
-              clientId: job.clientId,
-              fixerId: job.fixerId,
-            },
-          },
-        });
+await tx.job.update({
+  where: {
+    id: job.id,
+  },
+  data: {
+    status: JobStatus.CANCELLED,
+  },
+});
 
-        await tx.platformWallet.update({
-          where: { id: platformWallet.id },
-          data: { balanceMilliFec: { increment: commission } },
-        });
-
-        await tx.job.update({
-          where: { id: job.id },
-          data: { status: JobStatus.COMPLETED, completedApprovedAt: new Date() },
-        });
-      } else if (resolutionType === DisputeResolutionType.REFUND_TO_CLIENT) {
-        await this.ledger.addEntry({
-          userId: escrowUserId,
-          role: WalletRole.SYSTEM,
-          type: "ADJUSTMENT",
-          direction: "DEBIT",
-          amountMilliFec,
-          idempotencyKey: escrowDebitKey,
-          reference: job.id,
-          metadata: { kind: "DISPUTE_REFUND_TO_CLIENT", jobId: job.id, disputeId },
-          prisma: tx,
-        });
-
-        await this.ledger.addEntry({
-          userId: job.clientId,
-          role: WalletRole.CLIENT,
-          type: "ADJUSTMENT",
-          direction: "CREDIT",
-          amountMilliFec,
-          idempotencyKey: clientCreditKey,
-          reference: job.id,
-          metadata: { kind: "DISPUTE_REFUND_TO_CLIENT", jobId: job.id, disputeId },
-          prisma: tx,
-        });
+await tx.dispute.update({
+  where: {
+    id: disputeId,
+  },
+  data: {
+    status: DisputeStatus.RESOLVED,
+    resolutionType,
+    resolvedByAdminId: adminUserId,
+    resolvedAt: new Date(),
+  },
+});
 
         await tx.job.update({
           where: { id: job.id },

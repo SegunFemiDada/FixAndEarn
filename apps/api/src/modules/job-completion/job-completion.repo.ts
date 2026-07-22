@@ -32,36 +32,7 @@ export class JobCompletionRepo {
     }
     return pw;
   }
-    private async ensureEscrowUserId(tx: Prisma.TransactionClient): Promise<string> {
-    const key = "ESCROW_USER_ID";
-    const meta = await tx.appMeta.findUnique({ where: { key } });
-    if (meta?.value) return meta.value;
-
-    const escrowUser = await tx.user.create({
-      data: {
-        email: "escrow@fixandearn.internal",
-        fullName: "FixAndEarn Escrow",
-        passwordHash: "DISABLED",
-        isActive: true
-      }
-    });
-
-        await tx.wallet.create({
-      data: {
-        userId: escrowUser.id,
-        role: WalletRole.SYSTEM,
-        balanceMilliFec: 0,
-      },
-    });
-
-    await tx.appMeta.upsert({
-      where: { key },
-      update: { value: escrowUser.id },
-      create: { key, value: escrowUser.id }
-    });
-
-    return escrowUser.id;
-  }
+    
 
   async approveAndSettle(args: {
     jobId: string;
@@ -83,59 +54,56 @@ export class JobCompletionRepo {
       if (!job.lockedPriceMilliFec || job.lockedPriceMilliFec !== amountMilliFec) {
         throw new Error("INVALID_LOCKED_PRICE");
       }
+      const payment = await tx.jobPayment.findFirst({
+  where: {
+    jobId,
+    type: "FINAL",
+  },
+});
 
-      const escrowUserId = await this.ensureEscrowUserId(tx);
+if (!payment) {
+  throw new Error("FINAL_PAYMENT_NOT_FOUND");
+}
 
-            const escrowWallet = await tx.wallet.findUnique({
-        where: {
-          userId_role: {
-            userId: escrowUserId,
-            role: WalletRole.SYSTEM,
-          },
-        },
-      });
+if (payment.status !== "SUCCESS") {
+  throw new Error("FINAL_PAYMENT_NOT_COMPLETED");
+}
 
-      const fixerWallet = await tx.wallet.findUnique({
-        where: {
-          userId_role: {
-            userId: fixerId,
-            role: WalletRole.FIXER,
-          },
-        },
-      });
-      if (!escrowWallet || !fixerWallet) throw new Error("WALLET_NOT_FOUND");
+if (payment.amountMilliFec !== amountMilliFec) {
+  throw new Error("FINAL_PAYMENT_AMOUNT_MISMATCH");
+}
+const fixerWallet = await tx.wallet.upsert({
+  where: {
+    userId_role: {
+      userId: fixerId,
+      role: WalletRole.FIXER,
+    },
+  },
+  update: {},
+  create: {
+    userId: fixerId,
+    role: WalletRole.FIXER,
+    balanceMilliFec: 0,
+  },
+});
 
       // Idempotency keys
-      const payKey = `job_payment:${jobId}`;
       const payoutKey = `job_payout:${jobId}`;
       const commissionKey = `job_commission:${jobId}`;
 
       // If payment exists, settlement already happened
-      const existingPayment = await tx.ledgerEntry.findUnique({ where: { idempotencyKey: payKey } });
+      const existingPayout =
+  await tx.ledgerEntry.findUnique({
+    where: {
+      idempotencyKey: payoutKey,
+    },
+  });
 
-      if (!existingPayment) {
+if (!existingPayout) {
         
-        if (escrowWallet.balanceMilliFec < amountMilliFec) throw new Error("ESCROW_INSUFFICIENT_BALANCE");
         const commission = Math.floor(amountMilliFec * 0.1);
         const payout = amountMilliFec - commission;
 
-        // Client pays full amount
-                await tx.ledgerEntry.create({
-          data: {
-            walletId: escrowWallet.id,
-            type: "JOB_PAYMENT",
-            direction: "DEBIT",
-            amountMilliFec,
-            idempotencyKey: payKey,
-            reference: jobId,
-            metadata: { jobId, clientId, fixerId, source: "ESCROW" }
-          }
-        });
-
-        await tx.wallet.update({
-          where: { id: escrowWallet.id },
-          data: { balanceMilliFec: { decrement: amountMilliFec } }
-        });
 
         // Fixer receives payout (90%)
         await tx.ledgerEntry.create({

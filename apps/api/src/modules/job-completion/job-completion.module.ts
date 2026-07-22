@@ -10,6 +10,6 @@ import { JobCompletionController } from "./job-completion.controller";
   imports: [PrismaModule],
   controllers: [JobCompletionController],
   providers: [JobsRepo, JobCompletionRepo, JobCompletionService],
-  exports: [JobCompletionService]
+  exports: [JobCompletionService, JobCompletionRepo],
 })
 export class JobCompletionModule {}
