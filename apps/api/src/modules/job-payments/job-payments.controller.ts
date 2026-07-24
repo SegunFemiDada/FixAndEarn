@@ -23,6 +23,12 @@ async getPayments(
     jobId,
   );
 }
+@Get("status/:jobId")
+async getPaymentStatus(
+  @Param("jobId") jobId: string,
+) {
+  return this.jobPaymentsService.getPaymentStatus(jobId);
+}
 
   @Post("final/:jobId")
   async createFinalPayment(

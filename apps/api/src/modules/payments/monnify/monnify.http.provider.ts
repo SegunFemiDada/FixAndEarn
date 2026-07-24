@@ -156,7 +156,8 @@ export class MonnifyHttpProvider implements PaymentProvider  {
           currencyCode: "NGN",
           contractCode: this.contractCode,
           redirectUrl:
-            req.metadata?.redirectUrl,
+          req.metadata?.redirectUrl ??
+          `${process.env.FRONTEND_URL}/payment/return`,
           paymentMethods: [
             "CARD",
             "ACCOUNT_TRANSFER",

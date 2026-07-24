@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/NegotiationPanel.tsx
 "use client";
 import { useState, useEffect } from "react";
 import {Button} from "@/components/ui/Button";
@@ -13,8 +14,8 @@ type Props = {
   respondingToLockedPrice: boolean;
   onChangeProposeFec: (value: string) => void;
   onChangeLockFec: (value: string) => void;
-  onPropose: (milli: number) => void | Promise<void>;
-  onLock: (milli: number) => void | Promise<void>;
+ onPropose: () => void | Promise<void>;
+  onLock: () => void | Promise<void>;
   onRespond: (accept: boolean) => void | Promise<void>;
   myUserId?: string | null;
 };
@@ -101,10 +102,7 @@ export default function NegotiationPanel({
             />
             <Button
               disabled={proposingPrice || !canSubmitPropose}
-              onClick={() => {
-                const milli = parseMilliFromInput(proposeFec);
-                if (milli !== null) onPropose(milli);
-              }}
+              onClick={onPropose}
             >
               {proposingPrice ? "Submitting..." : "Propose"}
             </Button>
@@ -119,12 +117,9 @@ export default function NegotiationPanel({
               className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2.5 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none"
             />
             <Button
-              disabled={lockingPrice || !canSubmitLock}
-              onClick={() => {
-                const milli = parseMilliFromInput(lockFec);
-                if (milli !== null) onLock(milli);
-              }}
-            >
+            disabled={lockingPrice || !canSubmitLock}
+            onClick={onLock}
+          >
               {lockingPrice ? "Locking..." : "Lock"}
             </Button>
           </div>

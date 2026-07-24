@@ -180,10 +180,11 @@ export class JobsService {
     tx,
   );
 
-      return {
+return {
   ok: true,
   jobId: job.id,
-  payment,
+  checkoutUrl: payment.authorizationUrl,
+  reference: payment.reference,
 };
     });
   }

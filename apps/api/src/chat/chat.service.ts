@@ -168,7 +168,7 @@ export class ChatService {
 
   // Save the agreed fixer and locked price.
   // Do NOT move the job to IN_PROGRESS yet.
-  // The Paystack webhook will do that after payment succeeds.
+  // The Monnify webhook will do that after payment succeeds.
   await tx.job.update({
     where: {
       id: job.id,
@@ -194,7 +194,7 @@ export class ChatService {
   });
 
   // Create the FINAL payment.
-  // This generates the Paystack authorization URL that the client
+  // This generates the Monnify authorization URL that the client
   // must complete before the job becomes IN_PROGRESS.
   return this.jobPaymentsService.createFinalPayment({
     jobId: job.id,

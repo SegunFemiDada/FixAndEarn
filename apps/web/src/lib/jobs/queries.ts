@@ -16,6 +16,8 @@ import {
   updateJob,
   type CreateJobPayload,
   type OpenDisputePayload,
+  initializePostingPayment,
+  initializeFinalPayment,
 } from "./api";
 import { rateFixer } from "@/lib/jobs/api";
 import apiClient from "../apiClient";
@@ -40,6 +42,25 @@ export function useCreateJob() {
         qc.invalidateQueries({ queryKey: keys.mine }),
       ]);
     },
+  });
+}
+
+export function useInitializePostingPayment() {
+    return useMutation({
+        mutationFn: initializePostingPayment,
+    });
+}
+
+export function useInitializeFinalPayment() {
+  return useMutation({
+    mutationFn: (variables: {
+      jobId: string;
+      conversationId: string;
+    }) =>
+      initializeFinalPayment(
+        variables.jobId,
+        variables.conversationId,
+      ),
   });
 }
 
@@ -157,7 +178,10 @@ export function useUrgentDirectHire() {
   return useMutation({
     mutationFn: urgentDirectHire,
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["jobs"] });
+      await Promise.all([
+      qc.invalidateQueries({ queryKey: keys.list }),
+      qc.invalidateQueries({ queryKey: keys.mine }),
+    ]);
     },
   });
 }

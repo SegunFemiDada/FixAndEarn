@@ -262,7 +262,7 @@ return (
             <span>Loading…</span>
           ) : avail ? (
             <span>
-              Effective:{" "}
+              Current status:{" "}
               <b className="text-[#1A2B4A] dark:text-[#E8F0FA]">
                 {avail.effective}
               </b>
@@ -317,12 +317,12 @@ return (
 
       {avail ? (
         <div className="mt-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-          Preferred:{" "}
+          Preferred status:{" "}
           <b className="text-[#1A2B4A] dark:text-[#E8F0FA]">
             {avail.preferred}
           </b>
           {avail.updatedAt
-            ? ` • Updated: ${new Date(avail.updatedAt).toISOString()}`
+            ? ` • Updated: ${new Date(avail.updatedAt).toLocaleString()}`
             : null}
         </div>
       ) : null}

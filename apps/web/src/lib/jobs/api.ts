@@ -34,6 +34,32 @@ export async function createJob(values: CreateJobPayload): Promise<any> {
   return res.data;
 }
 
+export async function initializePostingPayment(jobId: string) {
+  const res = await apiClient.post(`/job-payments/posting/${jobId}`);
+  return res.data;
+}
+
+export async function initializeFinalPayment(
+  jobId: string,
+  conversationId: string,
+) {
+  const res = await apiClient.post(
+    `/job-payments/final/${jobId}`,
+    {
+      conversationId,
+    },
+  );
+
+  return res.data;
+}
+
+export type UrgentDirectHireResponse = {
+  ok: boolean;
+  jobId: string;
+  checkoutUrl: string;
+  reference: string;
+};
+
 export async function urgentDirectHire(payload: {
   fixerId: string;
   skillCategory: string;
@@ -41,7 +67,7 @@ export async function urgentDirectHire(payload: {
   city: string;
   lga?: string;
   area?: string;
-}): Promise<any> {
+}): Promise<UrgentDirectHireResponse> {
   const res = await apiClient.post("/jobs/urgent-direct-hire", payload);
   return res.data;
 }

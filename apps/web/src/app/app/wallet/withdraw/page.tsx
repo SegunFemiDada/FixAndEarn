@@ -58,7 +58,7 @@ type BankForm = z.input<typeof bankSchema>;
 type BankData = z.output<typeof bankSchema>;
 
 const withdrawSchema = z.object({
-  amountFec: z.coerce.number().finite().min(0.01, "Minimum is 0.01 FEC"),
+  amountFec: z.coerce.number().finite().min(1, "Minimum is 1 FEC"),
 });
 
 type WithdrawForm = z.input<typeof withdrawSchema>;

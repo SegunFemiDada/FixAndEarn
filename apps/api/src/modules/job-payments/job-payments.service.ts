@@ -70,9 +70,9 @@ export class JobPaymentsService {
     amountMilliFec: 1000,
     reference: paystackReference,
     metadata: {
-      paymentType: "POSTING",
-      jobId: args.jobId,
-    },
+    paymentType: "POSTING",
+    jobId: args.jobId,
+    redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=POSTING`  },
   });
 }
 
@@ -155,6 +155,8 @@ async createUrgentHirePayment(
       paymentType: "URGENT",
       jobId: args.jobId,
       fixerId: args.fixerId,
+      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=URGENT`,
+
     },
   });
 }
@@ -266,6 +268,7 @@ async createUrgentHirePayment(
       paymentType: "FINAL",
       jobId: args.jobId,
       conversationId: args.conversationId,
+      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=FINAL`,
     },
   });
 }
@@ -325,4 +328,29 @@ async handleFailedPayment(jobPaymentId: string) {
       metadata: args.metadata ?? {},
     });
   }
+  async getPaymentStatus(jobId: string) {
+  const payment = await this.prisma.jobPayment.findFirst({
+    where: {
+      jobId,
+      type: {
+        in: ["POSTING", "URGENT", "FINAL"],
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      status: true,
+      type: true,
+      jobId: true,
+    },
+  });
+
+  return {
+    paid: payment?.status === "SUCCESS",
+    status: payment?.status ?? null,
+    type: payment?.type ?? null,
+    jobId,
+  };
+}
 }

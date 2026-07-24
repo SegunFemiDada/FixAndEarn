@@ -18,10 +18,9 @@ import type { AxiosError } from "axios";
 
 type Params = {
   jobId: string;
-
   fixerId: string;
-
   myUserId?: string | null;
+  role: "client" | "fixer";
 
   refetch: () => Promise<any>;
 
@@ -69,6 +68,7 @@ export function useChatActions({
   jobId,
   fixerId,
   myUserId,
+  role,
   refetch,
   addOptimisticMessage,
   markFailedMessage,
@@ -274,15 +274,31 @@ export function useChatActions({
             null
           );
 
-          await respondLockedPrice(
-            jobId,
-            fixerId,
-            {
-              accept,
-            }
-          );
+          const response =
+    await respondLockedPrice(
+        jobId,
+        fixerId,
+        {
+            accept,
+        }
+    );
 
-          await refetch();
+await refetch();
+
+if (
+    accept &&
+    role === "client"
+) {
+    const checkoutUrl =
+        response?.payment?.authorizationUrl;
+
+    if (checkoutUrl) {
+        window.location.assign(
+            checkoutUrl
+        );
+        return;
+    }
+}
         } catch (e) {
           setActionErr(
             renderAxiosError(

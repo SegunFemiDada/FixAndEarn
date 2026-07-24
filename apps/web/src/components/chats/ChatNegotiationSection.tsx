@@ -30,13 +30,9 @@ type Props = {
     value: string
   ) => void;
 
-  onPropose: (
-    milli: number
-  ) => void | Promise<void>;
+  onPropose: () => void | Promise<void>;
 
-  onLock: (
-    milli: number
-  ) => void | Promise<void>;
+  onLock: () => void | Promise<void>;
 
   onRespond: (
     accept: boolean

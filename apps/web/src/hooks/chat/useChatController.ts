@@ -53,6 +53,7 @@ export function useChatController({
     jobId,
     fixerId,
     myUserId,
+    role,
     refetch: conversation.refetch,
     addOptimisticMessage,
     markFailedMessage,

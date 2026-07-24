@@ -8,12 +8,16 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useMyVerification } from "@/lib/verification/queries";
-import { useInitiateDeposit, useSimulateDepositWebhook, useWalletBalance } from "@/lib/wallet/queries";
+import { useInitiateDeposit, useWalletBalance } from "@/lib/wallet/queries";
 import { formatFecFromMilli } from "@/lib/wallet/ui";
 import { getActiveRole, getToken } from "@/lib/auth/session";
 
 const depositSchema = z.object({
-  amountFec: z.coerce.number().finite().min(0.01, "Minimum is 0.01 FEC").max(1_000_000, "Amount too large"),
+  amountFec: z.coerce
+    .number()
+    .finite()
+    .min(1, "Minimum deposit is 1 FEC")
+    .max(1_000_000, "Amount too large"),
 });
 
 type DepositForm = z.input<typeof depositSchema>;
@@ -38,7 +42,6 @@ export default function WalletDepositPage() {
   const verification = useMyVerification();
   const balance = useWalletBalance();
   const deposit = useInitiateDeposit();
-  const simulate = useSimulateDepositWebhook();
 
   const verificationStatus = (verification.data as { status?: string } | undefined)?.status;
   const isVerifiedApproved = verificationStatus === "APPROVED";
@@ -47,7 +50,7 @@ export default function WalletDepositPage() {
   const [success, setSuccess] = React.useState<string | null>(null);
   const [lastInit, setLastInit] = React.useState<{
     authorizationUrl?: string;
-    paystackRef?: string;
+    paymentReference?: string;
     amountMilliFec?: number;
   } | null>(null);
 
@@ -71,26 +74,13 @@ export default function WalletDepositPage() {
 
     setLastInit({
       authorizationUrl: res?.authorizationUrl,
-      paystackRef: res?.paystackRef,
+      paymentReference: res?.paymentReference,
       amountMilliFec: res?.amountMilliFec,
     });
 
-    setSuccess("Deposit initiated. Open the Paystack link to complete payment.");
+    setSuccess("Deposit initiated successfully. Complete your payment using the Monnify checkout below. Your wallet balance will update automatically after payment is confirmed.");
   }
 
-  async function simulateSuccess() {
-    if (!lastInit?.paystackRef) return;
-
-    setSuccess(null);
-    const res = await simulate.mutateAsync({
-      paystackRef: lastInit.paystackRef,
-      status: "success",
-    });
-
-    if (res?.error) throw new Error(String(res.error));
-
-    setSuccess("Deposit simulated as SUCCESS. Balance updated.");
-  }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-5">

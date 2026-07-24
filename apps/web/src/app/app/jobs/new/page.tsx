@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { z } from "zod";
 
-import { useCreateJob } from "@/lib/jobs/queries";
+import { useCreateJob, useInitializePostingPayment } from "@/lib/jobs/queries";
 import { useMyVerification } from "@/lib/verification/queries";
 import { getToken, getStoredRoles } from "@/lib/auth/session";
 
@@ -37,6 +37,7 @@ export default function NewJobPage() {
   const router = useRouter();
   const { data: ver, isLoading: verLoading } = useMyVerification();
   const createMutation = useCreateJob();
+  const postingPayment = useInitializePostingPayment();
 
   const [mounted, setMounted] = useState(false);
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
@@ -96,21 +97,37 @@ export default function NewJobPage() {
   }
 
   async function onSubmit(values: CreateJobUiValues) {
-    const priceMilliFec = Math.round(Number(values.priceFec) * 1000);
+  const priceMilliFec = Math.round(Number(values.priceFec) * 1000);
 
-    const job = await createMutation.mutateAsync({
-      skillCategory: values.skillCategory,
-      state: values.state,
-      city: values.city,
-      lga: values.lga?.trim() ? values.lga.trim() : undefined,
-      area: values.area?.trim() ? values.area.trim() : undefined,
-      priceMilliFec,
-      images: previews.map((p) => p.file),
-    });
+  const job = await createMutation.mutateAsync({
+    skillCategory: values.skillCategory,
+    state: values.state,
+    city: values.city,
+    lga: values.lga?.trim() ? values.lga.trim() : undefined,
+    area: values.area?.trim() ? values.area.trim() : undefined,
+    priceMilliFec,
+    images: previews.map((p) => p.file),
+  });
 
-    const id = job?.id ?? job?.jobId;
-    if (id) router.push(`/app/jobs/${id}`);
+  const jobId = job?.id ?? job?.jobId;
+
+  if (!jobId) {
+    throw new Error("Unable to determine Job ID.");
   }
+
+  const payment = await postingPayment.mutateAsync(jobId);
+
+  const checkoutUrl =
+    payment?.checkoutUrl ??
+    payment?.paymentUrl ??
+    payment?.authorizationUrl;
+
+  if (!checkoutUrl) {
+    throw new Error("Payment URL was not returned.");
+  }
+
+  window.location.assign(checkoutUrl);
+}
 
   const blockedReason = useMemo(() => {
     if (!mounted) return "Loading…";
@@ -279,17 +296,32 @@ export default function NewJobPage() {
                 </div>
               )}
             </div>
+<div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-sm text-blue-900 dark:text-blue-200">
+  <p className="font-medium">
+    Platform Service Fee
+  </p>
 
+  <p className="mt-1">
+    After creating your job, you&apos;ll be redirected to Monnify to securely pay the platform service fee. Your job will only become visible to fixers after your payment is successfully confirmed.
+  </p>
+</div>
             <button
   type="submit"
-  disabled={createMutation.isPending}
+  disabled={
+  createMutation.isPending ||
+  postingPayment.isPending
+}
   className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200
     ${createMutation.isPending
       ? "cursor-not-allowed border border-gray-300 bg-gray-100 text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
       : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
   `}
 >
-  {createMutation.isPending ? "Posting…" : "Post job"}
+  {createMutation.isPending
+  ? "Creating job..."
+  : postingPayment.isPending
+    ? "Preparing secure payment..."
+    : "Continue to Payment"}
 </button>
 
 
