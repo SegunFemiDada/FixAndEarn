@@ -142,12 +142,16 @@ export default function NegotiationPanel({
         />
       )}
 
-      {/* Agreed state */}
-      {showAgreedState && (
-        <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm">
-          Agreed price paid, Job <i>IN PROGRESS</i>.
-        </div>
-      )}
+ {showAgreedState && (
+  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+    Price agreed successfully.
+
+    <div className="mt-2">
+      The job will move to <strong>IN&nbsp;PROGRESS</strong> only after the
+      client&apos;s payment has been successfully confirmed.
+    </div>
+  </div>
+)}
     </div>
   );
 }

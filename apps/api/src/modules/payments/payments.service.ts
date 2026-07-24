@@ -14,6 +14,7 @@ import { LedgerService } from "../wallet/ledger.service";
 import { PAYMENT_PROVIDER } from "./payments.constants";
 import { PaymentProvider } from "./payment.provider";
 import { ModuleRef } from "@nestjs/core";
+import { JobPaymentProcessorService } from "../job-payments/job-payment-processor.service";
 
 @Injectable()
 export class PaymentsService {
@@ -26,6 +27,7 @@ export class PaymentsService {
     private readonly ledgerService: LedgerService,
     private readonly notifications: NotificationsService,
     private readonly moduleRef: ModuleRef,
+    private readonly jobPaymentProcessor: JobPaymentProcessorService,
   ) {}
 
   async initializeDeposit(userId: string, amountMilliFec: number) {
@@ -305,8 +307,8 @@ const reference =
     }
 
     // Process within a transaction, creating the webhook record atomically
-    // Process within a transaction, creating the webhook record atomically
-const result = await this.prisma.$transaction(async (tx) => {
+  const result = await this.prisma.$transaction(async (tx) => {
+  
   const eventType =
     event?.eventType ??
     event?.event ??
@@ -389,145 +391,6 @@ const jobPayment = await tx.jobPayment.findUnique({
       };
     }
 
-    if (jobPayment.status !== "SUCCESS") {
-      await tx.jobPayment.update({
-        where: {
-          id: jobPayment.id,
-        },
-        data: {
-          status: "SUCCESS",
-          paidAt: new Date(),
-        },
-      });
-
-      switch (jobPayment.type) {
-        case "POSTING":
-          await tx.job.update({
-            where: {
-              id: jobPayment.jobId,
-            },
-            data: {
-              status: "OPEN",
-            },
-          });
-          break;
-
-       case "URGENT": {
-  const conversation = await tx.conversation.upsert({
-    where: {
-      jobId_fixerId: {
-        jobId: jobPayment.jobId,
-        fixerId: jobPayment.fixerId!,
-      },
-    },
-    update: {
-      status: "OPEN",
-    },
-    create: {
-      jobId: jobPayment.jobId,
-      fixerId: jobPayment.fixerId!,
-      status: "OPEN",
-    },
-  });
-
-  await tx.jobApplication.upsert({
-    where: {
-      jobId_fixerId: {
-        jobId: jobPayment.jobId,
-        fixerId: jobPayment.fixerId!,
-      },
-    },
-    update: {
-      status: "APPLIED",
-    },
-    create: {
-      jobId: jobPayment.jobId,
-      fixerId: jobPayment.fixerId!,
-      status: "APPLIED",
-    },
-  });
-
-  await tx.jobPayment.update({
-    where: {
-      id: jobPayment.id,
-    },
-    data: {
-      conversationId: conversation.id,
-    },
-  });
-
-  await tx.job.update({
-    where: {
-      id: jobPayment.jobId,
-    },
-    data: {
-      status: "OPEN",
-    },
-  });
-
-  try {
-    await this.notifications.create({
-      userId: jobPayment.fixerId!,
-      type: NotificationType.SYSTEM_ANNOUNCEMENT,
-      title: "Urgent hire request",
-      body: "A client has started an urgent hire with you. Open the conversation to continue.",
-      idempotencyKey: `notif:urgent_hire:${jobPayment.jobId}:${jobPayment.fixerId}`,
-      data: {
-        jobId: jobPayment.jobId,
-        conversationId: conversation.id,
-      },
-      prisma: tx,
-    });
-  } catch {}
-
-  break;
-}
-        case "FINAL": {
-  await tx.job.update({
-    where: {
-      id: jobPayment.jobId,
-    },
-    data: {
-      fixerId: jobPayment.fixerId,
-      lockedPriceMilliFec: jobPayment.lockedPriceMilliFec,
-      status: "IN_PROGRESS",
-    },
-  });
-
-  try {
-    await this.notifications.create({
-      userId: jobPayment.job.clientId,
-      type: NotificationType.SYSTEM_ANNOUNCEMENT,
-      title: "Payment received",
-      body: "Your payment has been confirmed. The fixer can now begin working on your job.",
-      idempotencyKey: `notif:job_started_client:${jobPayment.id}`,
-      data: {
-        jobId: jobPayment.jobId,
-      },
-      prisma: tx,
-    });
-  } catch {}
-
-  if (jobPayment.fixerId) {
-    try {
-      await this.notifications.create({
-        userId: jobPayment.fixerId,
-        type: NotificationType.SYSTEM_ANNOUNCEMENT,
-        title: "Work can begin",
-        body: "The client's payment has been confirmed. You may now begin working on the job.",
-        idempotencyKey: `notif:job_started_fixer:${jobPayment.id}`,
-        data: {
-          jobId: jobPayment.jobId,
-        },
-        prisma: tx,
-      });
-    } catch {}
-  }
-
-  break;
-}}
-    }
-
     return {
       ok: true,
       paymentType: "JOB_PAYMENT",
@@ -550,6 +413,16 @@ const jobPayment = await tx.jobPayment.findUnique({
     ok: true,
   };
 });
+
+if (
+  result &&
+  typeof result === "object" &&
+  typeof result.jobPaymentId === "string"
+) {
+  await this.jobPaymentProcessor.handleSuccessfulPayment(
+    result.jobPaymentId,
+  );
+}
 
 if (
   result &&

@@ -11,6 +11,7 @@ import { ReconciliationService } from "./reconciliation.service";
 import { PAYMENT_PROVIDER } from "./payments.constants";
 import { MonnifyHttpProvider } from "./monnify/monnify.http.provider";
 import { MonnifyWebhookController } from "./monnify/monnify.webhook.controller";
+import { JobPaymentsModule } from "../job-payments/job-payments.module";
 @Module({
   imports: [
     PrismaModule,
@@ -18,6 +19,7 @@ import { MonnifyWebhookController } from "./monnify/monnify.webhook.controller";
     ScheduleModule,
     forwardRef(() => AdminModule),
     forwardRef(() => WalletModule),
+    JobPaymentsModule,
   ],
 
   controllers: [

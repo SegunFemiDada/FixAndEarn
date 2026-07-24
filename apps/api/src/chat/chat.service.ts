@@ -794,6 +794,22 @@ if (!convo.active) {
         conversationId: convo.id,
         price
       });
+      if (role === "FIXER") {
+  try {
+    await this.notifications.create({
+      userId: job.clientId,
+      type: "SYSTEM_ANNOUNCEMENT",
+      title: "Payment required",
+      body:
+        "The fixer accepted your agreed price. Complete payment to officially start the job.",
+      idempotencyKey: `job-payment-required:${job.id}`,
+      data: {
+        jobId: job.id,
+        conversationId: convo.id,
+      },
+    });
+  } catch {}
+}
     });
 
     this.realtime.emitToRoom(
@@ -819,11 +835,14 @@ if (!convo.active) {
     );
   }
 
-  return {
-    ok: true,
-    status: next.status,
-    payment,
-  };
+return {
+  ok: true,
+  status: next.status,
+  payment: role === "CLIENT" ? payment : null,
+  paymentPendingForClient:
+    next.status === "AGREED" &&
+    role === "FIXER",
+};
 }
 
   async getConversationDetail(
