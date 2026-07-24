@@ -9,7 +9,6 @@ import { CurrentUser } from "../common/auth/current-user.decorator";
 import { CurrentUserPayload } from "src/common/types/current-user";
 import { RespondLockedPriceDto } from "./dto/respond-locked-price.dto";
 
-// ...existing code...
 function pickUserId(user: any): string {
   const id =
     user?.userId ??
@@ -22,7 +21,6 @@ function pickUserId(user: any): string {
   if (!id) throw new Error("CURRENT_USER_ID_MISSING");
   return id;
 }
-// ...existing code...
 
 @UseGuards(JwtAuthGuard)
 @Controller("jobs/:jobId/chats/:fixerId")

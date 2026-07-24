@@ -5,11 +5,28 @@ import {
   Get,
   Param,
   Post,
-  Req,
 } from "@nestjs/common";
 import { JobPaymentsService } from "./job-payments.service";
+import { UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
+import { CurrentUser } from "../../common/auth/current-user.decorator";
+import { CurrentUserPayload } from "../../common/types/current-user";
 
 
+function pickUserId(user: any): string {
+  const id =
+    user?.userId ??
+    user?.id ??
+    user?.sub ??
+    user?.payload?.userId ??
+    user?.payload?.id ??
+    user?.payload?.sub;
+
+  if (!id) throw new Error("CURRENT_USER_ID_MISSING");
+
+  return id;
+}
+@UseGuards(JwtAuthGuard)
 @Controller("job-payments")
 export class JobPaymentsController {
   constructor(
@@ -26,11 +43,11 @@ async getPayments(
 @Post("posting/:jobId")
 async createPostingPayment(
   @Param("jobId") jobId: string,
-  @Req() req: any,
+  @CurrentUser() user: CurrentUserPayload,
 ) {
   return this.jobPaymentsService.createPostingPayment({
     jobId,
-    clientId: req.user.sub,
+    clientId: pickUserId(user),
   });
 }
 @Get("status/:jobId")
@@ -44,12 +61,12 @@ async getPaymentStatus(
   async createFinalPayment(
     @Param("jobId") jobId: string,
     @Body("conversationId") conversationId: string,
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload
   ) {
     return this.jobPaymentsService.createFinalPayment({
       jobId,
       conversationId,
-      clientId: req.user.sub,
+      clientId: pickUserId(user),
     });
   }
 }
