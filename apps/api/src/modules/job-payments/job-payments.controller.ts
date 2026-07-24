@@ -23,6 +23,16 @@ async getPayments(
     jobId,
   );
 }
+@Post("posting/:jobId")
+async createPostingPayment(
+  @Param("jobId") jobId: string,
+  @Req() req: any,
+) {
+  return this.jobPaymentsService.createPostingPayment({
+    jobId,
+    clientId: req.user.sub,
+  });
+}
 @Get("status/:jobId")
 async getPaymentStatus(
   @Param("jobId") jobId: string,

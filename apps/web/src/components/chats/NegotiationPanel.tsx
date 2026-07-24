@@ -145,7 +145,7 @@ export default function NegotiationPanel({
       {/* Agreed state */}
       {showAgreedState && (
         <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm">
-          Price agreed, Job <i>IN PROGRESS</i>.
+          Agreed price paid, Job <i>IN PROGRESS</i>.
         </div>
       )}
     </div>

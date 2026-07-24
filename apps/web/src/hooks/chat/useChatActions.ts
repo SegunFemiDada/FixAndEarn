@@ -311,11 +311,7 @@ if (
           );
         }
       },
-      [
-        fixerId,
-        jobId,
-        refetch,
-      ]
+      [fixerId, jobId, refetch, role]
     );
 
   return {
