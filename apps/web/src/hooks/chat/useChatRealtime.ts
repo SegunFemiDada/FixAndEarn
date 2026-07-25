@@ -73,6 +73,14 @@ export function useChatRealtime({
         ...message,
         flags: Array.isArray(message.flags) ? message.flags : [],
       });
+      socket.on("job:started", (payload) => {
+  if (unmounted) return;
+  if (payload.jobId !== jobId) return;
+
+  playSound("/sounds/notification.mp3");
+
+  safeRefetch();
+});
 
       // Only play sound if it's not my own message
       if (message.senderId !== myUserId) {
@@ -152,6 +160,7 @@ export function useChatRealtime({
       socket.off("conversation:activated");
       socket.off("message:new");
       socket.off("payment:created");
+      socket.off("job:started");
       notificationEvents.forEach((event) => socket.off(event));
 
       socketRef.current = null;

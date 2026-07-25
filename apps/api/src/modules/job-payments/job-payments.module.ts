@@ -6,12 +6,15 @@ import { NotificationsModule } from "../notifications/notifications.module";
 import { JobPaymentsController } from "./job-payments.controller";
 import { JobPaymentsService } from "./job-payments.service";
 import { JobPaymentProcessorService } from "./job-payment-processor.service";
+import { ChatModule } from "../../chat/chat.module";
 
 @Module({
   imports: [
   PrismaModule,
   NotificationsModule,
   forwardRef(() => PaymentsModule),
+  forwardRef(() => ChatModule),
+
 ],
   controllers: [JobPaymentsController],
   providers: [

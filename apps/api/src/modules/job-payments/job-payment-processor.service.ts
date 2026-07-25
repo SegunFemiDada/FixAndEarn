@@ -10,12 +10,14 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { ChatRealtimeService } from "src/chat/realtime/chat-realtime.service";
 
 @Injectable()
 export class JobPaymentProcessorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly realtime: ChatRealtimeService,
   ) {}
 
   async handleSuccessfulPayment(jobPaymentId: string) {
@@ -37,7 +39,9 @@ export class JobPaymentProcessorService {
         ok: true,
         alreadyProcessed: true,
       };
+      
     }
+    
 
     switch (payment.type) {
       case "POSTING":
@@ -54,7 +58,9 @@ export class JobPaymentProcessorService {
           ok: true,
         };
     }
+    
   }
+  
 
   async handleFailedPayment(jobPaymentId: string) {
     await this.prisma.jobPayment.update({
@@ -252,6 +258,7 @@ const lockedPrice = payment.lockedPriceMilliFec;
         paidAt: new Date(),
       },
     });
+    
 
     await tx.job.update({
       where: {
@@ -277,6 +284,20 @@ const lockedPrice = payment.lockedPriceMilliFec;
       },
     });
   });
+  const room = this.realtime.roomFor(
+  payment.jobId,
+  fixerId,
+);
+
+this.realtime.emitToRoom(
+  room,
+  "job:started",
+  {
+    jobId: payment.jobId,
+    fixerId,
+    status: "IN_PROGRESS",
+  },
+);
 
   try {
     await this.notifications.create({
@@ -309,4 +330,5 @@ const lockedPrice = payment.lockedPriceMilliFec;
     paymentType: payment.type,
   };
 }
+
 }

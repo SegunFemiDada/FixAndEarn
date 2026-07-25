@@ -23,6 +23,6 @@ import { JobPaymentsModule } from "../modules/job-payments/job-payments.module";
     AdminModerationController
   ],
   providers: [ChatService, ChatRepo, ChatModerationService, ChatRealtimeService, ChatGateway],
-  exports: [ChatService],
+  exports: [ChatService, ChatRealtimeService],
 })
 export class ChatModule {}
