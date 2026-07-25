@@ -71,13 +71,21 @@ export default function JobSummaryCard({
             )}
           </div>
 
-          <div className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-            Status:{" "}
-            {String(
-              job.status ??
-                "—"
-            )}
-          </div>
+          <div className="flex items-center gap-2 text-xs">
+  <span className="text-[#6B7C99] dark:text-[#8FA0BC]">
+    Status:
+  </span>
+
+  <span
+    className={`rounded-full px-2 py-0.5 font-semibold ${
+      job.status === "IN_PROGRESS"
+        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+        : "bg-gray-100 text-[#6B7C99] dark:bg-[#25344F] dark:text-[#8FA0BC]"
+    }`}
+  >
+    {String(job.status ?? "—")}
+  </span>
+</div>
         </div>
       </div>
     </Card>
