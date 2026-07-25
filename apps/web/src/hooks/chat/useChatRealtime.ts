@@ -115,6 +115,9 @@ export function useChatRealtime({
     });
 
     joinRoom();
+    socket.on("payment:created", (payload) => {
+  console.log("PAYMENT EVENT RECEIVED", payload);
+});
 
     return () => {
       unmounted = true;
