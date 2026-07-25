@@ -118,11 +118,11 @@ export function useChatRealtime({
   socket.on("payment:created", (payload) => {
   if (unmounted) return;
 
-  console.log("========== PAYMENT EVENT RECEIVED ==========");
-  console.log("Current User:", myUserId);
-  console.log("Expected Payer:", payload.payerId);
-  console.log("Current Job:", jobId);
-  console.log("Payload:", payload);
+  // console.log("========== PAYMENT EVENT RECEIVED ==========");
+  // console.log("Current User:", myUserId);
+  // console.log("Expected Payer:", payload.payerId);
+  // console.log("Current Job:", jobId);
+  // console.log("Payload:", payload);
 
   if (payload.jobId !== jobId) {
     console.log("Ignored: Job ID does not match.");
