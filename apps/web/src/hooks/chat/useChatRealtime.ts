@@ -77,7 +77,7 @@ export function useChatRealtime({
   if (unmounted) return;
   if (payload.jobId !== jobId) return;
 
-  playSound("/sounds/notification.mp3");
+  playSound("/sounds/bell.mp3");
 
   safeRefetch();
 });

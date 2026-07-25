@@ -64,7 +64,7 @@ listOpenJobs(query: {
   take: number;
   skip: number;
 }) {
-  const where: Prisma.JobWhereInput = { status: "OPEN" };
+  const where: Prisma.JobWhereInput = { status: "OPEN", fixerId: null };
 
   if (query.skill) {
     where.skillCategory = { contains: query.skill, mode: "insensitive" };

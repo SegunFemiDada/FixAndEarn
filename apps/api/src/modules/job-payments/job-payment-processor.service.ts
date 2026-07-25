@@ -168,6 +168,7 @@ export class JobPaymentProcessorService {
   },
   data: {
     status: JobStatus.OPEN,
+    fixerId: payment.fixerId,
   },
 });
 
@@ -180,6 +181,31 @@ export class JobPaymentProcessorService {
   },
 });
   });
+  if (payment.fixerId) {
+  const room = this.realtime.roomFor(
+    payment.jobId,
+    payment.fixerId,
+  );
+
+  this.realtime.emitToRoom(
+    room,
+    "job:started",
+    {
+      jobId: payment.jobId,
+      fixerId: payment.fixerId,
+      status: "OPEN",
+      urgentHire: true,
+    },
+  );
+
+  this.realtime.emitToRoom(
+    room,
+    "job:update",
+    {
+      jobId: payment.jobId,
+    },
+  );
+}
 
   try {
     await this.notifications.create({
