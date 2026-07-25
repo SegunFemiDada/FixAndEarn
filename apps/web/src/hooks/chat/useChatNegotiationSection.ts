@@ -49,6 +49,9 @@ export function useChatNegotiationSection(
 
       onRespond:
         chat.submitLockedPriceResponse,
+
+        myUserId:
+        chat.myUserId,
     }),
     [chat]
   );

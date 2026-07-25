@@ -391,9 +391,6 @@ export default function FixerProfilePage() {
         {/* Socials */}
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Socials</div>
-          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Optional public links provided during verification.
-          </div>
 
           <div className="mt-4 flex flex-col gap-2">
             {instagram ? (

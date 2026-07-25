@@ -156,6 +156,14 @@ export class JobPaymentProcessorService {
         paidAt: new Date(),
       },
     });
+    await tx.job.update({
+  where: {
+    id: payment.jobId,
+  },
+  data: {
+    status: JobStatus.OPEN,
+  },
+});
 
     await tx.conversation.update({
   where: {

@@ -794,7 +794,7 @@ if (!convo.active) {
         conversationId: convo.id,
         price
       });
-      if (role === "FIXER") {
+      if (next.status === "AGREED") {
   try {
     await this.notifications.create({
       userId: job.clientId,
@@ -838,10 +838,13 @@ if (!convo.active) {
 return {
   ok: true,
   status: next.status,
-  payment: role === "CLIENT" ? payment : null,
+
+  // Always include payment after agreement.
+  // Only the client will actually use it.
+  payment,
+
   paymentPendingForClient:
-    next.status === "AGREED" &&
-    role === "FIXER",
+    next.status === "AGREED",
 };
 }
 

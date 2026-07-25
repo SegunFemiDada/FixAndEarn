@@ -1,3 +1,4 @@
+//path: apps/web/src/hooks/chat/useChatConversation.ts
 import { useMemo } from "react";
 import { useConversationDetail } from "@/lib/chat/queries";
 import type { ConversationDetailData } from "@/lib/chat/types";
