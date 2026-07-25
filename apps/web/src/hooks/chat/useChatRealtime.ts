@@ -115,8 +115,27 @@ export function useChatRealtime({
     });
 
     joinRoom();
-    socket.on("payment:created", (payload) => {
-  console.log("PAYMENT EVENT RECEIVED", payload);
+  socket.on("payment:created", (payload) => {
+  if (unmounted) return;
+
+  console.log("========== PAYMENT EVENT RECEIVED ==========");
+  console.log("Current User:", myUserId);
+  console.log("Expected Payer:", payload.payerId);
+  console.log("Current Job:", jobId);
+  console.log("Payload:", payload);
+
+  if (payload.jobId !== jobId) {
+    console.log("Ignored: Job ID does not match.");
+    return;
+  }
+
+  if (payload.payerId !== myUserId) {
+    console.log("Ignored: Current user is not the payer.");
+    return;
+  }
+
+  console.log("Redirecting client to Monnify checkout...");
+  window.location.href = payload.authorizationUrl;
 });
 
     return () => {
@@ -132,6 +151,7 @@ export function useChatRealtime({
       socket.off("reconnect", joinRoom);
       socket.off("conversation:activated");
       socket.off("message:new");
+      socket.off("payment:created");
       notificationEvents.forEach((event) => socket.off(event));
 
       socketRef.current = null;
