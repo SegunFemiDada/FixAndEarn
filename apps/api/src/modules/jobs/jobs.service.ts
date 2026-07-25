@@ -8,7 +8,7 @@ import {
   Inject,
   forwardRef,
 } from "@nestjs/common";
-import { JobStatus, NotificationType, Prisma } from "@prisma/client";
+import { JobPostingType, JobStatus, NotificationType, Prisma } from "@prisma/client";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -157,18 +157,22 @@ export class JobsService {
 
 
       const job = await tx.job.create({
-        data: {
-          clientId: args.clientId,
-          fixerId,
-          skillCategory,
-          state,
-          city,
-          lga,
-          area,
-          priceMilliFec: 1,
-          status: "DRAFT",
-        },
-      });
+  data: {
+    clientId: args.clientId,
+    fixerId,
+    skillCategory,
+    state,
+    city,
+    lga,
+    area,
+
+    priceMilliFec: 1,
+
+    status: JobStatus.DRAFT,
+
+    postingType: JobPostingType.URGENT,
+  },
+});
 
       const payment =
   await this.jobPaymentsService.createUrgentHirePayment(

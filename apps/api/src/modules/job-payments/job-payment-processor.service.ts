@@ -134,6 +134,7 @@ export class JobPaymentProcessorService {
   private async completeUrgentHirePayment(
   jobPaymentId: string,
 ) {
+
   const payment = await this.prisma.jobPayment.findUnique({
     where: {
       id: jobPaymentId,
@@ -142,6 +143,10 @@ export class JobPaymentProcessorService {
       job: true,
     },
   });
+    console.log("========== URGENT PAYMENT ==========");
+console.log({
+  jobPaymentId,
+});
 
   if (!payment) {
     throw new NotFoundException("JOB_PAYMENT_NOT_FOUND");
@@ -160,8 +165,23 @@ export class JobPaymentProcessorService {
       data: {
         status: JobPaymentStatus.SUCCESS,
         paidAt: new Date(),
+        
       },
+      
     });
+    console.log({
+  paymentId: payment.id,
+  paymentType: payment.type,
+  jobId: payment.jobId,
+  jobStatus: payment.job.status,
+  postingType: payment.job.postingType,
+});
+console.log("Updating urgent job...");
+
+console.log({
+  jobId: payment.jobId,
+});
+    
     await tx.job.update({
   where: {
     id: payment.jobId,
@@ -205,7 +225,22 @@ export class JobPaymentProcessorService {
       jobId: payment.jobId,
     },
   );
+  
 }
+const updatedJob = await this.prisma.job.findUnique({
+  where: {
+    id: payment.jobId,
+  },
+  select: {
+    status: true,
+    postingType: true,
+    fixerId: true,
+  },
+});
+
+console.log("AFTER UPDATE");
+
+console.log(updatedJob);
 
   try {
     await this.notifications.create({
