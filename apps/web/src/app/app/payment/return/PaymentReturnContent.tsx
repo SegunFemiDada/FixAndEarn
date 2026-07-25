@@ -1,16 +1,30 @@
-//path: apps/web/src/app/app/payment/return/PaymentReturnContent.tsx
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function PaymentReturnContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
-  // paste the rest of your existing payment return logic here
+  const jobId = searchParams.get("jobId");
+  const type = searchParams.get("type");
+
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    async function checkPayment() {
+      if (!jobId) return;
+
+      // your existing polling logic
+    }
+
+    checkPayment();
+  }, [jobId]);
 
   return (
     <div>
-      {/* existing JSX */}
+      {/* your existing UI */}
     </div>
   );
 }
