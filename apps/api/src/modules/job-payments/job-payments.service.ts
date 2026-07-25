@@ -161,12 +161,18 @@ async createUrgentHirePayment(
   });
 }
 
-  async createFinalPayment(args: {
-  jobId: string;
-  clientId: string;
-  conversationId: string;
-}) {
-  const user = await this.prisma.user.findUnique({
+  async createFinalPayment(
+  args: {
+    jobId: string;
+    clientId: string;
+    conversationId: string;
+  },
+  tx?: Prisma.TransactionClient,
+) 
+
+{
+  const db = tx ?? this.prisma;
+  const user = await db.user.findUnique({
     where: {
       id: args.clientId,
     },
@@ -179,7 +185,7 @@ async createUrgentHirePayment(
     throw new Error("CLIENT_NOT_FOUND");
   }
 
-  const job = await this.prisma.job.findUnique({
+  const job = await db.job.findUnique({
     where: {
       id: args.jobId,
     },
@@ -197,7 +203,7 @@ async createUrgentHirePayment(
     throw new Error("NOT_JOB_OWNER");
   }
 
-  const negotiation = await this.prisma.negotiation.findUnique({
+  const negotiation = await db.negotiation.findUnique({
     where: {
       conversationId: args.conversationId,
     },
@@ -226,7 +232,7 @@ async createUrgentHirePayment(
 
   const paystackReference = crypto.randomUUID();
 
-  await this.prisma.jobPayment.upsert({
+  await db.jobPayment.upsert({
     where: {
       jobId_type: {
         jobId: args.jobId,

@@ -154,17 +154,7 @@ export class ChatService {
     conversationId,
     price,
   } = args;
-
-  // Mark the negotiation as agreed.
-  await tx.negotiation.update({
-    where: {
-      conversationId,
-    },
-    data: {
-      status: "AGREED",
-      agreedAt: new Date(),
-    },
-  });
+  
 
   // Save the agreed fixer and locked price.
   // Do NOT move the job to IN_PROGRESS yet.
@@ -196,11 +186,14 @@ export class ChatService {
   // Create the FINAL payment.
   // This generates the Monnify authorization URL that the client
   // must complete before the job becomes IN_PROGRESS.
-  return this.jobPaymentsService.createFinalPayment({
+  return this.jobPaymentsService.createFinalPayment(
+  {
     jobId: job.id,
     clientId: job.clientId,
     conversationId,
-  });
+  },
+  tx,
+);
 }
 
   async listJobConversations(
@@ -794,6 +787,21 @@ if (!convo.active) {
         conversationId: convo.id,
         price
       });
+      if (payment?.authorizationUrl) {
+  this.realtime.emitToRoom(
+    room,
+    "payment:created",
+    {
+      jobId,
+      conversationId: convo.id,
+      payerId: job.clientId,
+      authorizationUrl:
+        payment.authorizationUrl,
+      reference:
+        payment.reference,
+    },
+  );
+}
       if (next.status === "AGREED") {
   try {
     await this.notifications.create({
@@ -834,6 +842,9 @@ if (!convo.active) {
       }
     );
   }
+  console.log({
+  payment,
+});
 
 return {
   ok: true,

@@ -395,7 +395,7 @@ return {
 
     const existing = await this.repo.findApplication(args.jobId, args.fixerId);
     if (existing && existing.status === "APPLIED") {
-      throw new ConflictException("You already applied to this job.");
+      throw new ConflictException("You have applied to this job.");
     }
     if (existing) {
       throw new ConflictException(

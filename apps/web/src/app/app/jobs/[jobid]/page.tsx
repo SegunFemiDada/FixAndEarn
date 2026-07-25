@@ -627,7 +627,7 @@ export default function JobDetailsPage() {
 
           {hasApplied ? (
             <div className="rounded-2xl border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 p-3 text-sm text-[#2E7D32] dark:text-green-200">
-              You already applied to this job.
+              You have applied to this job.
             </div>
           ) : !canApply ? (
             <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
