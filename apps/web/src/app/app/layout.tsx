@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   Home,
   Briefcase,
-  Wallet,
+  CircleDollarSign,
   User,
   Bell,
 } from "lucide-react";
@@ -103,7 +103,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   {activeRole === "FIXER" && (
   <Link href="/app/wallet" className={navLinkClass()}>
-    <Wallet className="h-4 w-4" />
+    <CircleDollarSign  className="h-4 w-4" />
     <span>Earnings</span>
   </Link>
 )}

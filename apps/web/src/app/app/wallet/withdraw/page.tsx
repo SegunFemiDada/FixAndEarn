@@ -205,7 +205,7 @@ export default function WalletWithdrawPage() {
         {/* Balance card */}
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <div className="flex items-start justify-between">
-            <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Current balance</div>
+            <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Withdrawable earnings</div>
             <button
               onClick={() => setShowBalance((v) => !v)}
               className="rounded-full p-2 text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition"
