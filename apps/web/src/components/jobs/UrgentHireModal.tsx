@@ -173,7 +173,7 @@ lga:
           </p>
 
           <p className="mt-1">
-            A 2 FEC platform service fee
+            A 2 FEC (₦2000) platform service fee
             payment is required before the
             fixer can be assigned.
           </p>

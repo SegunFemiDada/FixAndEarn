@@ -1,3 +1,4 @@
+//path: apps/web/src/app/app/payment/return/page.tsx
 import { Suspense } from "react";
 import PaymentReturnContent from "./PaymentReturnContent";
 

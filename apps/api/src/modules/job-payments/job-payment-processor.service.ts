@@ -134,10 +134,6 @@ export class JobPaymentProcessorService {
   private async completeUrgentHirePayment(
   jobPaymentId: string,
 ) {
-  console.log("========== URGENT PAYMENT ==========");
-console.log({
-  jobPaymentId,
-});
   const payment = await this.prisma.jobPayment.findUnique({
     where: {
       id: jobPaymentId,
@@ -174,11 +170,6 @@ console.log({
       },
     });
 
-    console.log("Updating urgent job...");
-
-console.log({
-  jobId: payment.jobId,
-});
     await tx.job.update({
   where: {
     id: payment.jobId,
@@ -198,19 +189,7 @@ console.log({
   },
 });
   });
-  const updatedJob = await this.prisma.job.findUnique({
-  where: {
-    id: payment.jobId,
-  },
-  select: {
-    status: true,
-    postingType: true,
-    fixerId: true,
-  },
-});
 
-console.log("AFTER UPDATE");
-console.log(updatedJob);
   if (payment.fixerId) {
   const room = this.realtime.roomFor(
     payment.jobId,
