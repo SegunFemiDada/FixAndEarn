@@ -242,14 +242,17 @@ function TimelineBarChart({
   items: AdminAnalyticsTimelineItem[];
 }) {
   const maxValue = Math.max(
-    0,
-    ...items.flatMap((item) => [
-      item.jobsPosted,
-      item.jobsCompleted,
-      item.depositsMilliFec,
-      item.withdrawalsMilliFec,
-    ])
-  );
+  0,
+  ...items.flatMap((item) => [
+    item.registrations,
+    item.jobsPosted,
+    item.jobsCompleted,
+    item.withdrawalsMilliFec,
+    item.postingFeesMilliFec,
+    item.urgentHireFeesMilliFec,
+    item.platformCommissionMilliFec,
+  ])
+);
 
   return (
     <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -269,10 +272,26 @@ function TimelineBarChart({
       ) : (
         <div className="mt-5 space-y-5">
           {items.map((item) => {
-            const postedWidth = maxValue > 0 ? `${(item.jobsPosted / maxValue) * 100}%` : "0%";
-            const completedWidth = maxValue > 0 ? `${(item.jobsCompleted / maxValue) * 100}%` : "0%";
-            const depositsWidth = maxValue > 0 ? `${(item.depositsMilliFec / maxValue) * 100}%` : "0%";
-            const withdrawalsWidth = maxValue > 0 ? `${(item.withdrawalsMilliFec / maxValue) * 100}%` : "0%";
+            const registrationsWidth =
+  maxValue > 0 ? `${(item.registrations / maxValue) * 100}%` : "0%";
+
+const postedWidth =
+  maxValue > 0 ? `${(item.jobsPosted / maxValue) * 100}%` : "0%";
+
+const completedWidth =
+  maxValue > 0 ? `${(item.jobsCompleted / maxValue) * 100}%` : "0%";
+
+const withdrawalsWidth =
+  maxValue > 0 ? `${(item.withdrawalsMilliFec / maxValue) * 100}%` : "0%";
+
+const postingFeesWidth =
+  maxValue > 0 ? `${(item.postingFeesMilliFec / maxValue) * 100}%` : "0%";
+
+const urgentHireWidth =
+  maxValue > 0 ? `${(item.urgentHireFeesMilliFec / maxValue) * 100}%` : "0%";
+
+const commissionWidth =
+  maxValue > 0 ? `${(item.platformCommissionMilliFec / maxValue) * 100}%` : "0%";
 
             return (
               <div key={item.label} className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
@@ -281,6 +300,21 @@ function TimelineBarChart({
                 </div>
 
                 <div className="grid gap-4">
+                  <div>
+  <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+    <span>Registrations</span>
+    <span className="font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+      {formatInteger(item.registrations)}
+    </span>
+  </div>
+
+  <div className="h-2 overflow-hidden rounded-full bg-[#EAF0FB] dark:bg-[#16202E]">
+    <div
+      className="h-full rounded-full bg-[#7C3AED] dark:bg-violet-500"
+      style={{ width: registrationsWidth }}
+    />
+  </div>
+</div>
                   <div>
                     <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
                       <span>Jobs posted</span>
@@ -305,18 +339,6 @@ function TimelineBarChart({
 
                   <div>
                     <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      <span>Deposits</span>
-                      <span className="font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                        {formatFecFromMilli(item.depositsMilliFec)}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[#EAF0FB] dark:bg-[#16202E]">
-                      <div className="h-full rounded-full bg-[#40f81f] dark:bg-[#40f81f]" style={{ width: depositsWidth }} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
                       <span>Withdrawals</span>
                       <span className="font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
                         {formatFecFromMilli(item.withdrawalsMilliFec)}
@@ -326,6 +348,51 @@ function TimelineBarChart({
                       <div className="h-full rounded-full bg-[#D9534F] dark:bg-red-500" style={{ width: withdrawalsWidth }} />
                     </div>
                   </div>
+                  <div>
+  <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+    <span>Posting fees</span>
+    <span className="font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+      {formatFecFromMilli(item.postingFeesMilliFec)}
+    </span>
+  </div>
+
+  <div className="h-2 overflow-hidden rounded-full bg-[#EAF0FB] dark:bg-[#16202E]">
+    <div
+      className="h-full rounded-full bg-[#2563EB] dark:bg-blue-500"
+      style={{ width: postingFeesWidth }}
+    />
+  </div>
+</div>
+<div>
+  <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+    <span>Urgent hire fees</span>
+    <span className="font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+      {formatFecFromMilli(item.urgentHireFeesMilliFec)}
+    </span>
+  </div>
+
+  <div className="h-2 overflow-hidden rounded-full bg-[#EAF0FB] dark:bg-[#16202E]">
+    <div
+      className="h-full rounded-full bg-[#F59E0B] dark:bg-amber-500"
+      style={{ width: urgentHireWidth }}
+    />
+  </div>
+</div>
+<div>
+  <div className="mb-1 flex items-center justify-between gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+    <span>Platform commission</span>
+    <span className="font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+      {formatFecFromMilli(item.platformCommissionMilliFec)}
+    </span>
+  </div>
+
+  <div className="h-2 overflow-hidden rounded-full bg-[#EAF0FB] dark:bg-[#16202E]">
+    <div
+      className="h-full rounded-full bg-[#DC2626] dark:bg-red-600"
+      style={{ width: commissionWidth }}
+    />
+  </div>
+</div>
                 </div>
               </div>
             );
@@ -680,15 +747,11 @@ export default function AdminAnalyticsPage() {
         <div>
           <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Finance metrics</h3>
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Deposits, withdrawals, fees, commission, and total platform funds.
+            Withdrawals, fees, commission, and total platform funds.
           </p>
         </div>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <KpiCard
-            label="Total deposits"
-            value={formatFecFromMilli(analytics.finance.totalDepositsMilliFec)}
-          />
           <KpiCard
             label="Total withdrawals"
             value={formatFecFromMilli(analytics.finance.totalWithdrawalsMilliFec)}
@@ -704,45 +767,69 @@ export default function AdminAnalyticsPage() {
           <KpiCard
             label="Total platform funds"
             value={formatFecFromMilli(analytics.finance.totalPlatformFundsMilliFec)}
-            helper="Posting fees + commission"
+            helper="Posting fees + urgent hire fees + commission"
           />
         </section>
       </div>
 
-      <section className="grid gap-6 xl:grid-cols-3">
+      <section className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-3">
         {chartMode === "bar" ? (
-          <>
-            <SimpleBarChart
-              title="Users by role profile"
-              items={analytics.charts.usersByRoleProfile}
-            />
-            <SimpleBarChart
-              title="Jobs by outcome"
-              items={analytics.charts.jobsByOutcome}
-            />
-            <SimpleBarChart
-              title="Finance breakdown"
-              items={analytics.charts.financeBreakdown}
-              valueFormatter={financeFormatter}
-            />
-          </>
-        ) : (
-          <>
-            <PieChartCard
-              title="Users by role profile"
-              items={analytics.charts.usersByRoleProfile}
-            />
-            <PieChartCard
-              title="Jobs by outcome"
-              items={analytics.charts.jobsByOutcome}
-            />
-            <PieChartCard
-              title="Finance breakdown"
-              items={analytics.charts.financeBreakdown}
-              valueFormatter={financeFormatter}
-            />
-          </>
-        )}
+  <>
+    <SimpleBarChart
+      title="Users by role profile"
+      items={analytics.charts.usersByRoleProfile}
+    />
+
+    <SimpleBarChart
+      title="Client activity"
+      items={analytics.charts.clientActivityBreakdown}
+    />
+
+    <SimpleBarChart
+      title="Fixer activity"
+      items={analytics.charts.fixerActivityBreakdown}
+    />
+
+    <SimpleBarChart
+      title="Jobs by outcome"
+      items={analytics.charts.jobsByOutcome}
+    />
+
+    <SimpleBarChart
+      title="Finance breakdown"
+      items={analytics.charts.financeBreakdown}
+      valueFormatter={financeFormatter}
+    />
+  </>
+) : (
+  <>
+    <PieChartCard
+      title="Users by role profile"
+      items={analytics.charts.usersByRoleProfile}
+    />
+
+    <PieChartCard
+      title="Client activity"
+      items={analytics.charts.clientActivityBreakdown}
+    />
+
+    <PieChartCard
+      title="Fixer activity"
+      items={analytics.charts.fixerActivityBreakdown}
+    />
+
+    <PieChartCard
+      title="Jobs by outcome"
+      items={analytics.charts.jobsByOutcome}
+    />
+
+    <PieChartCard
+      title="Finance breakdown"
+      items={analytics.charts.financeBreakdown}
+      valueFormatter={financeFormatter}
+    />
+  </>
+)}
       </section>
 
       <TimelineBarChart items={analytics.charts.timeline} />

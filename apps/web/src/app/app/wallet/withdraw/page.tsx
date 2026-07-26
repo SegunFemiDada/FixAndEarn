@@ -174,16 +174,16 @@ export default function WalletWithdrawPage() {
       setPinModalOpen(false);
       setPin("");
       setPendingAmount(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       // Error is already displayed by the mutation error handling
     }
   }
 
-  const bankLoading = bankDetails.isLoading;
   const verificationLoading = verification.isLoading;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-5">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-5">
       <div className="mx-auto w-full max-w-md space-y-4">
         <div className="mb-4">
           <div className="flex items-center justify-between">

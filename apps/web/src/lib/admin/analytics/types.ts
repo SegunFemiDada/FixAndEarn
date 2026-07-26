@@ -13,7 +13,9 @@ export type AdminAnalyticsTimelineItem = {
   jobsCompleted: number;
   depositsMilliFec: number;
   withdrawalsMilliFec: number;
+  postingFeesMilliFec: number;
   urgentHireFeesMilliFec: number;
+  platformCommissionMilliFec: number;
 };
 
 export type AdminAnalyticsOverviewResponse = {

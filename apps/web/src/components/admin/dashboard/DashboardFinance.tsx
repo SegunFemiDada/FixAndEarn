@@ -6,11 +6,11 @@ import AdminSection from "@/components/admin/AdminSection";
 import AdminStatCard from "@/components/admin/AdminStatCard";
 
 type DashboardFinanceProps = {
-  deposits: {
-    pending: number;
-    succeeded: number;
-    failed: number;
-  };
+  // deposits: {
+  //   pending: number;
+  //   succeeded: number;
+  //   failed: number;
+  // };
 
   withdrawals: {
     pending: number;
@@ -22,13 +22,13 @@ type DashboardFinanceProps = {
 };
 
 export default function DashboardFinance({
-  deposits,
+  // deposits,
   withdrawals,
 }: DashboardFinanceProps) {
-  const totalDeposits =
-    deposits.pending +
-    deposits.succeeded +
-    deposits.failed;
+  // const totalDeposits =
+  //   deposits.pending +
+  //   deposits.succeeded +
+  //   deposits.failed;
 
   const totalWithdrawals =
     withdrawals.pending +
@@ -43,7 +43,7 @@ export default function DashboardFinance({
       description="Live overview of deposit and withdrawal operations across the platform."
     >
       <div className="space-y-8">
-        <div>
+        {/* <div>
           <h3 className="mb-4 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
             Deposits
           </h3>
@@ -77,7 +77,7 @@ export default function DashboardFinance({
               accent="red"
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="border-t border-[#E4ECF7] pt-8 dark:border-[#2D3F55]">
           <h3 className="mb-4 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">

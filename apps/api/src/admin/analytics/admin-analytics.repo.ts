@@ -309,32 +309,46 @@ export class AdminAnalyticsRepo {
         },
       }),
 
-      this.prisma.platformLedgerEntry.aggregate({
-        _sum: { amountMilliFec: true },
-        where: {
-          type: "JOB_POSTING_FEE",
-          direction: "CREDIT",
-          ...(createdAtWhere ? { createdAt: createdAtWhere } : {}),
-        },
-      }),
+      this.prisma.jobPayment.aggregate({
+  _sum: {
+    amountMilliFec: true,
+  },
+  where: {
+    type: "POSTING",
+    status: "SUCCESS",
+    ...(createdAtWhere
+      ? {
+          paidAt: createdAtWhere,
+        }
+      : {}),
+  },
+}),
 
-      this.prisma.platformLedgerEntry.aggregate({
-        _sum: { amountMilliFec: true },
-        where: {
-          type: "COMMISSION",
-          direction: "CREDIT",
-          ...(createdAtWhere ? { createdAt: createdAtWhere } : {}),
-        },
-      }),
+      this.prisma.platformRevenue.aggregate({
+  _sum: {
+    platformFeeMilliFec: true,
+  },
+  where: createdAtWhere
+    ? {
+        createdAt: createdAtWhere,
+      }
+    : undefined,
+}),
 
-      this.prisma.platformLedgerEntry.aggregate({
-        _sum: { amountMilliFec: true },
-        where: {
-          type: "URGENT_HIRE_FEE",
-          direction: "CREDIT",
-          ...(createdAtWhere ? { createdAt: createdAtWhere } : {}),
-        },
-      }),
+      this.prisma.jobPayment.aggregate({
+  _sum: {
+    amountMilliFec: true,
+  },
+  where: {
+    type: "URGENT",
+    status: "SUCCESS",
+    ...(createdAtWhere
+      ? {
+          paidAt: createdAtWhere,
+        }
+      : {}),
+  },
+}),
 
       this.prisma.user.count({
         where: createdAtWhere ? { createdAt: createdAtWhere } : undefined,
@@ -431,7 +445,7 @@ export class AdminAnalyticsRepo {
     const totalDepositsMilliFec = Number(totalDepositsMilliFecRows[0]?.sum ?? 0);
     const totalWithdrawalsMilliFec = withdrawalsAgg._sum.amountMilliFec ?? 0;
     const platformJobPostingFeesMilliFec = jobPostingFeesAgg._sum.amountMilliFec ?? 0;
-    const platformCommissionMilliFec = platformCommissionAgg._sum.amountMilliFec ?? 0;
+    const platformCommissionMilliFec = platformCommissionAgg._sum.platformFeeMilliFec  ?? 0;
     const platformUrgentHireFeesMilliFec = urgentHireFeesAgg._sum.amountMilliFec ?? 0;
     const totalPlatformFundsMilliFec =
       platformJobPostingFeesMilliFec +
@@ -513,7 +527,6 @@ export class AdminAnalyticsRepo {
 
     return Promise.all(
       buckets.map(async (bucket) => {
-        const bucketWhere = this.buildDateWhereLt(bucket.from, bucket.to);
 
         const [
           registrations,
@@ -521,7 +534,9 @@ export class AdminAnalyticsRepo {
           jobsCompleted,
           deposits,
           withdrawals,
+          postingFees,
           urgentHireFees,
+          platformCommission,
         ] = await Promise.all([
           this.prisma.user.count({
             where: {
@@ -559,26 +574,59 @@ export class AdminAnalyticsRepo {
               createdAt: { gte: bucket.from, lt: bucket.to },
             },
           }),
+          this.prisma.jobPayment.aggregate({
+  _sum: {
+    amountMilliFec: true,
+  },
+  where: {
+    type: "POSTING",
+    status: "SUCCESS",
+    paidAt: {
+      gte: bucket.from,
+      lt: bucket.to,
+    },
+  },
+}),
 
-          this.prisma.platformLedgerEntry.aggregate({
-            _sum: { amountMilliFec: true },
-            where: {
-              type: "URGENT_HIRE_FEE",
-              direction: "CREDIT",
-              ...(bucketWhere ? { createdAt: bucketWhere } : {}),
-            },
-          }),
-        ]);
+          this.prisma.jobPayment.aggregate({
+  _sum: {
+    amountMilliFec: true,
+  },
+  where: {
+    type: "URGENT",
+    status: "SUCCESS",
+    paidAt: {
+      gte: bucket.from,
+      lt: bucket.to,
+    },
+  },
+}),
+this.prisma.platformRevenue.aggregate({
+  _sum: {
+    platformFeeMilliFec: true,
+  },
+  where: {
+    createdAt: {
+      gte: bucket.from,
+      lt: bucket.to,
+    },
+  },
+}),
+]);
 
-        return {
-          label: bucket.label,
-          registrations,
-          jobsPosted,
-          jobsCompleted,
-          depositsMilliFec: Number(deposits[0]?.sum ?? 0),
-          withdrawalsMilliFec: withdrawals._sum.amountMilliFec ?? 0,
-          urgentHireFeesMilliFec: urgentHireFees._sum.amountMilliFec ?? 0,
-        };
+
+    return {
+  label: bucket.label,
+  registrations,
+  jobsPosted,
+  jobsCompleted,
+  depositsMilliFec: Number(deposits[0]?.sum ?? 0),
+  withdrawalsMilliFec: withdrawals._sum.amountMilliFec ?? 0,
+  postingFeesMilliFec: postingFees._sum.amountMilliFec ?? 0,
+  urgentHireFeesMilliFec: urgentHireFees._sum.amountMilliFec ?? 0,
+  platformCommissionMilliFec:
+    platformCommission._sum.platformFeeMilliFec ?? 0,
+};
       })
     );
   }

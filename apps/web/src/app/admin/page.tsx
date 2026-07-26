@@ -65,7 +65,6 @@ export default function AdminDashboardPage() {
       />
 
       <DashboardFinance
-        deposits={data.deposits}
         withdrawals={data.withdrawals}
       />
 
