@@ -173,19 +173,7 @@ console.log({
         paidAt: new Date(),
       },
     });
-    const updatedJob = await this.prisma.job.findUnique({
-  where: {
-    id: payment.jobId,
-  },
-  select: {
-    status: true,
-    postingType: true,
-    fixerId: true,
-  },
-});
 
-console.log("AFTER UPDATE");
-console.log(updatedJob);
     console.log("Updating urgent job...");
 
 console.log({
@@ -210,6 +198,19 @@ console.log({
   },
 });
   });
+  const updatedJob = await this.prisma.job.findUnique({
+  where: {
+    id: payment.jobId,
+  },
+  select: {
+    status: true,
+    postingType: true,
+    fixerId: true,
+  },
+});
+
+console.log("AFTER UPDATE");
+console.log(updatedJob);
   if (payment.fixerId) {
   const room = this.realtime.roomFor(
     payment.jobId,
