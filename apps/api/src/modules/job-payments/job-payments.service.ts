@@ -118,34 +118,52 @@ async createUrgentHirePayment(
 
   const paystackReference = crypto.randomUUID();
 
-  await db.jobPayment.upsert({
-    where: {
-      jobId_type: {
-        jobId: args.jobId,
-        type: "URGENT",
-      },
-    },
-    update: {
-      paystackReference,
-      amountMilliFec: 2000,
-      paystackFeeMilliFec: 0,
+const conversation = await db.conversation.upsert({
+  where: {
+    jobId_fixerId: {
+      jobId: args.jobId,
       fixerId: args.fixerId,
-      conversationId: null,
-      lockedPriceMilliFec: null,
-      status: "PENDING",
-      paidAt: null,
     },
-    create: {
+  },
+  update: {},
+  create: {
+    jobId: args.jobId,
+    fixerId: args.fixerId,
+    active: false,
+  },
+  select: {
+    id: true,
+  },
+});
+
+await db.jobPayment.upsert({
+  where: {
+    jobId_type: {
       jobId: args.jobId,
       type: "URGENT",
-      paystackReference,
-      amountMilliFec: 2000,
-      paystackFeeMilliFec: 0,
-      fixerId: args.fixerId,
-      conversationId: null,
-      status: "PENDING",
     },
-  });
+  },
+  update: {
+    paystackReference,
+    amountMilliFec: 2000,
+    paystackFeeMilliFec: 0,
+    fixerId: args.fixerId,
+    conversationId: conversation.id,
+    lockedPriceMilliFec: null,
+    status: "PENDING",
+    paidAt: null,
+  },
+  create: {
+    jobId: args.jobId,
+    type: "URGENT",
+    paystackReference,
+    amountMilliFec: 2000,
+    paystackFeeMilliFec: 0,
+    fixerId: args.fixerId,
+    conversationId: conversation.id,
+    status: "PENDING",
+  },
+});
 
   return this.initializeGatewayPayment({
     email: user.email,
