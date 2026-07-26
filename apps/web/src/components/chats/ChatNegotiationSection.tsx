@@ -37,6 +37,7 @@ type Props = {
   onRespond: (
     accept: boolean
   ) => void | Promise<void>;
+  myUserId: string | null;
 };
 
 export default function ChatNegotiationSection({
@@ -51,6 +52,7 @@ export default function ChatNegotiationSection({
   onPropose,
   onLock,
   onRespond,
+  myUserId
 }: Props) {
   return (
     <NegotiationPanel
@@ -87,6 +89,7 @@ export default function ChatNegotiationSection({
       onRespond={
         onRespond
       }
+      myUserId={myUserId}
     />
   );
 }

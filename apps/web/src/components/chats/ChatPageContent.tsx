@@ -58,6 +58,8 @@ export type NegotiationSectionProps = {
   onRespond: (
     accepted: boolean
   ) => void;
+    myUserId: string | null;
+
 };
 
 type Props = {

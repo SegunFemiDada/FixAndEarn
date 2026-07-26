@@ -19,6 +19,7 @@ export default function ChatNegotiationSectionContainer({
   onPropose,
   onLock,
   onRespond,
+  myUserId,
 }: NegotiationSectionProps) {
   return (
     <ChatNegotiationSection
@@ -51,6 +52,7 @@ export default function ChatNegotiationSectionContainer({
       onRespond={
         onRespond
       }
+      myUserId={myUserId}
     />
   );
 }
