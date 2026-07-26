@@ -31,9 +31,6 @@ function resolveHref(n: NotificationRow): string | null {
       return jobId ? `/app/jobs/${jobId}/applications` : null;
     case "JOB_COMPLETION_REQUESTED":
       return jobId ? `/app/jobs/${jobId}` : null;
-    case "ESCROW_LOCKED":
-    case "JOB_ESCROW_LOCKED":
-      return jobId ? `/app/jobs/${jobId}` : null;
     case "JOB_COMPLETION_APPROVED":
     case "JOB_COMPLETION_REJECTED":
       return jobId ? `/app/jobs/${jobId}` : null;
@@ -80,7 +77,7 @@ export default function NotificationsPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
         <div className="mx-auto max-w-2xl">
           <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
             Loading…
@@ -91,7 +88,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
       <div className="mx-auto max-w-2xl space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -172,20 +169,34 @@ export default function NotificationsPage() {
         )}
 
         <div className="grid gap-3">
-          {items.map((n) => {
+                    {items.map((n) => {
             const href = resolveHref(n);
             const isUnread = !n.readAt;
+            const title = n.title || n.type || "Notification";
 
             return (
               <div
                 key={n.id}
-                className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+                className="relative overflow-hidden rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
               >
-                <div className="flex items-start justify-between gap-3">
+                {href ? (
+                  <Link
+                    href={href}
+                    onClick={() => {
+                      if (!n.readAt) markOne.mutate(n.id);
+                    }}
+                    aria-label={`Open ${title}`}
+                    className="absolute inset-0 z-10 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:focus-visible:ring-blue-300"
+                  >
+                    <span className="sr-only">Open notification</span>
+                  </Link>
+                ) : null}
+
+                <div className="relative z-0 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <div className="truncate font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                        {n.title || n.type || "Notification"}
+                        {title}
                       </div>
                       {isUnread && (
                         <span className="rounded-full border border-[#5B8FCC] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 px-2 py-0.5 text-xs font-medium text-[#1A2B4A] dark:text-[#7AAEE0]">
@@ -195,7 +206,7 @@ export default function NotificationsPage() {
                     </div>
 
                     {n.body && (
-                      <div className="mt-1 break-words text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                      <div className="mt-1 wrap-break-word text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
                         {n.body}
                       </div>
                     )}
@@ -205,37 +216,24 @@ export default function NotificationsPage() {
                         {formatDate(n.createdAt)}
                       </div>
                     )}
-
-                    {href && (
-                      <div className="mt-3">
-                        <Link
-  href={href}
-  onClick={() => {
-    if (!n.readAt) markOne.mutate(n.id);
-  }}
-  className={`text-sm font-medium text-blue-600 hover:underline
-    dark:text-blue-400 dark:hover:text-blue-300`}
->
-  Open
-</Link>
-
-                      </div>
-                    )}
                   </div>
 
-                  <div className="shrink-0">
-                  <button
-  type="button"
-  onClick={() => markOne.mutate(n.id)}
-  disabled={!isUnread || markOne.isPending}
-  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
+                  <div className="relative z-20 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!n.readAt) markOne.mutate(n.id);
+                      }}
+                      disabled={!isUnread || markOne.isPending}
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
     border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100
     disabled:opacity-60 disabled:cursor-not-allowed`}
->
-  Mark read
-</button>
-
+                    >
+                      Mark read
+                    </button>
                   </div>
                 </div>
               </div>

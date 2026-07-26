@@ -117,10 +117,10 @@ export default function JobsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            {isClient ? "Client Jobs" : isFixer ? "Fixer Jobs" : "Jobs"}
+            {isClient ? "Open Jobs" : isFixer ? "Fixer Jobs" : "Jobs"}
           </h1>
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Marketplace (OPEN jobs only)
+            Marketplace
           </p>
         </div>
 
