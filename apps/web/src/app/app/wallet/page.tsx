@@ -44,10 +44,19 @@ export default function WalletPage() {
   const verificationStatus = verification.data?.status;
   const isVerifiedApproved = verificationStatus === "APPROVED";
 
-  const canDeposit = uiRole === "CLIENT" && isVerifiedApproved;
+  // const canDeposit = uiRole === "CLIENT" && isVerifiedApproved;
   const canWithdraw = uiRole === "FIXER" && isVerifiedApproved;
 
   const needsRoleChoice = mounted && (roles.length === 0 || (roles.length > 0 && !active));
+  React.useEffect(() => {
+  if (mounted && uiRole === "CLIENT") {
+    window.location.replace("/app/dashboard");
+  }
+}, [mounted, uiRole]);
+
+if (mounted && uiRole === "CLIENT") {
+  return null;
+}
 
   if (!mounted) {
     return (
@@ -66,13 +75,11 @@ export default function WalletPage() {
       <div className="mx-auto w-full max-w-md space-y-4">
         <div>
           <h1 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            {uiRole === "CLIENT" ? "Client Wallet" : uiRole === "FIXER" ? "Fixer Wallet" : "Wallet"}
+           My Earnings
           </h1>
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            {uiRole === "CLIENT"
-              ? "Manage your funds for hiring and paying fixers."
-              : uiRole === "FIXER"
-                ? "Withdraw earnings and manage fixer-side payout activity."
+            { uiRole === "FIXER"
+                ? "View your earnings and withdraw them to your bank account."
                 : "Your in-app balance and wallet actions."}
           </p>
         </div>
@@ -124,7 +131,7 @@ export default function WalletPage() {
           <div className="flex items-start justify-between">
             <div>
               <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                {uiRole === "CLIENT" ? "Client wallet balance" : uiRole === "FIXER" ? "Fixer wallet balance" : "FEC Balance"}
+                Available earnings
               </div>
               <div className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                 {showBalance
@@ -167,12 +174,12 @@ export default function WalletPage() {
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Actions</div>
 
-          <div className="mt-3 space-y-2">
+          {/* <div className="mt-3 space-y-2">
             {canDeposit && (
               <Link href="/app/wallet/deposit" className={`block w-full rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-300`}>
                 Deposit
               </Link>
-            )}
+            )} */}
 
             {canWithdraw && (
               <Link href="/app/wallet/withdraw" className={`block w-full rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white transition-colors shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-300`}>
@@ -182,6 +189,5 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
-    </div>
   );
 }

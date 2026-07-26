@@ -101,10 +101,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <span>Jobs</span>
   </Link>
 
+  {activeRole === "FIXER" && (
   <Link href="/app/wallet" className={navLinkClass()}>
     <Wallet className="h-4 w-4" />
-    <span>Wallet</span>
+    <span>Earnings</span>
   </Link>
+)}
 
   {!isVerified ? (
     <Link href="/app/verification" className={navLinkClass()}>
