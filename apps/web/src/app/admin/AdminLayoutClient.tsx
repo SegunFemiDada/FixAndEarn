@@ -184,6 +184,9 @@ function getNotificationCount(href: string): number {
     case "/admin/deletion-requests":
       return sidebarNotifications.deletionRequests;
 
+    case "/admin/reports":
+      return sidebarNotifications.reportsCenter;
+
     default:
       return 0;
   }

@@ -7,4 +7,5 @@ export type AdminSidebarNotifications = {
   messagingOversight: number;
   securityCenter: number;
   deletionRequests: number;
+  reportsCenter: number;
 };

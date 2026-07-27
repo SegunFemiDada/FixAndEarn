@@ -10,6 +10,7 @@ export type AdminSidebarNotifications = {
   messagingOversight: number;
   securityCenter: number;
   deletionRequests: number;
+  reportsCenter: number;
 };
 
 @Injectable()
@@ -23,6 +24,7 @@ export class AdminSidebarNotificationsRepo {
       disputeManagement,
       messagingOversight,
       deletionRequests,
+      reportsCenter,
       inactiveAdmins,
       adminsWithout2fa,
       failedLoginGroups,
@@ -54,6 +56,11 @@ export class AdminSidebarNotificationsRepo {
       this.prisma.user.count({
         where: {
           deletionRequestStatus: "PENDING",
+        },
+      }),
+       this.prisma.report.count({
+        where: {
+          status: "PENDING",
         },
       }),
 
@@ -103,6 +110,7 @@ export class AdminSidebarNotificationsRepo {
       messagingOversight,
       securityCenter,
       deletionRequests,
+      reportsCenter,
     };
   }
 }
