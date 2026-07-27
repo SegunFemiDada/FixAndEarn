@@ -11,6 +11,7 @@ import {
 } from "@/lib/admin/session";
 import { extractApiErrorMessage, useAdminMe } from "@/lib/admin/queries";
 import type { AdminNavItem } from "@/lib/admin/types";
+import { useAdminSidebarNotifications } from "@/lib/admin/sidebar-notifications/queries";
 
 const navItems: AdminNavItem[] = [
   {
@@ -103,7 +104,6 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-
 const [mounted, setMounted] = React.useState(false);
 
 React.useEffect(() => {
@@ -125,6 +125,8 @@ React.useEffect(() => {
   const shouldCheckAdmin = Boolean(token) && !isPublicAdminPage;
 
   const meQuery = useAdminMe(shouldCheckAdmin);
+  const { data: sidebarNotifications } =
+  useAdminSidebarNotifications(shouldCheckAdmin);
 
   React.useEffect(() => {
   if (!mounted) return;
@@ -160,7 +162,32 @@ React.useEffect(() => {
     clearAdminSession();
     router.replace("/admin/login");
   }
+function getNotificationCount(href: string): number {
+  if (!sidebarNotifications) return 0;
 
+  switch (href) {
+    case "/admin/verification":
+      return sidebarNotifications.verificationQueue;
+
+    case "/admin/finance/withdrawals":
+      return sidebarNotifications.withdrawalManagement;
+
+    case "/admin/disputes":
+      return sidebarNotifications.disputeManagement;
+
+    case "/admin/messaging":
+      return sidebarNotifications.messagingOversight;
+
+    case "/admin/security":
+      return sidebarNotifications.securityCenter;
+
+    case "/admin/deletion-requests":
+      return sidebarNotifications.deletionRequests;
+
+    default:
+      return 0;
+  }
+}
   if (!mounted) {
     return (
       <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
@@ -214,15 +241,26 @@ React.useEffect(() => {
                         : "border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]",
                     ].join(" ")}
                   >
-                    <div className="text-sm font-semibold">{item.label}</div>
-                    <div
-                      className={[
-                        "mt-1 text-xs leading-5",
-                        active ? "text-white/80" : "text-[#6B7C99] dark:text-[#8FA0BC]",
-                      ].join(" ")}
-                    >
-                      {item.description}
-                    </div>
+                    <div className="flex items-center justify-between gap-2">
+  <div className="text-sm font-semibold">
+    {item.label}
+  </div>
+
+  {getNotificationCount(item.href) > 0 && (
+    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+      {getNotificationCount(item.href)}
+    </span>
+  )}
+</div>
+
+<div
+  className={[
+    "mt-1 text-xs leading-5",
+    active ? "text-white/80" : "text-[#6B7C99] dark:text-[#8FA0BC]",
+  ].join(" ")}
+>
+  {item.description}
+</div>
                   </Link>
                 );
               })}
