@@ -23,7 +23,7 @@ export class ChatModerationService {
       hits.push({ type: 'WHATSAPP', matched: 'whatsapp' });
     }
 
-    const offPlatform = ['pay outside', 'outside the platform', 'transfer me', 'send to my account', 'cash app', 'crypto address'];
+    const offPlatform = ['pay outside', 'outside the platform', 'transfer me', 'send to my account', 'cash app', 'crypto address', 'green app'];
     if (offPlatform.some((p) => t.includes(p))) {
       hits.push({ type: 'OFF_PLATFORM_PAYMENT' });
     }

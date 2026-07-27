@@ -1,3 +1,5 @@
+//path: apps/api/src/admin/messaging/admin-messaging.repo.ts
+
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import type { Prisma } from "@prisma/client";
@@ -254,6 +256,25 @@ export class AdminMessagingRepo {
       },
     });
   }
+  async reviewConversationFlags(
+  conversationId: string,
+  adminId: string,
+  status: "REVIEWED" | "DISMISSED",
+) {
+  return this.prisma.moderationFlag.updateMany({
+    where: {
+      status: "PENDING",
+      message: {
+        conversationId,
+      },
+    },
+    data: {
+      status,
+      reviewedAt: new Date(),
+      reviewedByAdminId: adminId,
+    },
+  });
+}
 
   async setConversationStatus(conversationId: string, status: "OPEN" | "CLOSED") {
     return this.prisma.conversation.update({

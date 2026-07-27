@@ -67,3 +67,32 @@ export async function updateAdminUser(
   const response = await adminApi.patch(`/admin/users/${id}`, data);
   return response.data;
 }
+export async function getAdminDeletionRequests(
+  status?: "PENDING" | "APPROVED" | "REJECTED"
+) {
+  const response = await adminApi.get("/admin/users/deletion-requests", {
+    params: { status },
+  });
+
+  return response.data;
+}
+
+export async function approveAdminDeletion(id: string) {
+  const response = await adminApi.post(
+    `/admin/users/${id}/approve-deletion`
+  );
+
+  return response.data;
+}
+
+export async function rejectAdminDeletion(
+  id: string,
+  payload: { reason?: string }
+) {
+  const response = await adminApi.post(
+    `/admin/users/${id}/reject-deletion`,
+    payload
+  );
+
+  return response.data;
+}

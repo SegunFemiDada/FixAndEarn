@@ -28,6 +28,7 @@ import { PhoneVerificationModule } from "./modules/phone-verification/phone-veri
 import { StorageModule } from "./common/storage/storage.module";
 import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
 import { EarningsModule } from "./modules/earnings/earnings.module";
+import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/admin-sidebar-notifications.module";
 
 
 
@@ -63,6 +64,7 @@ import { EarningsModule } from "./modules/earnings/earnings.module";
     SupportModule,
     StorageModule,
     EarningsModule,
+    AdminSidebarNotificationsModule,
     ScheduleModule.forRoot(),
   ],
   providers: [

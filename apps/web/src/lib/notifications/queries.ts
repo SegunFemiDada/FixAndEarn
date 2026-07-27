@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listNotifications, markAllNotificationsRead, markNotificationRead } from "./api";
+import { listNotifications, markNotificationRead } from "./api";
 import type { NotificationRow } from "./api";
 import type { Role } from "@/lib/auth/session";
 

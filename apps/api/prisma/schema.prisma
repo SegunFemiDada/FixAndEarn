@@ -375,15 +375,21 @@ model Negotiation {
 }
 
 model ModerationFlag {
-  id        String             @id @default(uuid())
-  messageId String
-  type      ModerationFlagType
-  matched   String?
-  createdAt DateTime           @default(now())
-  message   ChatMessage        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  id                String               @id @default(uuid())
+  messageId         String
+  type              ModerationFlagType
+  matched           String?
+  status            ModerationFlagStatus @default(PENDING)
+  reviewedAt        DateTime?
+  reviewedByAdminId String?
+  createdAt         DateTime             @default(now())
+
+  message         ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reviewedByAdmin Admin?      @relation(fields: [reviewedByAdminId], references: [id])
 
   @@index([messageId])
   @@index([type])
+  @@index([status])
   @@map("moderation_flags")
 }
 
@@ -440,6 +446,7 @@ model Admin {
   sessions            AdminSession[]
   AdminAuditLog       AdminAuditLog[]
   resolvedDisputes    Dispute[]
+  ModerationFlag      ModerationFlag[]
 
   @@map("admins")
 }
@@ -795,4 +802,10 @@ enum FixerEarningStatus {
   PARTIALLY_WITHDRAWN
   PAID
   CANCELLED
+}
+
+enum ModerationFlagStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
 }

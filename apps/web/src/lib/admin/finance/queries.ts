@@ -1,3 +1,4 @@
+//path: apps/web/lib/admin/finance/queries.ts
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ import type {
   WithdrawalEarningsTrace,
   WithdrawalListItem,
 } from "@/lib/admin/finance/types";
+import { invalidateSidebarNotifications } from "@/lib/admin/sidebar-notifications/invalidate";
 
 export const adminFinanceQueryKeys = {
   all: ["admin", "finance"] as const,
@@ -65,9 +67,12 @@ export function useAdminApproveWithdrawal(id: string) {
   return useMutation<ReviewWithdrawalResponse, Error, ReviewWithdrawalPayload>({
     mutationFn: (payload) => approveWithdrawal(id, payload),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminFinanceQueryKeys.withdrawals }),
-      ]);
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: adminFinanceQueryKeys.withdrawals,
+    }),
+    invalidateSidebarNotifications(queryClient),
+  ]);
     },
   });
 }
@@ -78,10 +83,13 @@ export function useAdminRejectWithdrawal(id: string) {
   return useMutation<ReviewWithdrawalResponse, Error, ReviewWithdrawalPayload>({
     mutationFn: (payload) => rejectWithdrawal(id, payload),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminFinanceQueryKeys.withdrawals }),
-      ]);
-    },
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: adminFinanceQueryKeys.withdrawals,
+    }),
+    invalidateSidebarNotifications(queryClient),
+  ]);
+},
   });
 }
 
@@ -91,9 +99,12 @@ export function useAdminMarkPaidWithdrawal(id: string) {
   return useMutation<ReviewWithdrawalResponse, Error, ReviewWithdrawalPayload>({
     mutationFn: (payload) => markWithdrawalPaid(id, payload),
     onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminFinanceQueryKeys.withdrawals }),
-      ]);
-    },
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: adminFinanceQueryKeys.withdrawals,
+    }),
+    invalidateSidebarNotifications(queryClient),
+  ]);
+},
   });
 }

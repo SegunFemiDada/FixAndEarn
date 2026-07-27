@@ -1,3 +1,4 @@
+//path: apps/api/src/admin/messaging/admin-messaging.service.ts
 import {
   BadRequestException,
   Injectable,
@@ -233,7 +234,13 @@ export class AdminMessagingService {
     reason?: string;
   }) {
     const detail = await this.repo.getConversationById(args.conversationId, 1);
+    
     if (!detail) throw new NotFoundException("CONVERSATION_NOT_FOUND");
+    await this.repo.reviewConversationFlags(
+  detail.id,
+  args.adminId,
+  "REVIEWED",
+);
 
     const targets: Array<{
       userId: string;
@@ -319,6 +326,11 @@ export class AdminMessagingService {
 
     if (detail.status !== "CLOSED") {
       await this.repo.setConversationStatus(detail.id, "CLOSED");
+      await this.repo.reviewConversationFlags(
+  detail.id,
+  args.adminId,
+  "REVIEWED",
+);
     }
 
     const recipients = [detail.job?.clientId, detail.job?.fixerId].filter(Boolean) as string[];

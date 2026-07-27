@@ -125,3 +125,20 @@ export type AdminUserActionPayload = {
 export type AdminUserActionResponse = {
   ok: true;
 };
+export type DeletionRequestStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED";
+
+export type AdminDeletionRequest = {
+  id: string;
+  fullName: string;
+  email: string;
+  deletionRequestedAt: string;
+  deletionRequestReason: string | null;
+  deletionRequestStatus: DeletionRequestStatus;
+};
+
+export type AdminDeletionReviewResponse = {
+  ok: true;
+};

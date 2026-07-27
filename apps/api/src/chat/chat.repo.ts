@@ -181,6 +181,47 @@ async setConversationActive(conversationId: string, active: boolean) {
       }
     });
   }
+  async getModerationFlag(id: string) {
+  return this.prisma.moderationFlag.findUnique({
+    where: { id },
+    include: {
+      message: {
+        include: {
+          sender: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+          conversation: {
+            select: {
+              id: true,
+              jobId: true,
+              fixerId: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+async reviewModerationFlag(
+  id: string,
+  adminId: string,
+  status: "REVIEWED" | "DISMISSED",
+) {
+  return this.prisma.moderationFlag.update({
+    where: { id },
+    data: {
+      status,
+      reviewedAt: new Date(),
+      reviewedByAdminId: adminId,
+    },
+  });
+}
 
   async closeOtherConversationsForJob(jobId: string, keepConversationId: string) {
     return this.prisma.conversation.updateMany({

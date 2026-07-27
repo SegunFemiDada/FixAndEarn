@@ -11,6 +11,7 @@ import type {
   VerificationDecisionPayload,
   VerificationDecisionResponse,
 } from "./types";
+import { invalidateSidebarNotifications } from "@/lib/admin/sidebar-notifications/invalidate";
 
 const verificationKeys = {
   all: ["admin", "verification"] as const,
@@ -48,6 +49,7 @@ export function useVerificationDecision(id: string) {
       await Promise.all([
         qc.invalidateQueries({ queryKey: verificationKeys.all }),
         qc.invalidateQueries({ queryKey: verificationKeys.detail(id) }),
+        invalidateSidebarNotifications(qc),
       ]);
     },
   });

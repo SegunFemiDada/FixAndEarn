@@ -1,3 +1,5 @@
+//path: apps/api/src/admin/messaging/admin-messaging.controller.ts
+
 import {
   Body,
   Controller,

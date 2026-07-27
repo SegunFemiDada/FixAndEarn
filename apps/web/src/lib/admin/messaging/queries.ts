@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/admin/messaging/queries.ts
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";

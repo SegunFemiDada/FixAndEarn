@@ -17,6 +17,7 @@ import type {
   ResolveDisputePayload,
   ResolveDisputeResponse,
 } from "@/lib/admin/disputes/types";
+import { invalidateSidebarNotifications } from "@/lib/admin/sidebar-notifications/invalidate";
 
 export const adminDisputesQueryKeys = {
   all: ["admin", "disputes"] as const,
@@ -46,8 +47,13 @@ export function useAdminResolveDispute() {
   return useMutation<ResolveDisputeResponse, Error, { disputeId: string; payload: ResolveDisputePayload }>({
     mutationFn: ({ disputeId, payload }) => resolveAdminDispute(disputeId, payload),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminDisputesQueryKeys.all });
-    },
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: adminDisputesQueryKeys.all,
+    }),
+    invalidateSidebarNotifications(queryClient),
+  ]);
+},
   });
 }
 
@@ -57,8 +63,13 @@ export function useAdminResolveDisputeAmicably() {
   return useMutation<ResolveDisputeResponse, Error, { disputeId: string }>({
     mutationFn: ({ disputeId }) => resolveAdminDisputeAmicably(disputeId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminDisputesQueryKeys.all });
-    },
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: adminDisputesQueryKeys.all,
+    }),
+    invalidateSidebarNotifications(queryClient),
+  ]);
+},
   });
 }
 
