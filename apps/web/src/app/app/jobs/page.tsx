@@ -173,6 +173,14 @@ export default function JobsPage() {
     </p>
   </div>
 </div>
+<div>
+          <h1 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            {isClient ? "Open Jobs" : isFixer ? "Fixer Jobs" : "Jobs"}
+          </h1>
+          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Marketplace
+          </p>
+        </div>
 
       {!mounted ? (
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -290,14 +298,6 @@ export default function JobsPage() {
       />
     </div>
   ) : null}
-  <div>
-          <h1 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            {isClient ? "Open Jobs" : isFixer ? "Fixer Jobs" : "Jobs"}
-          </h1>
-          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Marketplace
-          </p>
-        </div>
 
   <div className="flex items-start justify-between gap-4">
     <div className="min-w-0">
