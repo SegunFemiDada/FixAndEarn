@@ -164,35 +164,49 @@ async getMarketplaceStats() {
     });
   }
 
-  listApplicationsByFixerId(args: {
-    fixerId: string;
-    skip: number;
-    take: number;
-  }) {
-    return this.prisma.jobApplication.findMany({
-      where: { fixerId: args.fixerId },
-      orderBy: { createdAt: "desc" },
-      skip: args.skip,
-      take: args.take,
-      include: { job: true },
-    });
-  }
-  listUrgentJobsByFixerId(args: {
+  async listApplicationsByFixerId(args: {
   fixerId: string;
   skip: number;
   take: number;
 }) {
-  return this.prisma.job.findMany({
-    where: {
-      fixerId: args.fixerId,
-      postingType: "URGENT",
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    skip: args.skip,
-    take: args.take,
-  });
+  const [applications, urgentJobs] = await Promise.all([
+    this.prisma.jobApplication.findMany({
+      where: {
+        fixerId: args.fixerId,
+      },
+      include: {
+        job: true,
+      },
+    }),
+
+    this.prisma.job.findMany({
+      where: {
+        fixerId: args.fixerId,
+        postingType: "URGENT",
+      },
+    }),
+  ]);
+
+  const applied = applications.map((a) => ({
+    type: "APPLICATION" as const,
+    createdAt: a.createdAt,
+    status: a.status,
+    job: a.job,
+  }));
+
+  const urgent = urgentJobs.map((job) => ({
+    type: "DIRECT_HIRE" as const,
+    createdAt: job.createdAt,
+    status: "ACCEPTED",
+    job,
+  }));
+
+  return [...applied, ...urgent]
+    .sort(
+      (a, b) =>
+        b.createdAt.getTime() - a.createdAt.getTime()
+    )
+    .slice(args.skip, args.skip + args.take);
 }
 
   async listJobApplications(jobId: string, skip: number, take: number) {
