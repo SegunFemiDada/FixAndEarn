@@ -116,7 +116,7 @@ export default function JobsPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        <h1 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
             Marketplace
           </h1>
 
