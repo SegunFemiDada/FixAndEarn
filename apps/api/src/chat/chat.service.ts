@@ -84,15 +84,21 @@ export class ChatService {
     return isClient ? "CLIENT" : "FIXER";
   }
 
-  private assertFixerApplied(job: any, fixerId: string) {
-    const applied = job.applications?.some(
-      (a: any) => a.fixerId === fixerId
-    );
-
-    if (!applied) {
-      throw new ForbiddenException("FIXER_HAS_NOT_APPLIED");
-    }
+  private assertFixerAuthorized(job: any, fixerId: string) {
+  // Direct hire
+  if (job.fixerId === fixerId) {
+    return;
   }
+
+  // Normal application
+  const applied = job.applications?.some(
+    (a: any) => a.fixerId === fixerId
+  );
+
+  if (!applied) {
+    throw new ForbiddenException("FIXER_NOT_AUTHORIZED");
+  }
+}
 
 
   private assertPositiveInt(n: number, msg: string) {
@@ -321,7 +327,7 @@ export class ChatService {
     }
 
     this.assertJobNegotiationAllowed(job);
-    this.assertFixerApplied(job, fixerId);
+    this.assertFixerAuthorized(job, fixerId);
 
     return this.repo.upsertConversation(jobId, fixerId);
   }
@@ -366,7 +372,7 @@ export class ChatService {
     this.assertUserActive(user);
 
     if (role === "FIXER") {
-      this.assertFixerApplied(job, fixerId);
+      this.assertFixerAuthorized(job, fixerId);
     }
 
     const convo = await this.repo.upsertConversation(jobId, fixerId);
@@ -461,7 +467,7 @@ if (!convo.active) {
     this.assertUserActive(user);
 
     if (role === "FIXER") {
-      this.assertFixerApplied(job, fixerId);
+      this.assertFixerAuthorized(job, fixerId);
     }
 
     const convo = await this.repo.upsertConversation(
@@ -574,7 +580,7 @@ if (!convo.active) {
     this.assertUserActive(user);
 
     if (role === "FIXER") {
-      this.assertFixerApplied(job, fixerId);
+      this.assertFixerAuthorized(job, fixerId);
     }
 
     const convo = await this.repo.upsertConversation(
@@ -692,7 +698,7 @@ if (!convo.active) {
   this.assertUserActive(user);
 
   if (role === "FIXER") {
-    this.assertFixerApplied(job, fixerId);
+    this.assertFixerAuthorized(job, fixerId);
   }
 
   const convo = await this.repo.upsertConversation(
