@@ -794,11 +794,7 @@ if (!convo.active) {
         price
       });
       if (payment?.authorizationUrl) {
-        console.log("EMITTING PAYMENT EVENT", {
-  room,
-  payerId: job.clientId,
-  authorizationUrl: payment.authorizationUrl,
-});
+
   this.realtime.emitToRoom(
     room,
     "payment:created",
@@ -853,9 +849,6 @@ if (!convo.active) {
       }
     );
   }
-  console.log({
-  payment,
-});
 
 return {
   ok: true,

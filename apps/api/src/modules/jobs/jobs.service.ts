@@ -197,13 +197,22 @@ return {
   }
 
   async listMyApplications(args: {
-    fixerId: string;
-    skip: number;
-    take: number;
-  }) {
-    await this.assertVerifiedUser(args.fixerId);
-    return this.repo.listApplicationsByFixerId(args);
-  }
+  fixerId: string;
+  skip: number;
+  take: number;
+}) {
+  await this.assertVerifiedUser(args.fixerId);
+
+  const rows =
+    await this.repo.listApplicationsByFixerId(args);
+
+  return rows.map((row: any) => ({
+    type: row.type,
+    status: row.status,
+    createdAt: row.createdAt,
+    job: row.job,
+  }));
+}
 
   async listJobApplications(args: {
     jobId: string;

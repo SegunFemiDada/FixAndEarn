@@ -177,6 +177,23 @@ async getMarketplaceStats() {
       include: { job: true },
     });
   }
+  listUrgentJobsByFixerId(args: {
+  fixerId: string;
+  skip: number;
+  take: number;
+}) {
+  return this.prisma.job.findMany({
+    where: {
+      fixerId: args.fixerId,
+      postingType: "URGENT",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    skip: args.skip,
+    take: args.take,
+  });
+}
 
   async listJobApplications(jobId: string, skip: number, take: number) {
     return this.prisma.jobApplication.findMany({

@@ -142,13 +142,7 @@ export class JobPaymentProcessorService {
       job: true,
     },
   });
-  console.log({
-  paymentId: payment?.id,
-  paymentType: payment?.type,
-  jobId: payment?.jobId,
-  jobStatus: payment?.job?.status,
-  postingType: payment?.job?.postingType,
-});
+
 
   if (!payment) {
     throw new NotFoundException("JOB_PAYMENT_NOT_FOUND");
