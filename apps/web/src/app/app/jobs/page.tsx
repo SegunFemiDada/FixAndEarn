@@ -116,7 +116,9 @@ export default function JobsPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        
+        <h1 className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Marketplace
+          </h1>
 
         {mounted && isApproved && isClient ? (
           <button
@@ -177,9 +179,7 @@ export default function JobsPage() {
           <h1 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
             {isClient ? "Open Jobs" : isFixer ? "Fixer Jobs" : "Jobs"}
           </h1>
-          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Marketplace
-          </p>
+          
         </div>
 
       {!mounted ? (
