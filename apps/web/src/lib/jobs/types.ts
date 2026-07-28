@@ -46,3 +46,11 @@ export const CreateJobSchema = z.object({
 });
 
 export type CreateJobFormValues = z.infer<typeof CreateJobSchema>;
+
+export const MarketplaceStatsSchema = z.object({
+  openJobs: z.number().int(),
+  inProgressJobs: z.number().int(),
+  completedJobs: z.number().int(),
+});
+
+export type MarketplaceStats = z.infer<typeof MarketplaceStatsSchema>;

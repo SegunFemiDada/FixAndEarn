@@ -1,5 +1,6 @@
 // Path: apps/web/src/lib/jobs/api.ts
 import apiClient from "@/lib/apiClient";
+import type { MarketplaceStats } from "./types";
 
 export type CreateJobPayload = {
   skillCategory: string;
@@ -179,4 +180,8 @@ export async function updateJob(
 ): Promise<any> {
   const response = await apiClient.patch(`/jobs/${jobId}`, data);
   return response.data;
+}
+export async function getMarketplaceStats(): Promise<MarketplaceStats> {
+  const res = await apiClient.get("/jobs/stats");
+  return res.data;
 }

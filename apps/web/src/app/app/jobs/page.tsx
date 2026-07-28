@@ -4,7 +4,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useJobsList } from "@/lib/jobs/queries";
+import { useJobsList, useMarketplaceStats, } from "@/lib/jobs/queries";
 import { useMyVerification } from "@/lib/verification/queries";
 import {
   getStoredRoles,
@@ -111,6 +111,7 @@ export default function JobsPage() {
   } = useJobsList(jobsFilters);
 
   const items = data ?? [];
+  const { data: stats } = useMarketplaceStats();
 
   return (
     <div className="space-y-5">
@@ -136,6 +137,49 @@ export default function JobsPage() {
 
         ) : null}
       </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-800 dark:bg-blue-900/20">
+    <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+      Open Jobs
+    </p>
+
+    <p className="mt-2 text-3xl font-bold text-blue-900 dark:text-white">
+      {stats?.openJobs ?? "—"}
+    </p>
+
+    <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+      Available for fixers
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-900/20">
+    <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+      In Progress
+    </p>
+
+    <p className="mt-2 text-3xl font-bold text-amber-900 dark:text-white">
+      {stats?.inProgressJobs ?? "—"}
+    </p>
+
+    <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+      Jobs currently being worked on
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-green-200 bg-green-50 p-5 dark:border-green-800 dark:bg-green-900/20">
+    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+      Completed
+    </p>
+
+    <p className="mt-2 text-3xl font-bold text-green-900 dark:text-white">
+      {stats?.completedJobs ?? "—"}
+    </p>
+
+    <p className="mt-1 text-xs text-green-600 dark:text-green-400">
+      Successfully completed jobs
+    </p>
+  </div>
+</div>
 
       {!mounted ? (
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">

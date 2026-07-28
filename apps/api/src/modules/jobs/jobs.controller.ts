@@ -53,6 +53,10 @@ export class JobsController {
       take: q.take ?? 20,
     });
   }
+  @Get("stats")
+async marketplaceStats() {
+  return this.jobsService.getMarketplaceStats();
+}
 
   @Get("mine")
   @Roles("CLIENT")

@@ -82,6 +82,9 @@ export class JobsService {
     const jobs = await this.repo.listOpenJobs(query);
     return Array.isArray(jobs) ? jobs.map((job) => this.mapJob(job)) : [];
   }
+  async getMarketplaceStats() {
+  return this.repo.getMarketplaceStats();
+}
 
   async listMyJobs(args: {
     clientId: string;

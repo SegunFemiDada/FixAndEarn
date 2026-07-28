@@ -102,6 +102,34 @@ listOpenJobs(query: {
     },
   });
 }
+async getMarketplaceStats() {
+  const [openJobs, inProgressJobs, completedJobs] = await Promise.all([
+    this.prisma.job.count({
+      where: {
+        status: "OPEN",
+        fixerId: null,
+      },
+    }),
+
+    this.prisma.job.count({
+      where: {
+        status: "IN_PROGRESS",
+      },
+    }),
+
+    this.prisma.job.count({
+      where: {
+        status: "COMPLETED",
+      },
+    }),
+  ]);
+
+  return {
+    openJobs,
+    inProgressJobs,
+    completedJobs,
+  };
+}
 
   findApplication(jobId: string, fixerId: string) {
     return this.prisma.jobApplication.findUnique({

@@ -18,6 +18,7 @@ import {
   type OpenDisputePayload,
   initializePostingPayment,
   initializeFinalPayment,
+  getMarketplaceStats,
 } from "./api";
 import { rateFixer } from "@/lib/jobs/api";
 import apiClient from "../apiClient";
@@ -26,6 +27,7 @@ import apiClient from "../apiClient";
 const keys = {
   list: ["jobs", "list"] as const,
   mine: ["jobs", "mine"] as const,
+  stats: ["jobs", "stats"] as const,
   myApplications: ["jobs", "myApplications"] as const,
   byId: (id: string) => ["jobs", "byId", id] as const,
   dispute: (id: string) => ["jobs", "dispute", id] as const,
@@ -40,6 +42,7 @@ export function useCreateJob() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: keys.list }),
         qc.invalidateQueries({ queryKey: keys.mine }),
+        qc.invalidateQueries({ queryKey: keys.stats }),
       ]);
     },
   });
@@ -118,6 +121,7 @@ export function useApplyToJob(id: string) {
       await Promise.all([
         qc.invalidateQueries({ queryKey: keys.byId(id) }),
         qc.invalidateQueries({ queryKey: keys.list }),
+        qc.invalidateQueries({ queryKey: keys.stats }),
         qc.invalidateQueries({ queryKey: keys.myApplications }),
       ]);
     },
@@ -151,6 +155,7 @@ export function useApproveCompletion(id: string) {
         qc.invalidateQueries({ queryKey: keys.byId(id) }),
         qc.invalidateQueries({ queryKey: keys.list }),
         qc.invalidateQueries({ queryKey: keys.mine }),
+        qc.invalidateQueries({ queryKey: keys.stats }),
         qc.invalidateQueries({ queryKey: keys.myApplications }),
       ]);
     },
@@ -167,6 +172,7 @@ export function useRejectCompletion(id: string) {
         qc.invalidateQueries({ queryKey: keys.byId(id) }),
         qc.invalidateQueries({ queryKey: keys.list }),
         qc.invalidateQueries({ queryKey: keys.mine }),
+        qc.invalidateQueries({ queryKey: keys.stats }),
         qc.invalidateQueries({ queryKey: keys.myApplications }),
       ]);
     },
@@ -181,6 +187,7 @@ export function useUrgentDirectHire() {
       await Promise.all([
       qc.invalidateQueries({ queryKey: keys.list }),
       qc.invalidateQueries({ queryKey: keys.mine }),
+      qc.invalidateQueries({ queryKey: keys.stats }),
     ]);
     },
   });
@@ -207,6 +214,7 @@ export function useOpenJobDispute(id: string) {
         qc.invalidateQueries({ queryKey: keys.dispute(id) }),
         qc.invalidateQueries({ queryKey: keys.list }),
         qc.invalidateQueries({ queryKey: keys.mine }),
+        qc.invalidateQueries({ queryKey: keys.stats }),
         qc.invalidateQueries({ queryKey: keys.myApplications }),
       ]);
     },
@@ -243,5 +251,14 @@ export function useUpdateJob(jobId: string) {
       queryClient.invalidateQueries({ queryKey: ["job", jobId] });
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
     },
+  });
+}
+export function useMarketplaceStats() {
+  return useQuery({
+    queryKey: keys.stats,
+    queryFn: getMarketplaceStats,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+    retry: 1,
   });
 }
