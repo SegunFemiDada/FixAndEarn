@@ -81,6 +81,7 @@ function getResolutionClass(resolution: string | null | undefined) {
     default:
       return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
   }
+  
 }
 function getPayoutModeClass(mode: string | null | undefined) {
   switch (mode) {
@@ -97,6 +98,7 @@ function getPayoutModeClass(mode: string | null | undefined) {
       return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
   }
 }
+
 
 function DetailField({
   label,
@@ -131,92 +133,91 @@ export default function AdminWithdrawalDetailPage() {
   const [note, setNote] = React.useState("");
   const [message, setMessage] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [currentAction, setCurrentAction] = React.useState<"APPROVE" | "REJECT" | "PAID" | null>(null);
+  const [selectedAction, setSelectedAction] = React.useState<
+  "APPROVE" | "REJECT" | "PAID" | null
+>(null);
+
+const [showConfirmModal, setShowConfirmModal] = React.useState(false);
 
   const detail = detailQuery.data;
   const status = detail?.status ?? null;
 
-  const canApprove = status === "PENDING";
-  const canReject = status === "PENDING";
-  const canMarkPaid = status === "APPROVED";
+  const allowedActions = {
+  approve: status === "PENDING",
+  reject: status === "PENDING",
+  markPaid: status === "APPROVED",
+};
   const busy = approveMutation.isPending || rejectMutation.isPending || paidMutation.isPending;
 
-  async function handleApprove() {
-    if (!detail) return;
-
+  function openAction(action: "APPROVE" | "REJECT" | "PAID") {
+    setSelectedAction(action);
     setMessage(null);
+    setShowConfirmModal(true);
+}
+async function confirmAction() {
+  if (!selectedAction) return;
 
-    const confirmed = window.confirm("Approve this withdrawal request?");
-    if (!confirmed) return;
+  setCurrentAction(selectedAction);
+  setMessage(null);
 
-    setCurrentAction("APPROVE");
+  try {
+    switch (selectedAction) {
+      case "APPROVE":
+        await approveMutation.mutateAsync({
+          note: note.trim() || undefined,
+        });
 
-    approveMutation.mutate(
-      { note: note.trim() || undefined },
-      {
-        onSuccess: async (response) => {
-          await Promise.all([detailQuery.refetch(), traceQuery.refetch()]);
-          setMessage({ type: "ok", text: `Withdrawal updated successfully. Current status: ${response.status}.` });
-        },
-        onError: (error) => {
-          setMessage({ type: "err", text: extractApiErrorMessage(error) });
-        },
-      }
-    );
-  }
+        setMessage({
+          type: "ok",
+          text: "Withdrawal approved successfully.",
+        });
+        break;
 
-  async function handleReject() {
-    if (!detail) return;
+      case "REJECT":
+        if (!note.trim()) {
+          setMessage({
+            type: "err",
+            text: "A rejection note is required.",
+          });
+          return;
+        }
 
-    const trimmed = note.trim();
-    if (!trimmed) {
-      setMessage({ type: "err", text: "Reject action requires a note." });
-      return;
+        await rejectMutation.mutateAsync({
+          note: note.trim(),
+        });
+
+        setMessage({
+          type: "ok",
+          text: "Withdrawal rejected successfully.",
+        });
+        break;
+
+      case "PAID":
+        await paidMutation.mutateAsync({
+          note: note.trim() || undefined,
+        });
+
+        setMessage({
+          type: "ok",
+          text: "Withdrawal marked as paid successfully.",
+        });
+        break;
     }
 
-    setMessage(null);
+    setShowConfirmModal(false);
+    setSelectedAction(null);
+    setNote("");
 
-    const confirmed = window.confirm("Reject this withdrawal request?");
-    if (!confirmed) return;
-
-    setCurrentAction("REJECT");
-
-    rejectMutation.mutate(
-      { note: trimmed },
-      {
-        onSuccess: async (response) => {
-          await Promise.all([detailQuery.refetch(), traceQuery.refetch()]);
-          setMessage({ type: "ok", text: `Withdrawal updated successfully. Current status: ${response.status}.` });
-        },
-        onError: (error) => {
-          setMessage({ type: "err", text: extractApiErrorMessage(error) });
-        },
-      }
-    );
+    await detailQuery.refetch();
+  } catch (error) {
+    setMessage({
+      type: "err",
+      text: extractApiErrorMessage(error),
+    });
+  } finally {
+    setCurrentAction(null);
   }
-
-  async function handleMarkPaid() {
-    if (!detail) return;
-
-    setMessage(null);
-
-    const confirmed = window.confirm("Mark this approved withdrawal as paid?");
-    if (!confirmed) return;
-
-    setCurrentAction("PAID");
-
-    paidMutation.mutate(
-      { note: note.trim() || undefined },
-      {
-        onSuccess: async (response) => {
-          await Promise.all([detailQuery.refetch(), traceQuery.refetch()]);
-          setMessage({ type: "ok", text: `Withdrawal updated successfully. Current status: ${response.status}.` });
-        },
-        onError: (error) => {
-          setMessage({ type: "err", text: extractApiErrorMessage(error) });
-        },
-      }
-    );
-  }
+}
 
   return (
     <div className="space-y-6">
@@ -378,7 +379,9 @@ export default function AdminWithdrawalDetailPage() {
                   </div>
                 )}
 
-                {!canApprove && !canReject && !canMarkPaid && (
+                {!allowedActions.approve &&
+                  !allowedActions.reject &&
+                  !allowedActions.markPaid && (
                   <div className="mt-4 rounded-2xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
                     No further admin action is valid for the current status.
                   </div>
@@ -387,10 +390,10 @@ export default function AdminWithdrawalDetailPage() {
                 <div className="mt-4 grid gap-3">
                   <button
   type="button"
-  onClick={handleApprove}
-  disabled={!canApprove || busy}
+  onClick={() => openAction("APPROVE")}
+  disabled={!allowedActions.approve || busy}
   className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
-    ${!canApprove || busy
+    ${!allowedActions.approve || busy
       ? "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 opacity-50"
       : "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
   `}
@@ -402,10 +405,10 @@ export default function AdminWithdrawalDetailPage() {
 
 <button
   type="button"
-  onClick={handleReject}
-  disabled={!canReject || busy}
+  onClick={() => openAction("REJECT")}
+  disabled={!allowedActions.reject || busy}
   className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
-    ${!canReject || busy
+    ${!allowedActions.reject || busy
       ? "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 opacity-50"
       : "bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-red-400 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-300"}
   `}
@@ -418,10 +421,10 @@ export default function AdminWithdrawalDetailPage() {
 
 <button
   type="button"
-  onClick={handleMarkPaid}
-  disabled={!canMarkPaid || busy}
+  onClick={() => openAction("PAID")}
+  disabled={!allowedActions.markPaid || busy}
   className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
-    ${!canMarkPaid || busy
+    ${!allowedActions.markPaid || busy
       ? "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400 opacity-50"
       : "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg focus:ring-2 focus:ring-green-400 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300"}
   `}
@@ -506,50 +509,69 @@ export default function AdminWithdrawalDetailPage() {
                     </div>
                   </div>
                 </div>
+<div className="mt-5 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-5">
 
-                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                  <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                    <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Withdrawal amount</div>
-                    <div className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {formatFecFromMilli(traceQuery.data.summary.withdrawalAmountMilliFec)}
-                    </div>
-                  </div>
+  <div className="flex flex-wrap items-center justify-between gap-3">
 
-                  <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                    <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Total traced earnings</div>
-                    <div className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {formatFecFromMilli(traceQuery.data.summary.totalEarningCreditsMilliFec)}
-                    </div>
-                  </div>
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+        Audit Summary
+      </p>
 
-                  <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                    <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Covered toward withdrawal</div>
-                    <div className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {formatFecFromMilli(traceQuery.data.summary.cumulativeCoveredMilliFec)}
-                    </div>
-                  </div>
+      <h4 className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        Withdrawal Coverage
+      </h4>
+    </div>
 
-                  <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                    <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Remaining uncovered</div>
-                    <div className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {formatFecFromMilli(traceQuery.data.summary.remainingUncoveredMilliFec)}
-                    </div>
-                  </div>
+    <span
+      className={[
+        "inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+        getCoverageClass(traceQuery.data.summary.coverageReached),
+      ].join(" ")}
+    >
+      {traceQuery.data.summary.coverageReached
+        ? "Fully Covered"
+        : traceQuery.data.entries.length === 0
+        ? "No Allocation"
+        : "Partially Covered"}
+    </span>
 
-                  <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                    <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Coverage status</div>
-                    <div className="mt-2">
-  <span
-    className={[
-      "inline-flex rounded-full px-3 py-1 text-xs font-semibold",
-      getCoverageClass(traceQuery.data.summary.coverageReached),
-    ].join(" ")}
-  >
-    {traceQuery.data.summary.coverageReached ? "Covered" : "Partial"}
-  </span>
+  </div>
+
+  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+    <DetailField
+      label="Withdrawal Amount"
+      value={formatFecFromMilli(
+        traceQuery.data.summary.withdrawalAmountMilliFec
+      )}
+    />
+
+    <DetailField
+      label="Allocations Used"
+      value={`${traceQuery.data.entries.length}`}
+    />
+
+    <DetailField
+      label="Audit Checked"
+      value={formatDateTime(
+        traceQuery.data.summary.autoAssessment.checkedAt
+      )}
+    />
+
+    <DetailField
+      label="Review"
+      value={
+        traceQuery.data.summary.autoAssessment.status === "PASS"
+          ? "Automatic"
+          : "Manual Required"
+      }
+    />
+
+  </div>
+
 </div>
-                  </div>
-                </div>
+                
 
                 {traceQuery.data.entries.length === 0 ? (
                   <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
@@ -730,6 +752,7 @@ export default function AdminWithdrawalDetailPage() {
     </div>
   </article>
 ))}
+
                   </div>
                 )}
               </>
@@ -737,6 +760,64 @@ export default function AdminWithdrawalDetailPage() {
           </section>
         </>
       )}
+      {showConfirmModal && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+
+      <div className="w-full max-w-md rounded-xl bg-white dark:bg-[#1E2A3A] p-6 shadow-xl">
+
+          <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+          Confirm Action
+        </h3>
+
+          <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+          Are you sure you want to
+          {selectedAction === "APPROVE" && " approve this withdrawal?"}
+          {selectedAction === "REJECT" && " reject this withdrawal?"}
+          {selectedAction === "PAID" && " mark this withdrawal as paid?"}
+        </p>
+
+         <div className="mt-6 flex justify-end gap-3">
+
+  <button
+    type="button"
+    onClick={() => {
+      setShowConfirmModal(false);
+      setSelectedAction(null);
+    }}
+    disabled={busy}
+    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-100"
+  >
+    Cancel
+  </button>
+
+  <button
+    type="button"
+    onClick={confirmAction}
+    disabled={busy}
+    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white
+      ${
+        selectedAction === "REJECT"
+          ? "bg-red-600 hover:bg-red-700"
+          : selectedAction === "PAID"
+          ? "bg-green-600 hover:bg-green-700"
+          : "bg-blue-600 hover:bg-blue-700"
+      }
+    `}
+  >
+    {busy
+      ? "Processing..."
+      : selectedAction === "APPROVE"
+      ? "Approve"
+      : selectedAction === "REJECT"
+      ? "Reject"
+      : "Mark as Paid"}
+  </button>
+
+</div>
+      </div>
+
+  </div>
+)}
     </div>
   );
 }

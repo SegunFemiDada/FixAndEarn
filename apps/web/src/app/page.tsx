@@ -5,7 +5,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "FixAndEarn – Hire Trusted Fixers in Nigeria",
   description:
-    "FixAndEarn connects clients with verified skilled workers. Secure escrow payments, identity verification, and a job‑focused platform.",
+  "FixAndEarn connects clients with verified skilled workers across Nigeria. Secure online payments, verified identities, in-app chat, and transparent payouts for every completed job.",
 };
 
 export default function HomePage() {
@@ -24,12 +24,13 @@ export default function HomePage() {
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-[#1A2B4A] dark:text-[#E8F0FA] sm:text-5xl lg:text-6xl">
                 Hire trusted fixers. <br />
-                Find real jobs.
+                Get the job done.
               </h1>
               <p className="mt-6 text-lg leading-8 text-[#6B7C99] dark:text-[#8FA0BC]">
-                FixAndEarn connects clients with verified skilled workers in Nigeria
-                through a secure, job‑focused workflow. Payments are held in escrow,
-                identities are verified, and disputes are handled by our admin team.
+                FixAndEarn connects clients with verified skilled workers across Nigeria.
+                Every user is verified before participating, payments are made securely
+                online, jobs are managed from start to finish inside the platform, and
+                fixers receive their earnings after approved job completion.
               </p>
               <div className="mt-10 flex flex-wrap gap-4">
                 <Link
@@ -83,11 +84,11 @@ export default function HomePage() {
                     <text x="30" y="65" textAnchor="middle" fontSize="10" fill="#7AAEE0" fontWeight="bold">Fixer</text>
                   </g>
 
-                  {/* Escrow shield */}
+                  {/* Secure payment */}
                   <g transform="translate(185, 140)">
                     <path d="M15 0 L30 8 L30 22 C30 34 15 42 15 42 C15 42 0 34 0 22 L0 8 Z" fill="#10b981" fillOpacity="0.8" stroke="#10b981" strokeWidth="1.5" />
                     <path d="M8 18 L12 22 L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                    <text x="15" y="52" textAnchor="middle" fontSize="8" fill="#10b981" fontWeight="bold">Escrow</text>
+                    <text x="15" y="52" textAnchor="middle" fontSize="8" fill="#10b981" fontWeight="bold">Secure Pay</text>
                   </g>
 
                   {/* Connecting line */}
@@ -99,7 +100,7 @@ export default function HomePage() {
                   <circle cx="260" cy="180" r="4" fill="#5B8FCC" fillOpacity="0.4" />
                 </svg>
                 <p className="mt-4 text-center text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Secure payments • Verified profiles • Real‑time chat
+                  Verified users • Secure online payments • Real-time chat
                 </p>
               </div>
             </div>
@@ -109,7 +110,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Stats ── */}
-      <section className="bg-white dark:bg-[#1E2A3A] py-12 shadow-[0_1px_0_rgba(91,143,204,0.1),0_-1px_0_rgba(91,143,204,0.1)]">
+      {/* <section className="bg-white dark:bg-[#1E2A3A] py-12 shadow-[0_1px_0_rgba(91,143,204,0.1),0_-1px_0_rgba(91,143,204,0.1)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
             {[
@@ -125,7 +126,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ── How It Works ── */}
       <section className="py-16 sm:py-24">
@@ -135,7 +136,7 @@ export default function HomePage() {
               How FixAndEarn works
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-[#6B7C99] dark:text-[#8FA0BC]">
-              Simple, transparent, and secure, from job posting to payment.
+              Everything happens in one place, from hiring to payment completion.
             </p>
           </div>
 
@@ -144,17 +145,17 @@ export default function HomePage() {
               {
                 step: "1",
                 title: "Post a job",
-                desc: "Clients describe the work, set a price, and pay a small fee.",
+                desc: "Create a job or hire a fixer directly. Complete the required posting or urgent hire payment securely online.",
               },
               {
                 step: "2",
                 title: "Fixers apply & negotiate",
-                desc: "Verified fixers apply, chat, and lock a price. Funds go into escrow.",
+                desc: "Verified fixers apply or accept direct hires. Chat, negotiate when needed, and begin work after payment confirmation.",
               },
               {
                 step: "3",
                 title: "Job done, get paid",
-                desc: "Client approves the work, funds are released to the fixer.",
+                desc: "Approve completed work. The fixer's earnings are credited instantly and become available for withdrawal.",
               },
             ].map(({ step, title, desc }) => (
               <div key={step} className="text-center">
@@ -181,33 +182,33 @@ export default function HomePage() {
             {[
               {
                 icon: "✅",
-                title: "Verified participation",
-                desc: "All users complete NIN/BVN/selfie verification before posting or applying.",
+                title: "Verified users",
+                desc: "Identity verification helps ensure clients and fixers interact with trusted users.",
               },
               {
                 icon: "🔒",
-                title: "Escrow‑backed payments",
-                desc: "Funds are held securely until the job is approved, no off‑platform risk.",
+                title: "Secure online payments",
+                desc: "Clients pay securely through our payment provider while the platform manages the complete job workflow and payment records.",
               },
               {
                 icon: "👩‍⚖️",
                 title: "Admin oversight",
-                desc: "Verification, withdrawals, disputes, and audits are handled by a dedicated admin team.",
+                desc: "Our admin team oversees verification, disputes, withdrawals, and platform integrity.",
               },
               {
                 icon: "💬",
                 title: "Real‑time chat",
-                desc: "Negotiate prices, share updates, and resolve issues directly in the app.",
+                desc: "Discuss the job, negotiate pricing when applicable, and keep all communication inside the platform.",
               },
               {
                 icon: "⭐",
                 title: "Ratings & reviews",
-                desc: "Build trust with transparent 5‑star ratings from real clients.",
+                desc: "Build your reputation with genuine ratings and reviews after completed jobs.",
               },
               {
                 icon: "📱",
                 title: "Mobile‑first",
-                desc: "Works perfectly on any smartphone, no app download required.",
+                desc: "Designed for phones, tablets, and desktops without requiring an app installation.",
               },
             ].map(({ icon, title, desc }) => (
               <div
@@ -227,10 +228,10 @@ export default function HomePage() {
       <section className="py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
           <h2 className="text-3xl font-bold tracking-tight text-[#1A2B4A] dark:text-[#E8F0FA] sm:text-4xl">
-            Ready to start earning or hiring?
+            Ready to hire a trusted fixer or earn from your skills?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-[#6B7C99] dark:text-[#8FA0BC]">
-            Join thousands of Nigerians who trust FixAndEarn for their daily work.
+            Create your free account today and connect with verified clients and skilled professionals across Nigeria.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
