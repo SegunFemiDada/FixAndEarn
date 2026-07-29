@@ -10,7 +10,7 @@ export function toPublicFileUrl(pathOrKey: string | null | undefined): string | 
     process.env.API_BASE_URL ||
     process.env.PUBLIC_ASSET_BASE_URL ||
     process.env.BACKEND_URL ||
-    `http://localhost:${process.env.API_PORT || 3000}`;
+    `https://api.fixandearn.com:${process.env.API_PORT}`;
 
   if (pathOrKey.startsWith("/")) {
     return `${baseUrl}${pathOrKey}`;

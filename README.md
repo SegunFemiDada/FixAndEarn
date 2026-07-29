@@ -120,7 +120,7 @@ pnpm --filter api run start:dev
 
 # Frontend (port 3001)
 pnpm --filter web run dev
-Visit http://localhost:3001 – you are ready to go.
+Visit https://fixandearn.com – you are ready to go.
 
 🧪 Testing
 

@@ -122,6 +122,18 @@ if (!existingPayout) {
           where: { id: fixerWallet.id },
           data: { balanceMilliFec: { increment: payout } }
         });
+        await tx.fixerEarning.upsert({
+  where: {
+    jobId,
+  },
+  update: {},
+  create: {
+    fixerId,
+    jobId,
+    availableMilliFec: payout,
+    status: "AVAILABLE",
+  },
+});
 
         // Platform receives commission (10%)
         const platformWallet = await this.getOrCreatePlatformWallet(tx);

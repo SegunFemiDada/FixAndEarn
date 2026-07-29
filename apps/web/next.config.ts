@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3000/:path*", // Adjust port if needed
+        destination: "https://api.fixandearn.com/:path*", // Adjust port if needed
       },
     ];
   },
