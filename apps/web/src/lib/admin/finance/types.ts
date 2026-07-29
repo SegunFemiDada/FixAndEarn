@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/admin/finance/types.ts
 export type WithdrawalStatus = "PENDING" | "APPROVED" | "REJECTED" | "PAID";
 
 export type WithdrawalListItem = {
@@ -58,34 +59,45 @@ export type WithdrawalDetail = {
 };
 
 export type WithdrawalEarningsTraceEntry = {
-  id: string;
-  type: string;
+  allocationId: string;
+
+  earningId: string;
+
   amountMilliFec: number;
-  createdAt: string;
-  reference: string | null;
-  payoutSource: string | null;
-  jobId: string | null;
-  clientId: string | null;
-  fixerId: string | null;
-  grossAmountMilliFec: number | null;
-  netAmountMilliFec: number | null;
-  commissionMilliFec: number | null;
+
+  availableMilliFec: number;
+
+  earningStatus: string;
+
+  earnedAt: string;
+
   cumulativeCoveredMilliFec: number;
+
   coversWithdrawalAfterThisEntry: boolean;
+
   job: {
     id: string;
+
     clientId: string | null;
+
     fixerId: string | null;
+
     status: string;
+
     lockedPriceMilliFec: number | null;
+
     priceMilliFec: number | null;
+
     completedApprovedAt: string | null;
+
     dispute: {
       id: string;
+
       resolutionType: string | null;
+
       resolvedAt: string | null;
     } | null;
-  } | null;
+  };
 };
 
 export type WithdrawalEarningsTrace = {

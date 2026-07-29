@@ -1,3 +1,4 @@
+//path: apps/web/lib/admin/finance/api.ts
 import { adminApi } from "@/lib/admin/api";
 import type {
   ListWithdrawalsParams,

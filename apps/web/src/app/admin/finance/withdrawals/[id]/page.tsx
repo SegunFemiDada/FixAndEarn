@@ -41,6 +41,62 @@ function getStatusClass(status: WithdrawalStatus) {
       return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
   }
 }
+function getJobStatusClass(status: string) {
+  switch (status) {
+    case "OPEN":
+      return "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300";
+
+    case "IN_PROGRESS":
+      return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 text-[#5B8FCC] dark:text-[#7AAEE0]";
+
+    case "COMPLETED":
+      return "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200";
+
+    case "DISPUTED":
+      return "border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 text-[#D9534F] dark:text-red-300";
+
+    case "CANCELLED":
+      return "border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300";
+
+    default:
+      return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
+  }
+}
+function getCoverageClass(covered: boolean) {
+  return covered
+    ? "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
+    : "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300";
+}
+function getResolutionClass(resolution: string | null | undefined) {
+  switch (resolution) {
+    case "FIXER_WON":
+      return "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200";
+
+    case "CLIENT_WON":
+      return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 text-[#5B8FCC] dark:text-[#7AAEE0]";
+
+    case "SPLIT":
+      return "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300";
+
+    default:
+      return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
+  }
+}
+function getPayoutModeClass(mode: string | null | undefined) {
+  switch (mode) {
+    case "BANK_TRANSFER":
+      return "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200";
+
+    case "PAYSTACK":
+      return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 text-[#5B8FCC] dark:text-[#7AAEE0]";
+
+    case "MANUAL":
+      return "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300";
+
+    default:
+      return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
+  }
+}
 
 function DetailField({
   label,
@@ -244,7 +300,20 @@ export default function AdminWithdrawalDetailPage() {
                   <DetailField label="Review note" value={detail.reviewNote} />
                   <DetailField label="Transfer reference" value={detail.paystackTransferReference} breakAll />
                   <DetailField label="Transfer code" value={detail.paystackTransferCode} breakAll />
-                  <DetailField label="Payout mode" value={detail.payoutMode} />
+                  <div>
+  <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+    Payout Mode
+  </span>
+
+  <span
+    className={[
+      "mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+      getPayoutModeClass(detail.payoutMode),
+    ].join(" ")}
+  >
+    {detail.payoutMode ?? "Unknown"}
+  </span>
+</div>
                   <DetailField
                     label="Wallet balance"
                     value={
@@ -469,9 +538,16 @@ export default function AdminWithdrawalDetailPage() {
 
                   <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
                     <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Coverage status</div>
-                    <div className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {traceQuery.data.summary.coverageReached ? "Covered" : "Partial"}
-                    </div>
+                    <div className="mt-2">
+  <span
+    className={[
+      "inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+      getCoverageClass(traceQuery.data.summary.coverageReached),
+    ].join(" ")}
+  >
+    {traceQuery.data.summary.coverageReached ? "Covered" : "Partial"}
+  </span>
+</div>
                   </div>
                 </div>
 
@@ -482,159 +558,178 @@ export default function AdminWithdrawalDetailPage() {
                 ) : (
                   <div className="mt-5 grid gap-4">
                     {traceQuery.data.entries.map((entry) => (
-                      <article key={entry.id} className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                                {entry.jobId ? `Job ${entry.jobId}` : "Unlinked earning entry"}
-                              </h4>
+  <article
+    key={entry.allocationId}
+    className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-5"
+  >
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h4 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+          Earning Allocation
+        </h4>
 
-                              <span className="rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 px-3 py-1 text-xs font-medium text-[#5B8FCC] dark:text-[#7AAEE0]">
-                                {entry.payoutSource ?? entry.type}
-                              </span>
+        <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC] break-all">
+          Allocation ID: {entry.allocationId}
+        </p>
+      </div>
 
-                              {entry.coversWithdrawalAfterThisEntry && (
-                                <span className="rounded-full border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 px-3 py-1 text-xs font-medium text-[#2E7D32] dark:text-green-200">
-                                  Withdrawal coverage reached
-                                </span>
-                              )}
-                            </div>
+      <span
+        className={[
+          "rounded-full px-3 py-1 text-xs font-semibold",
+          entry.earningStatus === "AVAILABLE"
+            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+            : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+        ].join(" ")}
+      >
+        {entry.earningStatus}
+      </span>
+    </div>
 
-                            <div className="mt-3 grid gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] sm:grid-cols-2 lg:grid-cols-4">
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Entry amount
-                                </span>
-                                <span className="mt-1 block font-semibold">
-                                  {formatFecFromMilli(entry.amountMilliFec)}
-                                </span>
-                              </div>
+    <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Gross amount
-                                </span>
-                                <span className="mt-1 block">
-                                  {entry.grossAmountMilliFec != null
-                                    ? formatFecFromMilli(entry.grossAmountMilliFec)
-                                    : "Not available"}
-                                </span>
-                              </div>
+      <DetailField
+        label="Allocated from this earning"
+        value={formatFecFromMilli(entry.amountMilliFec)}
+      />
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Net payout
-                                </span>
-                                <span className="mt-1 block">
-                                  {entry.netAmountMilliFec != null
-                                    ? formatFecFromMilli(entry.netAmountMilliFec)
-                                    : "Not available"}
-                                </span>
-                              </div>
+      <DetailField
+        label="Remaining Available"
+        value={formatFecFromMilli(entry.availableMilliFec)}
+      />
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Commission
-                                </span>
-                                <span className="mt-1 block">
-                                  {entry.commissionMilliFec != null
-                                    ? formatFecFromMilli(entry.commissionMilliFec)
-                                    : "Not available"}
-                                </span>
-                              </div>
+      <DetailField
+        label="Earned At"
+        value={formatDateTime(entry.earnedAt)}
+      />
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Client ID
-                                </span>
-                                <span className="mt-1 block break-all">{entry.clientId ?? "Not available"}</span>
-                              </div>
+      <DetailField
+        label="Cumulative Covered"
+        value={formatFecFromMilli(entry.cumulativeCoveredMilliFec)}
+      />
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Fixer ID
-                                </span>
-                                <span className="mt-1 block break-all">{entry.fixerId ?? "Not available"}</span>
-                              </div>
+      <DetailField
+        label="Earning ID"
+        value={entry.earningId}
+        breakAll
+      />
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Created
-                                </span>
-                                <span className="mt-1 block">{formatDateTime(entry.createdAt)}</span>
-                              </div>
+      <DetailField
+        label="Job ID"
+        value={entry.job.id}
+        breakAll
+      />
 
-                              <div>
-                                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                  Cumulative covered
-                                </span>
-                                <span className="mt-1 block">
-                                  {formatFecFromMilli(entry.cumulativeCoveredMilliFec)}
-                                </span>
-                              </div>
-                            </div>
+      <DetailField
+        label="Client ID"
+        value={entry.job.clientId}
+        breakAll
+      />
 
-                            {entry.job && (
-                              <div className="mt-4 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4">
-                                <div className="grid gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] sm:grid-cols-2 lg:grid-cols-4">
-                                  <div>
-                                    <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                      Job status
-                                    </span>
-                                    <span className="mt-1 block">{entry.job.status}</span>
-                                  </div>
+      <DetailField
+        label="Fixer ID"
+        value={entry.job.fixerId}
+        breakAll
+      />
 
-                                  <div>
-                                    <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                      Locked price
-                                    </span>
-                                    <span className="mt-1 block">
-                                      {entry.job.lockedPriceMilliFec != null
-                                        ? formatFecFromMilli(entry.job.lockedPriceMilliFec)
-                                        : "Not available"}
-                                    </span>
-                                  </div>
+    </div>
 
-                                  <div>
-                                    <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                      Original price
-                                    </span>
-                                    <span className="mt-1 block">
-                                      {entry.job.priceMilliFec != null
-                                        ? formatFecFromMilli(entry.job.priceMilliFec)
-                                        : "Not available"}
-                                    </span>
-                                  </div>
+    <div className="mt-6 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4">
 
-                                  <div>
-                                    <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                                      Completed approved
-                                    </span>
-                                    <span className="mt-1 block">
-                                      {formatDateTime(entry.job.completedApprovedAt)}
-                                    </span>
-                                  </div>
-                                </div>
+      <h5 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        Job Information
+      </h5>
 
-                                {entry.job.dispute && (
-                                  <div className="mt-4 rounded-xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
-                                    <div className="font-medium">Dispute-linked payout</div>
-                                    <div className="mt-1">Dispute ID: {entry.job.dispute.id}</div>
-                                    <div className="mt-1">
-                                      Resolution: {entry.job.dispute.resolutionType ?? "Not available"}
-                                    </div>
-                                    <div className="mt-1">
-                                      Resolved: {formatDateTime(entry.job.dispute.resolvedAt)}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </article>
-                    ))}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+        <div>
+  <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+    Job Status
+  </span>
+
+  <span
+    className={[
+      "mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+      getJobStatusClass(entry.job.status),
+    ].join(" ")}
+  >
+    {entry.job.status}
+  </span>
+</div>
+
+        <DetailField
+          label="Locked Price"
+          value={
+            entry.job.lockedPriceMilliFec != null
+              ? formatFecFromMilli(entry.job.lockedPriceMilliFec)
+              : "Not available"
+          }
+        />
+
+        <DetailField
+          label="Original Price"
+          value={
+            entry.job.priceMilliFec != null
+              ? formatFecFromMilli(entry.job.priceMilliFec)
+              : "Not available"
+          }
+        />
+
+        <DetailField
+          label="Completed"
+          value={formatDateTime(entry.job.completedApprovedAt)}
+        />
+
+      </div>
+
+      {entry.job.dispute && (
+        <div className="mt-5 rounded-xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-4">
+
+          <div className="font-semibold text-[#B45309] dark:text-amber-300">
+            Dispute Resolution
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+
+            <DetailField
+              label="Dispute ID"
+              value={entry.job.dispute.id}
+              breakAll
+            />
+
+            <div>
+  <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+    Resolution
+  </span>
+
+  <span
+    className={[
+      "mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+      getResolutionClass(entry.job.dispute.resolutionType),
+    ].join(" ")}
+  >
+    {entry.job.dispute.resolutionType}
+  </span>
+</div>
+
+            <DetailField
+              label="Resolved At"
+              value={formatDateTime(entry.job.dispute.resolvedAt)}
+            />
+
+          </div>
+
+        </div>
+      )}
+
+      {entry.coversWithdrawalAfterThisEntry && (
+        <div className="mt-5 rounded-xl border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 p-3 text-sm font-medium text-[#2E7D32] dark:text-green-200">
+          ✓ Withdrawal amount becomes fully covered after this earning allocation.
+        </div>
+      )}
+
+    </div>
+  </article>
+))}
                   </div>
                 )}
               </>
