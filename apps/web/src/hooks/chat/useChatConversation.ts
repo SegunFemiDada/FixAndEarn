@@ -1,5 +1,5 @@
 //path: apps/web/src/hooks/chat/useChatConversation.ts
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useConversationDetail } from "@/lib/chat/queries";
 import type { ConversationDetailData } from "@/lib/chat/types";
 import { buildChatConversationState } from "@/lib/chat/transformers";
@@ -20,6 +20,9 @@ export function useChatConversation({
   enabled?: boolean;
 }) {
   const query = useConversationDetail(jobId, fixerId);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+const previousStatus = useRef<string | null>(null);
 
   const state = useMemo(() => {
     return buildChatConversationState({
@@ -28,6 +31,19 @@ export function useChatConversation({
       isError: query.isError,
     });
   }, [query.data, query.error, query.isError]);
+  useEffect(() => {
+  const currentStatus = state.job?.status;
+
+  if (
+    role === "fixer" &&
+    previousStatus.current === "OPEN" &&
+    currentStatus === "IN_PROGRESS"
+  ) {
+    setShowPaymentModal(true);
+  }
+
+  previousStatus.current = currentStatus ?? null;
+}, [role, state.job?.status]);
 
   const {
     messages,
@@ -63,5 +79,9 @@ export function useChatConversation({
       false,
     role,              // expose role
     myUserId,          // expose myUserId
+    showPaymentModal,
+    dismissPaymentModal: () => {
+    setShowPaymentModal(false);
+},
   };
 }

@@ -64,11 +64,17 @@ export default function JobChatDetailPage() {
 
       {status.showContent && (
         <ChatPageContent
-          job={chat.job ?? null}
-          needsAgreement={chat.needsAgreement}
-          conversation={{ ...conversationSection, onReport: actions.openReportModal }}
-          negotiationSection={negotiationSection}
-        />
+        job={chat.job ?? null}
+        needsAgreement={chat.needsAgreement}
+        conversation={{
+          ...conversationSection,
+          onReport: actions.openReportModal,
+        }}
+        negotiationSection={negotiationSection}
+        showPaymentModal={chat.showPaymentModal}
+        onClosePaymentModal={chat.dismissPaymentModal}
+        onRefresh={chat.refetch}
+      />
       )}
 
       <ChatActionError error={chat.actionErr} />
