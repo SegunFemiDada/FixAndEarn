@@ -73,14 +73,7 @@ export function useChatRealtime({
         ...message,
         flags: Array.isArray(message.flags) ? message.flags : [],
       });
-      socket.on("job:started", (payload) => {
-  if (unmounted) return;
-  if (payload.jobId !== jobId) return;
-
-  playSound("/sounds/bell.mp3");
-
-  safeRefetch();
-});
+      
 
       // Only play sound if it's not my own message
       if (message.senderId !== myUserId) {
@@ -89,6 +82,14 @@ export function useChatRealtime({
 
       safeRefetch();
     });
+    socket.on("job:started", (payload) => {
+  if (unmounted) return;
+  if (payload.jobId !== jobId) return;
+
+  playSound("/sounds/bell.mp3");
+
+  safeRefetch();
+});
 
     const notificationEvents = [
       "negotiation:update",

@@ -4,14 +4,12 @@ import { useConversationDetail } from "@/lib/chat/queries";
 import type { ConversationDetailData } from "@/lib/chat/types";
 import { buildChatConversationState } from "@/lib/chat/transformers";
 import { useChatMessages } from "./useChatMessages";
-import { useChatRealtime } from "./useChatRealtime";
 
 export function useChatConversation({
   jobId,
   fixerId,
   myUserId,        // NEW
-  role,            // NEW
-  enabled = true,
+  role,
 }: {
   jobId: string;
   fixerId: string;
@@ -31,9 +29,6 @@ const previousStatus = useRef<string | null>(null);
       isError: query.isError,
     });
   }, [query.data, query.error, query.isError]);
-  useEffect(() => {
-  console.log("Job status:", state.job?.status);
-}, [state.job?.status]);
   
   useEffect(() => {
   const currentStatus = state.job?.status;
@@ -57,14 +52,7 @@ const previousStatus = useRef<string | null>(null);
     markFailedMessage,
   } = useChatMessages(state.messages ?? []);
 
-  useChatRealtime({
-    jobId,
-    fixerId,
-    enabled,
-    myUserId,          // pass user ID
-    refetch: query.refetch,
-    addRealtimeMessage,
-  });
+
 
   return {
     ...state,

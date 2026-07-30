@@ -261,9 +261,6 @@ export default function NewJobPage() {
                 className="block w-full text-sm text-[#6B7C99] dark:text-[#8FA0BC] file:mr-3 file:rounded-xl file:border-0 file:bg-[#EAF0FB] dark:file:bg-[#16202E] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#1A2B4A] dark:file:text-[#E8F0FA] hover:file:bg-[#D4E3F7] dark:hover:file:bg-[#1E2A3A]"
                 onChange={(e) => handleImages(e.target.files)}
               />
-              <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                Up to 5 images. Rear camera works better for job photos.
-              </p>
 
               {previews.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
