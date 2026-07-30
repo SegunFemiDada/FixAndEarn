@@ -31,6 +31,9 @@ const previousStatus = useRef<string | null>(null);
       isError: query.isError,
     });
   }, [query.data, query.error, query.isError]);
+  useEffect(() => {
+  console.log("Job status:", state.job?.status);
+}, [state.job?.status]);
   
   useEffect(() => {
   const currentStatus = state.job?.status;
@@ -45,9 +48,6 @@ const previousStatus = useRef<string | null>(null);
 
   previousStatus.current = currentStatus ?? null;
 }, [role, state.job?.status]);
-useEffect(() => {
-  console.log("Job status:", state.job?.status);
-}, [state.job?.status]);
 
   const {
     messages,
