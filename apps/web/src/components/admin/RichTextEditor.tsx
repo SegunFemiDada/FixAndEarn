@@ -31,7 +31,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[200px] rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-[#1A2B4A] dark:text-[#E8F0FA]",
+          "prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[200px] rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-[#1A2B4A] dark:text-[#E8F0FA] text-justify leading-7",
       },
     },
   });

@@ -76,28 +76,50 @@ export type WithdrawalEarningsTraceEntry = {
   coversWithdrawalAfterThisEntry: boolean;
 
   job: {
+  id: string;
+
+  clientId: string | null;
+
+  fixerId: string | null;
+
+  status: string;
+
+  lockedPriceMilliFec: number | null;
+
+  priceMilliFec: number | null;
+
+  completedApprovedAt: string | null;
+
+  client: {
+    id: string;
+    fullName: string;
+    email: string;
+    isActive: boolean;
+  } | null;
+
+  fixer: {
+    id: string;
+    fullName: string;
+    email: string;
+    isActive: boolean;
+  } | null;
+
+  latestPayment: {
+  id: string;
+  status: string;
+  amountMilliFec: number;
+  createdAt: string;
+  providerReference: string | null;
+} | null;
+
+  dispute: {
     id: string;
 
-    clientId: string | null;
+    resolutionType: string | null;
 
-    fixerId: string | null;
-
-    status: string;
-
-    lockedPriceMilliFec: number | null;
-
-    priceMilliFec: number | null;
-
-    completedApprovedAt: string | null;
-
-    dispute: {
-      id: string;
-
-      resolutionType: string | null;
-
-      resolvedAt: string | null;
-    } | null;
-  };
+    resolvedAt: string | null;
+  } | null;
+};
 };
 
 export type WithdrawalEarningsTrace = {

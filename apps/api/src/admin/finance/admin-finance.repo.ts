@@ -95,6 +95,94 @@ export class AdminFinanceRepo {
 if (!withdrawal) {
   return null;
 }
+const wallet = await this.prisma.wallet.findUnique({
+  where: {
+    userId_role: {
+      userId: withdrawal.userId,
+      role: WalletRole.FIXER,
+    },
+  },
+  select: {
+    id: true,
+    balanceMilliFec: true,
+    role: true,
+  },
+});
+
+const lifetimeEarnings = await this.prisma.fixerEarning.findMany({
+  where: {
+    fixerId: withdrawal.userId,
+  },
+  include: {
+    allocations: true,
+  },
+});
+
+const previousWithdrawals =
+  await this.prisma.withdrawalRequest.findMany({
+    where: {
+      userId: withdrawal.userId,
+    },
+    select: {
+      id: true,
+      amountMilliFec: true,
+      status: true,
+    },
+  });
+  const lifetimeEarnedMilliFec =
+  lifetimeEarnings.reduce(
+    (sum, earning) =>
+      sum +
+      earning.availableMilliFec +
+      earning.allocations.reduce(
+        (s, allocation) =>
+          s + allocation.amountMilliFec,
+        0
+      ),
+    0
+  );
+
+const lifetimeAllocatedMilliFec =
+  lifetimeEarnings.reduce(
+    (sum, earning) =>
+      sum +
+      earning.allocations.reduce(
+        (s, allocation) =>
+          s + allocation.amountMilliFec,
+        0
+      ),
+    0
+  );
+
+const paidWithdrawalsMilliFec =
+  previousWithdrawals
+    .filter((w) => w.status === "PAID")
+    .reduce(
+      (sum, w) =>
+        sum + w.amountMilliFec,
+      0
+    );
+
+const pendingWithdrawalsMilliFec =
+  previousWithdrawals
+    .filter((w) =>
+      w.status === "PENDING" ||
+      w.status === "APPROVED" ||
+      w.status === "PROCESSING"
+    )
+    .reduce(
+      (sum, w) =>
+        sum + w.amountMilliFec,
+      0
+    );
+
+const expectedWalletBalanceMilliFec =
+  lifetimeEarnedMilliFec -
+  lifetimeAllocatedMilliFec;
+
+const walletDifferenceMilliFec =
+  (wallet?.balanceMilliFec ?? 0) -
+  expectedWalletBalanceMilliFec;
 
 const allocations =
   await this.prisma.withdrawalAllocation.findMany({
@@ -106,20 +194,45 @@ const allocations =
     },
     include: {
       earning: {
-        include: {
-          job: {
-            include: {
-              dispute: {
-                select: {
-                  id: true,
-                  resolutionType: true,
-                  resolvedAt: true,
-                },
-              },
-            },
-          },
-        },
+  include: {
+    job: {
+  include: {
+    client: {
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        isActive: true,
       },
+    },
+
+    fixer: {
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        isActive: true,
+      },
+    },
+
+    payments: {
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 1,
+    },
+
+    dispute: {
+      select: {
+        id: true,
+        resolutionType: true,
+        resolvedAt: true,
+      },
+    },
+  },
+},
+  },
+},
     },
   });
   
@@ -157,29 +270,35 @@ const entries = allocations.map((allocation) => {
       withdrawal.amountMilliFec,
 
     job: {
-      id: allocation.earning.job.id,
+  id: allocation.earning.job.id,
 
-      clientId:
-        allocation.earning.job.clientId,
+  status: allocation.earning.job.status,
 
-      fixerId:
-        allocation.earning.job.fixerId,
+  clientId: allocation.earning.job.clientId,
 
-      status:
-        allocation.earning.job.status,
+  fixerId: allocation.earning.job.fixerId,
 
-      lockedPriceMilliFec:
-        allocation.earning.job.lockedPriceMilliFec,
+  priceMilliFec:
+    allocation.earning.job.priceMilliFec,
 
-      priceMilliFec:
-        allocation.earning.job.priceMilliFec,
+  lockedPriceMilliFec:
+    allocation.earning.job.lockedPriceMilliFec,
 
-      completedApprovedAt:
-        allocation.earning.job.completedApprovedAt,
+  completedApprovedAt:
+    allocation.earning.job.completedApprovedAt,
 
-      dispute:
-        allocation.earning.job.dispute,
-    },
+  client:
+    allocation.earning.job.client,
+
+  fixer:
+    allocation.earning.job.fixer,
+
+  latestPayment:
+    allocation.earning.job.payments[0] ?? null,
+
+  dispute:
+    allocation.earning.job.dispute,
+},
   };
 });
 const totalAllocatedMilliFec =
@@ -206,6 +325,8 @@ const remainingUncoveredMilliFec =
   );
 
 const reasons: string[] = [];
+const warnings: string[] = [];
+const critical: string[] = [];
 
 if (entries.length === 0) {
   reasons.push(
@@ -217,6 +338,108 @@ if (!coverageReached) {
   reasons.push(
     "Allocated earnings do not fully cover the withdrawal amount."
   );
+}
+if (walletDifferenceMilliFec !== 0) {
+  critical.push(
+    "Wallet balance does not match calculated earnings."
+  );
+}
+const wrongFixer = entries.some(
+  (entry) =>
+    entry.job.fixerId !== withdrawal.userId
+);
+
+if (wrongFixer) {
+  critical.push(
+    "One or more earnings belong to another fixer."
+  );
+}
+const missingClient = entries.some(
+  (entry) => !entry.job.client
+);
+
+if (missingClient) {
+  critical.push(
+    "One or more jobs have no client."
+  );
+}
+const missingPayment = entries.some(
+  (entry) => !entry.job.latestPayment
+);
+
+if (missingPayment) {
+  critical.push(
+    "One or more jobs have no payment record."
+  );
+}
+const duplicateJobs =
+  new Set(entries.map((e) => e.job.id)).size !==
+  entries.length;
+
+if (duplicateJobs) {
+  critical.push(
+    "Duplicate job detected in withdrawal."
+  );
+}
+const duplicateEarnings =
+  new Set(entries.map((e) => e.earningId)).size !==
+  entries.length;
+
+if (duplicateEarnings) {
+  critical.push(
+    "Duplicate earning detected."
+  );
+}
+const negativeAvailable =
+  allocations.some(
+    (allocation) =>
+      allocation.earning.availableMilliFec < 0
+  );
+
+if (negativeAvailable) {
+  critical.push(
+    "Negative earning balance detected."
+  );
+}
+const priceMismatch =
+  entries.some((entry) => {
+
+    if (
+      !entry.job.lockedPriceMilliFec
+    ) {
+      return false;
+    }
+
+    return (
+      entry.job.lockedPriceMilliFec <
+      entry.amountMilliFec
+    );
+  });
+
+if (priceMismatch) {
+  warnings.push(
+    "Allocated earning exceeds agreed job price."
+  );
+}
+let score = 0;
+
+score += warnings.length * 10;
+
+score += critical.length * 40;
+
+let level =
+  "LOW";
+
+if (score >= 25) {
+  level = "MEDIUM";
+}
+
+if (score >= 50) {
+  level = "HIGH";
+}
+
+if (score >= 80) {
+  level = "CRITICAL";
 }
 
 const missingJob = entries.some(
@@ -242,6 +465,26 @@ if (invalidCompletion) {
 }
 return {
   withdrawal,
+  wallet,
+
+lifetime: {
+  earnedMilliFec:
+    lifetimeEarnedMilliFec,
+
+  allocatedMilliFec:
+    lifetimeAllocatedMilliFec,
+
+  paidWithdrawalsMilliFec,
+
+  pendingWithdrawalsMilliFec,
+
+  expectedWalletBalanceMilliFec,
+
+  actualWalletBalanceMilliFec:
+    wallet?.balanceMilliFec ?? 0,
+
+  walletDifferenceMilliFec,
+},
 
   allocationCount: allocations.length,
 
@@ -275,6 +518,36 @@ return {
       checkedAt: new Date(),
     },
   },
+  integrity: {
+  walletMatches:
+    walletDifferenceMilliFec === 0,
+
+  expectedWalletBalanceMilliFec,
+
+  actualWalletBalanceMilliFec:
+    wallet?.balanceMilliFec ?? 0,
+
+  differenceMilliFec:
+    walletDifferenceMilliFec,
+},
+risk: {
+  score,
+
+  level,
+
+  warnings,
+
+  critical,
+},
+
+recommendation: {
+  action:
+    level === "LOW"
+      ? "APPROVE"
+      : level === "MEDIUM"
+      ? "MANUAL_REVIEW"
+      : "REJECT",
+},
 
   entries,
 };

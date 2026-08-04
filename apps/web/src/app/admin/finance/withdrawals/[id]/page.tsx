@@ -642,16 +642,22 @@ async function confirmAction() {
       />
 
       <DetailField
-        label="Client ID"
-        value={entry.job.clientId}
-        breakAll
-      />
+  label="Client"
+  value={
+    entry.job.client
+      ? `${entry.job.client.fullName} (${entry.job.client.email})`
+      : "Unknown"
+  }
+/>
 
-      <DetailField
-        label="Fixer ID"
-        value={entry.job.fixerId}
-        breakAll
-      />
+<DetailField
+  label="Fixer"
+  value={
+    entry.job.fixer
+      ? `${entry.job.fixer.fullName} (${entry.job.fixer.email})`
+      : "Unknown"
+  }
+/>
 
     </div>
 
@@ -695,6 +701,62 @@ async function confirmAction() {
               : "Not available"
           }
         />
+        <DetailField
+  label="Payment Amount"
+  value={
+    entry.job.latestPayment
+      ? formatFecFromMilli(entry.job.latestPayment.amountMilliFec)
+      : "No payment record"
+  }
+/>
+
+<DetailField
+  label="Payment Status"
+  value={
+    entry.job.latestPayment?.status ?? "Unknown"
+  }
+/>
+
+<DetailField
+  label="Payment Reference"
+  value={
+    entry.job.latestPayment?.providerReference ??
+    "Not available"
+  }
+  breakAll
+/>
+<div>
+    <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+        Client Status
+    </span>
+
+    <span
+        className={[
+            "mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+            entry.job.client?.isActive
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+        ].join(" ")}
+    >
+        {entry.job.client?.isActive ? "Active" : "Inactive"}
+    </span>
+</div>
+<div>
+    <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+        Fixer Status
+    </span>
+
+    <span
+        className={[
+            "mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+            entry.job.fixer?.isActive
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+        ].join(" ")}
+    >
+        {entry.job.fixer?.isActive ? "Active" : "Inactive"}
+    </span>
+</div>
 
         <DetailField
           label="Completed"
@@ -750,6 +812,32 @@ async function confirmAction() {
       )}
 
     </div>
+    {entry.job.latestPayment && (
+    <div className="mt-5 rounded-xl border border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20 p-3">
+
+        <div className="font-semibold text-green-700 dark:text-green-300">
+            Payment Verification
+        </div>
+
+        <p className="mt-2 text-sm text-green-700 dark:text-green-300">
+            Client payment exists and can be traced to this earning.
+        </p>
+
+    </div>
+)}
+{!entry.job.latestPayment && (
+    <div className="mt-5 rounded-xl border border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20 p-3">
+
+        <div className="font-semibold text-red-700 dark:text-red-300">
+            Missing Payment Record
+        </div>
+
+        <p className="mt-2 text-sm text-red-700 dark:text-red-300">
+            This earning has no payment attached. Manual investigation is strongly recommended before any payout.
+        </p>
+
+    </div>
+)}
   </article>
 ))}
 
@@ -776,7 +864,7 @@ async function confirmAction() {
           {selectedAction === "PAID" && " mark this withdrawal as paid?"}
         </p>
 
-         <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex justify-end gap-3">
 
   <button
     type="button"
