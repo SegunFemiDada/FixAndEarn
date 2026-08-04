@@ -571,6 +571,70 @@ async function confirmAction() {
   </div>
 
 </div>
+<div className="mt-5 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-5">
+
+  <div className="flex flex-wrap items-center justify-between gap-3">
+
+    <div>
+      <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+        Financial Integrity
+      </p>
+
+      <h4 className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        Wallet Reconciliation
+      </h4>
+    </div>
+
+    <span
+      className={[
+        "inline-flex rounded-full px-3 py-1 text-xs font-semibold",
+        traceQuery.data.integrity.walletMatches
+          ? "border border-[#B8D9B8] bg-[#F0FAF0] text-[#2E7D32] dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
+          : "border border-[#F2C0BC] bg-[#FFF4F3] text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300",
+      ].join(" ")}
+    >
+      {traceQuery.data.integrity.walletMatches
+        ? "MATCH"
+        : "MISMATCH"}
+    </span>
+
+  </div>
+
+  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+
+    <DetailField
+      label="Expected Wallet"
+      value={formatFecFromMilli(
+        traceQuery.data.integrity.expectedWalletBalanceMilliFec
+      )}
+    />
+
+    <DetailField
+      label="Actual Wallet"
+      value={formatFecFromMilli(
+        traceQuery.data.integrity.actualWalletBalanceMilliFec
+      )}
+    />
+
+    <DetailField
+      label="Difference"
+      value={formatFecFromMilli(
+        traceQuery.data.integrity.differenceMilliFec
+      )}
+    />
+
+    <DetailField
+      label="Result"
+      value={
+        traceQuery.data.integrity.walletMatches
+          ? "PASS"
+          : "FAILED"
+      }
+    />
+
+  </div>
+
+</div>
                 
 
                 {traceQuery.data.entries.length === 0 ? (

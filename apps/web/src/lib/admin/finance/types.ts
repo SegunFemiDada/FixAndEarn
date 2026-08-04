@@ -1,5 +1,10 @@
-//path: apps/web/src/lib/admin/finance/types.ts
-export type WithdrawalStatus = "PENDING" | "APPROVED" | "REJECTED" | "PAID";
+// path: apps/web/src/lib/admin/finance/types.ts
+
+export type WithdrawalStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "PAID";
 
 export type WithdrawalListItem = {
   id: string;
@@ -16,6 +21,7 @@ export type WithdrawalListItem = {
   paystackTransferReference: string | null;
   paystackTransferCode: string | null;
   paystackTransferId: string | null;
+
   user: {
     id: string;
     email: string;
@@ -39,11 +45,13 @@ export type WithdrawalDetail = {
   paystackTransferReference: string | null;
   paystackTransferCode: string | null;
   paystackTransferId: string | null;
+
   user: {
     id: string;
     email: string;
     fullName: string;
     isActive: boolean;
+
     bankDetails: {
       bankName: string | null;
       accountName: string | null;
@@ -51,6 +59,7 @@ export type WithdrawalDetail = {
       bankCode?: string | null;
       paystackRecipientCode?: string | null;
     } | null;
+
     wallet: {
       id: string;
       balanceMilliFec: number;
@@ -76,50 +85,48 @@ export type WithdrawalEarningsTraceEntry = {
   coversWithdrawalAfterThisEntry: boolean;
 
   job: {
-  id: string;
-
-  clientId: string | null;
-
-  fixerId: string | null;
-
-  status: string;
-
-  lockedPriceMilliFec: number | null;
-
-  priceMilliFec: number | null;
-
-  completedApprovedAt: string | null;
-
-  client: {
-    id: string;
-    fullName: string;
-    email: string;
-    isActive: boolean;
-  } | null;
-
-  fixer: {
-    id: string;
-    fullName: string;
-    email: string;
-    isActive: boolean;
-  } | null;
-
-  latestPayment: {
-  id: string;
-  status: string;
-  amountMilliFec: number;
-  createdAt: string;
-  providerReference: string | null;
-} | null;
-
-  dispute: {
     id: string;
 
-    resolutionType: string | null;
+    clientId: string | null;
 
-    resolvedAt: string | null;
-  } | null;
-};
+    fixerId: string | null;
+
+    status: string;
+
+    lockedPriceMilliFec: number | null;
+
+    priceMilliFec: number | null;
+
+    completedApprovedAt: string | null;
+
+    client: {
+      id: string;
+      fullName: string;
+      email: string;
+      isActive: boolean;
+    } | null;
+
+    fixer: {
+      id: string;
+      fullName: string;
+      email: string;
+      isActive: boolean;
+    } | null;
+
+    latestPayment: {
+      id: string;
+      status: string;
+      amountMilliFec: number;
+      createdAt: string;
+      providerReference?: string | null;
+    } | null;
+
+    dispute: {
+      id: string;
+      resolutionType: string | null;
+      resolvedAt: string | null;
+    } | null;
+  };
 };
 
 export type WithdrawalEarningsTrace = {
@@ -131,6 +138,7 @@ export type WithdrawalEarningsTrace = {
     createdAt: string;
     reviewedAt: string | null;
     paidAt: string | null;
+
     user: {
       id: string;
       email: string;
@@ -138,24 +146,56 @@ export type WithdrawalEarningsTrace = {
       isActive: boolean;
     };
   };
+
   wallet: {
     id: string;
     balanceMilliFec: number;
-    createdAt: string;
-    updatedAt: string;
+    role: string;
   } | null;
+
+  lifetime: {
+    earnedMilliFec: number;
+    allocatedMilliFec: number;
+    paidWithdrawalsMilliFec: number;
+    pendingWithdrawalsMilliFec: number;
+    expectedWalletBalanceMilliFec: number;
+    actualWalletBalanceMilliFec: number;
+    walletDifferenceMilliFec: number;
+  };
+
   summary: {
     totalEarningCreditsMilliFec: number;
     withdrawalAmountMilliFec: number;
     cumulativeCoveredMilliFec: number;
     coverageReached: boolean;
     remainingUncoveredMilliFec: number;
+    remainingAvailableMilliFec: number;
+
     autoAssessment: {
       status: "PASS" | "FLAG";
       reasons: string[];
       checkedAt: string;
     };
   };
+
+  integrity: {
+    walletMatches: boolean;
+    expectedWalletBalanceMilliFec: number;
+    actualWalletBalanceMilliFec: number;
+    differenceMilliFec: number;
+  };
+
+  risk: {
+    score: number;
+    level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    warnings: string[];
+    critical: string[];
+  };
+
+  recommendation: {
+    action: "APPROVE" | "MANUAL_REVIEW" | "REJECT";
+  };
+
   entries: WithdrawalEarningsTraceEntry[];
 };
 
