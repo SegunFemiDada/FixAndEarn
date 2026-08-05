@@ -8,14 +8,12 @@ import { WalletModule } from "../wallet/wallet.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { StorageModule } from "../../common/storage/storage.module";
 import { JobPaymentsModule } from "../job-payments/job-payments.module";
-import { JobCompletionModule } from "../job-completion/job-completion.module";
 @Module({
   imports: [
   WalletModule,
   NotificationsModule,
   StorageModule,
   forwardRef(() => JobPaymentsModule),
-  forwardRef(() => JobCompletionModule),
 ],
   controllers: [JobsController],
   providers: [

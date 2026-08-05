@@ -20,14 +20,11 @@ import { Roles } from "../../common/auth/roles.decorator";
 import { StorageProvider } from "../../common/storage/storage.provider";
 import { JobsService } from "./jobs.service";
 import { ApplyJobDto } from "./dto/apply-job.dto";
-import { ApproveCompletionDto } from "./dto/approve-completion.dto";
 import { CreateJobDto } from "./dto/create-job.dto";
 import { ListJobApplicationsQuery } from "./dto/list-job-applications.query";
 import { ListJobsQuery } from "./dto/list-jobs.query";
 import { ListMyApplicationsQuery } from "./dto/list-my-applications.query";
 import { ListMyJobsQuery } from "./dto/list-my-jobs.query";
-import { RejectCompletionDto } from "./dto/reject-completion.dto";
-import { RequestCompletionDto } from "./dto/request-completion.dto";
 import { UpdateJobDto } from "./dto/update-job.dto";
 import { UrgentDirectHireDto } from "./dto/urgent-direct-hire.dto";
 
@@ -194,49 +191,6 @@ async marketplaceStats() {
       jobId: id,
       fixerId: user.userId,
       note: dto.note,
-    });
-  }
-
-  @Post(":id/completion/request")
-  @Roles("FIXER")
-  async requestCompletion(
-    @CurrentUser() user: { userId: string },
-    @Param("id") id: string,
-    @Body() dto: RequestCompletionDto
-  ) {
-    return this.jobsService.requestCompletion({
-      jobId: id,
-      fixerId: user.userId,
-      note: dto.note,
-    });
-  }
-
-  @Post(":id/completion/approve")
-  @Roles("CLIENT")
-  async approveCompletion(
-    @CurrentUser() user: { userId: string },
-    @Param("id") id: string,
-    @Body() dto: ApproveCompletionDto
-  ) {
-    return this.jobsService.approveCompletion({
-      jobId: id,
-      clientId: user.userId,
-      rating: dto.rating,
-      comment: dto.comment,
-    });
-  }
-
-  @Post(":id/completion/reject")
-  @Roles("CLIENT")
-  async rejectCompletion(
-    @CurrentUser() user: { userId: string },
-    @Param("id") id: string,
-    @Body() dto: RejectCompletionDto
-  ) {
-    return this.jobsService.rejectCompletion({
-      jobId: id,
-      clientId: user.userId,
-      reason: dto.reason,
     });
   }
 }

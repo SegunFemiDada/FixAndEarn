@@ -16,28 +16,40 @@ export class JobCompletionController {
   constructor(private readonly svc: JobCompletionService) {}
 
   // Fixer requests completion
-  @Post(":id/complete/request")
-  @Roles("FIXER")
-  async request(@CurrentUser() u: { userId: string }, @Param("id") jobId: string, @Body() _dto: RequestCompletionDto) {
-    return this.svc.requestCompletion(jobId, u.userId);
-  }
+  @Post(":id/completion/request")
+@Roles("FIXER")
+async request(
+  @CurrentUser() u: { userId: string },
+  @Param("id") jobId: string,
+  @Body() _dto: RequestCompletionDto,
+) {
+  return this.svc.requestCompletion(jobId, u.userId);
+}
 
   // Client rejects completion request
-  @Post(":id/complete/reject")
-  @Roles("CLIENT")
-  async reject(@CurrentUser() u: { userId: string }, @Param("id") jobId: string) {
-    return this.svc.rejectCompletion(jobId, u.userId);
-  }
+  @Post(":id/completion/reject")
+@Roles("CLIENT")
+async reject(
+  @CurrentUser() u: { userId: string },
+  @Param("id") jobId: string,
+  @Body() _dto: RequestCompletionDto // or RejectCompletionDto if you have one
+) {
+  return this.svc.rejectCompletion(jobId, u.userId);
+}
 
   // Client approves completion -> payment + payout + commission + rating
-  @Post(":id/complete/approve")
-  @Roles("CLIENT")
-  async approve(@CurrentUser() u: { userId: string }, @Param("id") jobId: string, @Body() dto: ApproveCompletionDto) {
-    return this.svc.approveCompletion({
-      jobId,
-      clientId: u.userId,
-      stars: dto.stars,
-      comment: dto.comment
-    });
-  }
+  @Post(":id/completion/approve")
+@Roles("CLIENT")
+async approve(
+  @CurrentUser() u: { userId: string },
+  @Param("id") jobId: string,
+  @Body() dto: ApproveCompletionDto,
+) {
+  return this.svc.approveCompletion({
+    jobId,
+    clientId: u.userId,
+    stars: dto.stars,
+    comment: dto.comment,
+  });
+}
 }
