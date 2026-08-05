@@ -48,7 +48,7 @@ async approve(
   return this.svc.approveCompletion({
     jobId,
     clientId: u.userId,
-    stars: dto.stars,
+    rating: dto.rating,
     comment: dto.comment,
   });
 }

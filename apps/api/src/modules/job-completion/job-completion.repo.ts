@@ -44,10 +44,10 @@ export class JobCompletionRepo {
     clientId: string;
     fixerId: string;
     amountMilliFec: number;
-    stars: number;
+    rating: number;
     comment?: string | null;
   }) {
-    const { jobId, clientId, fixerId, amountMilliFec, stars, comment } = args;
+    const { jobId, clientId, fixerId, amountMilliFec, rating, comment } = args;
 
     return this.prisma.$transaction(async (tx) => {
       const job = await tx.job.findUnique({ where: { id: jobId } });
@@ -166,14 +166,14 @@ if (!existingPayout) {
 await tx.jobReview.upsert({
   where: { jobId },
   update: {
-    rating: stars,
+    rating: rating,
     comment: comment ?? null
   },
   create: {
     jobId,
     clientId,
     fixerId,
-    rating: stars,
+    rating: rating,
     comment: comment ?? null
   }
 });

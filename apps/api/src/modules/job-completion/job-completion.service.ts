@@ -119,7 +119,7 @@ export class JobCompletionService {
   async approveCompletion(args: {
     jobId: string;
     clientId: string;
-    stars: number;
+    rating: number;
     comment?: string;
   }) {
     const job = await this.repo.getJob(args.jobId);
@@ -158,7 +158,7 @@ export class JobCompletionService {
       clientId: args.clientId,
       fixerId: job.fixerId,
       amountMilliFec: job.lockedPriceMilliFec,
-      stars: args.stars,
+      rating: args.rating,
       comment: args.comment?.trim() ?? null,
     });
 
@@ -172,7 +172,7 @@ export class JobCompletionService {
         data: {
           jobId: job.id,
           clientId: args.clientId,
-          rating: args.stars,
+          rating: args.rating,
         },
       });
     } catch {}

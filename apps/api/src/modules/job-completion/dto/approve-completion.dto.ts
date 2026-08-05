@@ -4,7 +4,7 @@ export class ApproveCompletionDto {
   @IsInt()
   @Min(1)
   @Max(5)
-  stars!: number;
+  rating!: number;
 
   @IsOptional()
   @IsString()

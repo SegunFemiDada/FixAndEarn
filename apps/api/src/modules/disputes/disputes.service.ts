@@ -438,7 +438,7 @@ await this.jobCompletionRepo.approveAndSettle({
   clientId: job.clientId,
   fixerId: job.fixerId,
   amountMilliFec: amountMilliFec,
-  stars: 5,
+  rating: 5,
   comment: "Resolved by admin after dispute.",
 });
    
