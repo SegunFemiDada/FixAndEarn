@@ -1,11 +1,10 @@
 //path: apps/api/src/modules/job-completion/job-completion.service.ts
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { JobCompletionRepo } from "./job-completion.repo";
-import { JobsRepo } from "../jobs/jobs.repo";
 
 @Injectable()
 export class JobCompletionService {
-  constructor(private readonly repo: JobCompletionRepo, private readonly jobsRepo: JobsRepo) {}
+  constructor(private readonly repo: JobCompletionRepo) {}
 
   private ensurePositiveInt(n: number, msg: string) {
     if (!Number.isInteger(n) || n <= 0) throw new BadRequestException(msg);
