@@ -43,40 +43,8 @@ export default function RichTextEditor({
 
     editorProps: {
       attributes: {
-        class: `
-          prose
-          prose-sm
-          dark:prose-invert
-          max-w-none
-          min-h-[200px]
-          rounded-xl
-          border
-          border-[#C5D5EE]
-          dark:border-[#2D3F55]
-          bg-[#F4F8FF]
-          dark:bg-[#16202E]
-          px-4
-          py-3
-          text-[#1A2B4A]
-          dark:text-[#E8F0FA]
-          leading-7
-          text-justify
-          focus:outline-none
-
-          [&_ol]:list-decimal
-          [&_ol]:pl-6
-
-          [&_ul]:list-disc
-          [&_ul]:pl-6
-
-          [&_li]:my-2
-          [&_li]:leading-7
-
-          [&_p]:text-justify
-          [&_h1]:text-left
-          [&_h2]:text-left
-          [&_h3]:text-left
-        `,
+        class:
+  "prose prose-sm dark:prose-invert max-w-none min-h-[200px] rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 focus:outline-none",
       },
     },
   });
