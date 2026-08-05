@@ -17,6 +17,7 @@ import { PlatformWalletService } from "../wallet/platform-wallet.service";
 import { WalletService } from "../wallet/wallet.service";
 import { JobsRepo } from "./jobs.repo";
 import { JobPaymentsService } from "../job-payments/job-payments.service";
+import { JobCompletionService } from "../job-completion/job-completion.service";
 
 
 
@@ -27,6 +28,7 @@ export class JobsService {
   private readonly ledgerService: LedgerService,
   private readonly walletService: WalletService,
   private readonly notifications: NotificationsService,
+  private readonly jobCompletionService: JobCompletionService,
   private readonly platformWalletService: PlatformWalletService,
   private readonly prisma: PrismaService,
   @Inject(forwardRef(() => JobPaymentsService))
@@ -515,12 +517,12 @@ return {
       throw new BadRequestException("Invalid completion request status.");
     }
 
-    const res = await this.repo.approveCompletionAndPay({
-      jobId: args.jobId,
-      clientId: args.clientId,
-      rating: args.rating,
-      comment: args.comment?.trim(),
-    });
+    const res = await this.jobCompletionService.approveCompletion({
+  jobId: args.jobId,
+  clientId: args.clientId,
+  stars: args.rating,
+  comment: args.comment,
+});
 
     try {
       const fixerId =
