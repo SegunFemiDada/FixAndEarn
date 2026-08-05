@@ -10,6 +10,11 @@ export class JobCompletionRepo {
   getJob(jobId: string) {
     return this.prisma.job.findUnique({ where: { id: jobId } });
   }
+  async getCompletionRequest(jobId: string) {
+  return this.prisma.jobCompletionRequest.findUnique({
+    where: { jobId },
+  });
+}
 
   async requestCompletion(jobId: string) {
     return this.prisma.job.update({

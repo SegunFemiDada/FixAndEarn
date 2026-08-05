@@ -17,7 +17,6 @@ import { PlatformWalletService } from "../wallet/platform-wallet.service";
 import { WalletService } from "../wallet/wallet.service";
 import { JobsRepo } from "./jobs.repo";
 import { JobPaymentsService } from "../job-payments/job-payments.service";
-import { JobCompletionService } from "../job-completion/job-completion.service";
 
 
 
@@ -28,7 +27,6 @@ export class JobsService {
   private readonly ledgerService: LedgerService,
   private readonly walletService: WalletService,
   private readonly notifications: NotificationsService,
-  private readonly jobCompletionService: JobCompletionService,
   private readonly platformWalletService: PlatformWalletService,
   private readonly prisma: PrismaService,
   @Inject(forwardRef(() => JobPaymentsService))
@@ -444,161 +442,5 @@ return {
     return created;
   }
 
-  async requestCompletion(args: {
-    jobId: string;
-    fixerId: string;
-    note?: string;
-  }) {
-    const job = await this.repo.findJobById(args.jobId);
-    if (!job) throw new NotFoundException("Job not found.");
-    if (job.status !== "IN_PROGRESS") {
-      throw new ForbiddenException(
-        "Job must be IN_PROGRESS to request completion."
-      );
-    }
-
-    const agreedFixerId = await this.repo.findAgreedFixerIdForJob(args.jobId);
-    if (agreedFixerId !== args.fixerId) {
-      throw new ForbiddenException(
-        "Only the assigned fixer can request completion."
-      );
-    }
-
-    const req = await this.repo.upsertCompletionRequest({
-      jobId: args.jobId,
-      fixerId: args.fixerId,
-      note: args.note?.trim(),
-    });
-
-    try {
-      await this.notifications.create({
-        userId: job.clientId,
-        type: NotificationType.JOB_COMPLETION_REQUESTED,
-        title: "Fixer requested job completion",
-        body: "Your fixer marked the job as done and requested your review.",
-        idempotencyKey: `notif:job_completion_requested:${job.id}`,
-        data: {
-          jobId: job.id,
-          fixerId: args.fixerId,
-        },
-      });
-    } catch {}
-
-    return req;
-  }
-
-  async approveCompletion(args: {
-    jobId: string;
-    clientId: string;
-    rating: number;
-    comment?: string;
-  }) {
-    this.ensureRating(args.rating);
-
-    const job = await this.repo.findJobById(args.jobId);
-    if (!job) throw new NotFoundException("Job not found.");
-    if (job.clientId !== args.clientId) {
-      throw new ForbiddenException("You can only approve your own job.");
-    }
-    if (job.status !== "IN_PROGRESS") {
-      throw new ForbiddenException(
-        "Job must be IN_PROGRESS to approve completion."
-      );
-    }
-
-    const completion = await this.repo.findCompletionRequest(args.jobId);
-    if (!completion) {
-      throw new BadRequestException("No completion request found for this job.");
-    }
-    if (completion.status === "APPROVED") {
-      return { ok: true, status: "ALREADY_APPROVED" };
-    }
-    if (completion.status !== "PENDING") {
-      throw new BadRequestException("Invalid completion request status.");
-    }
-
-    const res = await this.jobCompletionService.approveCompletion({
-  jobId: args.jobId,
-  clientId: args.clientId,
-  stars: args.rating,
-  comment: args.comment,
-});
-
-    try {
-      const fixerId =
-        (res as any)?.fixerId ?? (job as any)?.fixerId ?? completion.fixerId;
-      if (fixerId) {
-        await this.notifications.create({
-          userId: fixerId,
-          type: NotificationType.JOB_COMPLETION_APPROVED,
-          title: "Job completion approved",
-          body: "Client approved your completion request. Payout is processed.",
-          idempotencyKey: `notif:job_completion_approved:${job.id}`,
-          data: {
-            jobId: job.id,
-            clientId: args.clientId,
-            rating: args.rating,
-          },
-        });
-      }
-    } catch {}
-
-    return res;
-  }
-
-  async rejectCompletion(args: {
-    jobId: string;
-    clientId: string;
-    reason?: string;
-  }) {
-    const job = await this.repo.findJobById(args.jobId);
-    if (!job) throw new NotFoundException("Job not found.");
-    if (job.clientId !== args.clientId) {
-      throw new ForbiddenException("You can only review your own job.");
-    }
-    if (job.status !== "IN_PROGRESS") {
-      throw new ForbiddenException(
-        "Job must be IN_PROGRESS to reject completion."
-      );
-    }
-
-    const completion = await this.repo.findCompletionRequest(args.jobId);
-    if (!completion) {
-      throw new BadRequestException("No completion request found for this job.");
-    }
-    if (completion.status === "APPROVED") {
-      throw new ConflictException("Completion already approved.");
-    }
-    if (completion.status === "REJECTED") {
-      return { ok: true, status: "ALREADY_REJECTED" };
-    }
-    if (completion.status !== "PENDING") {
-      throw new BadRequestException("Invalid completion request status.");
-    }
-
-    const res = await this.repo.rejectCompletionRequest({
-      jobId: args.jobId,
-      clientId: args.clientId,
-      reason: args.reason?.trim(),
-    });
-
-    try {
-      const fixerId = completion.fixerId ?? (job as any)?.fixerId;
-      if (fixerId) {
-        await this.notifications.create({
-          userId: fixerId,
-          type: NotificationType.JOB_COMPLETION_REJECTED,
-          title: "Job completion rejected",
-          body: "Client rejected your completion request. Check their note and continue the job.",
-          idempotencyKey: `notif:job_completion_rejected:${job.id}`,
-          data: {
-            jobId: job.id,
-            clientId: args.clientId,
-            reason: args.reason?.trim() ?? null,
-          },
-        });
-      }
-    } catch {}
-    return res;
-  }
+  
 }
