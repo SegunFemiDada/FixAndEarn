@@ -83,6 +83,7 @@ export type WithdrawalEarningsTraceEntry = {
   cumulativeCoveredMilliFec: number;
 
   coversWithdrawalAfterThisEntry: boolean;
+  remainingAvailableMilliFec: number;
 
   job: {
     id: string;

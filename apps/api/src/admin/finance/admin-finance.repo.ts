@@ -158,11 +158,8 @@ const pendingWithdrawalsMilliFec =
     );
 
 const expectedWithdrawableBalanceMilliFec =
-  lifetimeEarnings.reduce(
-    (sum, earning) =>
-      sum + earning.amountMilliFec,
-    0,
-  );
+  lifetimeEarnedMilliFec -
+  pendingWithdrawalsMilliFec;
 
 const actualWithdrawableBalanceMilliFec =
   lifetimeEarnings.reduce(

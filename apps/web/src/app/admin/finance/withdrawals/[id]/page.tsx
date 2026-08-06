@@ -581,7 +581,7 @@ async function confirmAction() {
       </p>
 
       <h4 className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-        Wallet Reconciliation
+        Earnings Reconciliation
       </h4>
     </div>
 
@@ -679,9 +679,9 @@ async function confirmAction() {
       />
 
       <DetailField
-        label="Remaining Available"
-        value={formatFecFromMilli(entry.availableMilliFec)}
-      />
+  label="Remaining Available"
+  value={formatFecFromMilli(entry.remainingAvailableMilliFec)}
+/>
 
       <DetailField
         label="Earned At"
