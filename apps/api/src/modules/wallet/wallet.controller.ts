@@ -31,6 +31,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import * as argon2 from "argon2";
 import { SetWithdrawalPinDto } from "./dto/set-withdrawal-pin.dto";
 import { VerifyWithdrawalPinDto } from "./dto/verify-withdrawal-pin.dto";
+import { EarningsService } from "../earnings/earnings.service";
 
 @ApiTags("wallet")
 @ApiBearerAuth()
@@ -44,6 +45,7 @@ export class WalletController {
     private readonly crypto: CryptoService,
     private readonly escrowLock: EscrowLockService,
     private readonly notifications: NotificationsService,
+    private readonly earningsService: EarningsService,
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: any
   ) {}
 
@@ -365,82 +367,40 @@ async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: 
   const pinValid = await argon2.verify(userRecord.withdrawalPinHash, dto.pin);
   if (!pinValid) throw new BadRequestException("INCORRECT PIN");
 
-  const earnings = await this.prisma.fixerEarning.findMany({
-  where: {
-  fixerId: user.userId,
-  status: {
-    in: [
-      "AVAILABLE",
-      "PARTIALLY_WITHDRAWN",
-    ],
-  },
-},
-  orderBy: {
-    createdAt: "asc",
+  const req = await this.prisma.$transaction(async (tx) => {
+  const req = await tx.withdrawalRequest.create({
+    data: {
+      userId: user.userId,
+      amountMilliFec: dto.amountMilliFec,
+      status: "PENDING",
+    },
+  });
+
+  await this.earningsService.reserveForWithdrawal(
+    tx,
+    user.userId,
+    req.id,
+    dto.amountMilliFec,
+  );
+
+  return req;
+});
+
+await this.notifications.create({
+  userId: user.userId,
+  type: NotificationType.WITHDRAWAL_REQUESTED,
+  title: "Withdrawal requested",
+  body: `Withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC submitted.`,
+  idempotencyKey: `notif:withdraw:${req.id}`,
+  data: {
+    withdrawalId: req.id,
   },
 });
 
-const available = earnings.reduce(
-  (sum, earning) => sum + earning.availableMilliFec,
-  0,
-);
-
-if (dto.amountMilliFec > available) {
-  throw new BadRequestException("INSUFFICIENT_BALANCE");
-}
-
-    const req = await this.prisma.withdrawalRequest.create({
-      data: {
-        userId: user.userId,
-        amountMilliFec: dto.amountMilliFec,
-        status: "PENDING",
-      },
-    });
-
-    let remaining = dto.amountMilliFec;
-
-for (const earning of earnings) {
-  if (remaining <= 0) {
-    break;
-  }
-
-  if (earning.availableMilliFec <= remaining) {
-  await this.prisma.fixerEarning.update({
-    where: {
-      id: earning.id,
-    },
-    data: {
-      availableMilliFec: 0,
-      status: "PAID",
-      paidAt: null, // This will be set when the payment is actually made
-    },
-  });
-
-  remaining -= earning.availableMilliFec;
-} else {
-  await this.prisma.fixerEarning.update({
-    where: {
-      id: earning.id,
-    },
-    data: {
-      availableMilliFec: earning.availableMilliFec - remaining,
-      status: "PARTIALLY_WITHDRAWN",
-    },
-  });
-
-  remaining = 0;
-}
-}
-
-    await this.notifications.create({
-      userId: user.userId,
-      type: NotificationType.WITHDRAWAL_REQUESTED,
-      title: "Withdrawal requested",
-      body: `Withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC submitted.`,
-      idempotencyKey: `notif:withdraw:${req.id}`,
-      data: { withdrawalId: req.id },
-    });
-
-    return { ok: true, requestId: req.id, status: req.status };
+return {
+  ok: true,
+  requestId: req.id,
+  status: req.status,
+};
   }
 }
