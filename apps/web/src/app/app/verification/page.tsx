@@ -624,7 +624,7 @@ export default function VerificationPage() {
     border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
 >
-  Add
++ Add
 </button>
 
                   </div>

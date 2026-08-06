@@ -157,6 +157,13 @@ const pendingWithdrawalsMilliFec =
       0
     );
 
+const expectedWithdrawableBalanceMilliFec =
+  lifetimeEarnings.reduce(
+    (sum, earning) =>
+      sum + earning.amountMilliFec,
+    0,
+  );
+
 const actualWithdrawableBalanceMilliFec =
   lifetimeEarnings.reduce(
     (sum, earning) =>
@@ -164,12 +171,9 @@ const actualWithdrawableBalanceMilliFec =
     0,
   );
 
-const expectedWithdrawableBalanceMilliFec =
-  actualWithdrawableBalanceMilliFec;
-
 const walletDifferenceMilliFec =
-  actualWithdrawableBalanceMilliFec -
-  expectedWithdrawableBalanceMilliFec;
+expectedWithdrawableBalanceMilliFec -
+  actualWithdrawableBalanceMilliFec;
 
 const allocations =
   await this.prisma.withdrawalAllocation.findMany({

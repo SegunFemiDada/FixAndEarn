@@ -299,7 +299,7 @@ export default function NewJobPage() {
   </p>
 
   <p className="mt-1">
-    After creating your job, you&apos;ll be redirected to Monnify to securely pay the platform service fee. Your job will only become visible to fixers after your payment is successfully confirmed.
+    After creating your job, you&apos;ll be redirected to Monnify to securely pay the platform service fee <i>1 FEC (₦1000).</i> Your job will only become visible to fixers after your payment is successfully confirmed.
   </p>
 </div>
             <button
