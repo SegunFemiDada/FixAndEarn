@@ -49,7 +49,12 @@ export default function EditJobPage() {
   const applicationsQuery = useJobApplications(jobId, { skip: 0, take: 1, enabled: gateOk && !!jobId });
   const hasApplications = (applicationsQuery.data?.total ?? 0) > 0;
 
-  const canEdit = job?.status === "OPEN" && !hasApplications || job?.status === "DRAFT";
+  const isDraft = job?.status === "DRAFT";
+const isOpenWithoutApplicants =
+  job?.status === "OPEN" && !hasApplications;
+
+const canEdit =
+  isDraft || isOpenWithoutApplicants;
 
   const form = useForm<EditJobForm>({
     resolver: zodResolver(EditJobSchema),

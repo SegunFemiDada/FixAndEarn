@@ -205,15 +205,13 @@ async continuePayment(args: {
     throw new Error("ONLY_DRAFT_JOBS_CAN_CONTINUE_PAYMENT");
   }
 
-  const payment = await this.prisma.jobPayment.findFirst({
-    where: {
-      jobId: args.jobId,
-      status: "PENDING",
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+ const payment = await this.prisma.jobPayment.findFirst({
+  where: {
+    jobId: args.jobId,
+    type: "POSTING",
+    status: "PENDING",
+  },
+});
 
   if (!payment) {
     throw new Error("NO_PENDING_PAYMENT_FOUND");
@@ -227,6 +225,18 @@ async continuePayment(args: {
       email: true,
     },
   });
+  const newReference = crypto.randomUUID();
+
+await this.prisma.jobPayment.update({
+  where: {
+    id: payment.id,
+  },
+  data: {
+    paymentReference: newReference,
+    status: "PENDING",
+    paidAt: null,
+  },
+});
 
   if (!user) {
     throw new Error("CLIENT_NOT_FOUND");
@@ -235,7 +245,7 @@ async continuePayment(args: {
   return this.initializeGatewayPayment({
     email: user.email,
     amountMilliFec: payment.amountMilliFec,
-    reference: payment.paystackReference,
+    reference: newReference,
     metadata: {
       paymentType: payment.type,
       jobId: job.id,
