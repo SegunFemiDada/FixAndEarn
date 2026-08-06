@@ -15,6 +15,10 @@ import {
   useRejectCompletion,
   useRequestCompletion,
 } from "@/lib/jobs/queries";
+import {
+  continuePostingPayment,
+  deleteDraftJob,
+} from "@/lib/job-payments/api";
 import { useJobApplications } from "@/lib/jobs/applications-queries";
 import { useMyVerification } from "@/lib/verification/queries";
 import {
@@ -242,6 +246,7 @@ export default function JobDetailsPage() {
   const applicationsQuery = useJobApplications(jobId, { skip: 0, take: 1, enabled: isClient && isJobOwner && !!jobId });
   const hasApplications = (applicationsQuery.data?.total ?? 0) > 0;
   const canEdit = isClient && isJobOwner && job?.status === "OPEN" && !hasApplications;
+  const isDraftJob = isClient && isJobOwner && job?.status === "DRAFT";
 
   const canApply = useMemo(() => {
     if (!isFixer) return false;
@@ -276,6 +281,10 @@ export default function JobDetailsPage() {
   const completionRequestStatus = completionRequest?.status ?? null;
   const completionReviewNote = completionRequest?.reviewNote ?? null;
   const completionReviewedAt = completionRequest?.reviewedAt ?? null;
+  const [continuingPayment, setContinuingPayment] =
+  useState(false);
+  const [deletingDraft, setDeletingDraft] =
+  useState(false);
 
   useEffect(() => {
     if (completionApprovedAt) setRatingSubmitted(true);
@@ -297,6 +306,36 @@ export default function JobDetailsPage() {
     !ratingSubmitted;
 
   const existingDispute = (disputeQuery.data as { dispute?: unknown } | undefined)?.dispute ?? null;
+  async function handleContinuePayment() {
+  try {
+    setContinuingPayment(true);
+
+    const payment =
+      await continuePostingPayment(jobId);
+
+    window.location.href =
+      payment.checkoutUrl;
+  } finally {
+    setContinuingPayment(false);
+  }
+}
+async function handleDeleteDraft() {
+  const confirmed = window.confirm(
+    "Delete this draft job? This cannot be undone."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    setDeletingDraft(true);
+
+    await deleteDraftJob(jobId);
+
+    window.location.href = "/app/dashboard";
+  } finally {
+    setDeletingDraft(false);
+  }
+}
 
   const canFixerOpenDisputeAfterCompletionReject =
     !!job &&
@@ -565,6 +604,47 @@ export default function JobDetailsPage() {
 </Link>
 
             )}
+            {isDraftJob && (
+  <>
+    {/* Edit Draft */}
+    <Link
+      href={`/app/jobs/${jobId}/edit`}
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold
+        bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg focus:ring-2 focus:ring-blue-400
+        transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+        dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+    >
+      Edit Draft
+    </Link>
+
+    {/* Continue to Payment */}
+    <button
+      type="button"
+      onClick={handleContinuePayment}
+      disabled={continuingPayment}
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold
+        bg-green-600 text-white shadow-md hover:bg-green-700 hover:shadow-lg focus:ring-2 focus:ring-green-400
+        transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+        dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300"
+    >
+      {continuingPayment ? "Redirecting..." : "Continue to Payment"}
+    </button>
+
+    {/* Delete Draft */}
+    <button
+      type="button"
+      onClick={handleDeleteDraft}
+      disabled={deletingDraft}
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold
+        bg-red-600 text-white shadow-md hover:bg-red-700 hover:shadow-lg focus:ring-2 focus:ring-red-400
+        transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+        dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-300"
+    >
+      {deletingDraft ? "Deleting..." : "Delete Draft"}
+    </button>
+  </>
+)}
+
             {!isJobOwner && (
               <button
   onClick={() => setShowReportModal(true)}

@@ -178,6 +178,73 @@ await db.jobPayment.upsert({
     },
   });
 }
+async continuePayment(args: {
+  jobId: string;
+  clientId: string;
+}) {
+  const job = await this.prisma.job.findUnique({
+    where: {
+      id: args.jobId,
+    },
+    select: {
+      id: true,
+      clientId: true,
+      status: true,
+    },
+  });
+
+  if (!job) {
+    throw new Error("JOB_NOT_FOUND");
+  }
+
+  if (job.clientId !== args.clientId) {
+    throw new Error("NOT_JOB_OWNER");
+  }
+
+  if (job.status !== "DRAFT") {
+    throw new Error("ONLY_DRAFT_JOBS_CAN_CONTINUE_PAYMENT");
+  }
+
+  const payment = await this.prisma.jobPayment.findFirst({
+    where: {
+      jobId: args.jobId,
+      status: "PENDING",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  if (!payment) {
+    throw new Error("NO_PENDING_PAYMENT_FOUND");
+  }
+
+  const user = await this.prisma.user.findUnique({
+    where: {
+      id: args.clientId,
+    },
+    select: {
+      email: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("CLIENT_NOT_FOUND");
+  }
+
+  return this.initializeGatewayPayment({
+    email: user.email,
+    amountMilliFec: payment.amountMilliFec,
+    reference: payment.paystackReference,
+    metadata: {
+      paymentType: payment.type,
+      jobId: job.id,
+      conversationId: payment.conversationId ?? undefined,
+      fixerId: payment.fixerId ?? undefined,
+      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${job.id}&type=${payment.type}`,
+    },
+  });
+}
 
   async createFinalPayment(
   args: {

@@ -349,16 +349,24 @@ return {
     if (job.clientId !== args.clientId) {
       throw new ForbiddenException("You can only edit your own jobs.");
     }
-    if (job.status !== "OPEN") {
-      throw new ForbiddenException("Only OPEN jobs can be edited.");
-    }
+    if (
+  job.status !== JobStatus.DRAFT &&
+  job.status !== JobStatus.OPEN
+) {
+  throw new ForbiddenException(
+    "Only DRAFT or OPEN jobs can be edited."
+  );
+}
 
-    const appliedCount = await this.repo.countApplications(args.jobId);
-    if (appliedCount > 0) {
-      throw new ConflictException(
-        "Job cannot be edited after a fixer has applied."
-      );
-    }
+if (job.status === JobStatus.OPEN) {
+  const appliedCount = await this.repo.countApplications(args.jobId);
+
+  if (appliedCount > 0) {
+    throw new ConflictException(
+      "Job cannot be edited after a fixer has applied."
+    );
+  }
+}
 
     const data: any = {};
     if (typeof args.patch.skillCategory === "string") {
@@ -391,6 +399,57 @@ return {
 
     return this.repo.updateJob(args.jobId, data);
   }
+
+  async deleteDraftJob(args: {
+  jobId: string;
+  clientId: string;
+}) {
+  const job = await this.repo.findJobById(args.jobId);
+
+  if (!job) {
+    throw new NotFoundException("Job not found.");
+  }
+
+  if (job.clientId !== args.clientId) {
+    throw new ForbiddenException(
+      "You can only delete your own jobs."
+    );
+  }
+
+  if (job.status !== JobStatus.DRAFT) {
+    throw new ForbiddenException(
+      "Only draft jobs can be deleted."
+    );
+  }
+
+  const payment =
+    await this.prisma.jobPayment.findFirst({
+      where: {
+        jobId: job.id,
+        type: {
+          in: ["POSTING", "URGENT"],
+        },
+      },
+    });
+
+  if (payment?.status === "SUCCESS") {
+    throw new ConflictException(
+      "Paid jobs cannot be deleted."
+    );
+  }
+
+  await this.prisma.jobPayment.deleteMany({
+    where: {
+      jobId: job.id,
+    },
+  });
+
+  await this.repo.deleteDraftJob(job.id);
+
+  return {
+    success: true,
+  };
+}
 
   async applyToJob(args: {
     jobId: string;

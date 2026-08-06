@@ -11,6 +11,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Delete,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
@@ -179,6 +180,17 @@ async marketplaceStats() {
       patch: dto,
     });
   }
+  @Delete(":id")
+@Roles("CLIENT")
+async delete(
+  @CurrentUser() user: { userId: string },
+  @Param("id") id: string,
+) {
+  return this.jobsService.deleteDraftJob({
+    jobId: id,
+    clientId: user.userId,
+  });
+}
 
   @Post(":id/apply")
   @Roles("FIXER")

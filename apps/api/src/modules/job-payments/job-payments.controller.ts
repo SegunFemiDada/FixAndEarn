@@ -50,6 +50,16 @@ async createPostingPayment(
     clientId: pickUserId(user),
   });
 }
+@Post("continue/:jobId")
+async continuePayment(
+  @Param("jobId") jobId: string,
+  @CurrentUser() user: CurrentUserPayload,
+) {
+  return this.jobPaymentsService.continuePayment({
+    jobId,
+    clientId: pickUserId(user),
+  });
+}
 @Get("status/:jobId")
 async getPaymentStatus(
   @Param("jobId") jobId: string,

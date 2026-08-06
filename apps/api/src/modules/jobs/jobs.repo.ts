@@ -50,6 +50,13 @@ export class JobsRepo {
   updateJob(jobId: string, data: any) {
     return this.prisma.job.update({ where: { id: jobId }, data });
   }
+  deleteDraftJob(jobId: string) {
+  return this.prisma.job.delete({
+    where: {
+      id: jobId,
+    },
+  });
+}
 
   countApplications(jobId: string) {
     return this.prisma.jobApplication.count({ where: { jobId } });
