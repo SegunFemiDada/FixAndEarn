@@ -395,11 +395,15 @@ if (existingEarning || existingRevenue) {
 
       await tx.fixerEarning.create({
   data: {
-    fixerId,
-    jobId,
-    availableMilliFec: fixerNet,
-    status: "AVAILABLE",
-  },
+  fixerId,
+  jobId,
+
+  amountMilliFec: fixerNet,
+
+  availableMilliFec: fixerNet,
+
+  status: "AVAILABLE",
+}
 });
 
 await tx.platformRevenue.create({

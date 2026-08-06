@@ -600,6 +600,8 @@ model FixerEarning {
   fixerId String
   jobId   String @unique
 
+  amountMilliFec Int
+
   availableMilliFec Int
 
   status FixerEarningStatus @default(AVAILABLE)
@@ -608,8 +610,9 @@ model FixerEarning {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  fixer               User                   @relation(fields: [fixerId], references: [id], onDelete: Cascade)
-  job                 Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  fixer User @relation(fields: [fixerId], references: [id], onDelete: Cascade)
+  job   Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
   allocations         WithdrawalAllocation[]
   WithdrawalRequest   WithdrawalRequest?     @relation(fields: [withdrawalRequestId], references: [id])
   withdrawalRequestId String?

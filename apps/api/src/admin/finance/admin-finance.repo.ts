@@ -95,19 +95,7 @@ export class AdminFinanceRepo {
 if (!withdrawal) {
   return null;
 }
-const wallet = await this.prisma.wallet.findUnique({
-  where: {
-    userId_role: {
-      userId: withdrawal.userId,
-      role: WalletRole.FIXER,
-    },
-  },
-  select: {
-    id: true,
-    balanceMilliFec: true,
-    role: true,
-  },
-});
+
 
 const lifetimeEarnings = await this.prisma.fixerEarning.findMany({
   where: {
@@ -129,17 +117,10 @@ const previousWithdrawals =
       status: true,
     },
   });
-  const lifetimeEarnedMilliFec =
+const lifetimeEarnedMilliFec =
   lifetimeEarnings.reduce(
-    (sum, earning) =>
-      sum +
-      earning.availableMilliFec +
-      earning.allocations.reduce(
-        (s, allocation) =>
-          s + allocation.amountMilliFec,
-        0
-      ),
-    0
+    (sum, earning) => sum + earning.amountMilliFec,
+    0,
   );
 
 const lifetimeAllocatedMilliFec =
@@ -176,13 +157,19 @@ const pendingWithdrawalsMilliFec =
       0
     );
 
-const expectedWalletBalanceMilliFec =
-  lifetimeEarnedMilliFec -
-  lifetimeAllocatedMilliFec;
+const actualWithdrawableBalanceMilliFec =
+  lifetimeEarnings.reduce(
+    (sum, earning) =>
+      sum + earning.availableMilliFec,
+    0,
+  );
+
+const expectedWithdrawableBalanceMilliFec =
+  actualWithdrawableBalanceMilliFec;
 
 const walletDifferenceMilliFec =
-  (wallet?.balanceMilliFec ?? 0) -
-  expectedWalletBalanceMilliFec;
+  actualWithdrawableBalanceMilliFec -
+  expectedWithdrawableBalanceMilliFec;
 
 const allocations =
   await this.prisma.withdrawalAllocation.findMany({
@@ -465,23 +452,19 @@ if (invalidCompletion) {
 }
 return {
   withdrawal,
-  wallet,
 
 lifetime: {
-  earnedMilliFec:
-    lifetimeEarnedMilliFec,
+  earnedMilliFec: lifetimeEarnedMilliFec,
 
-  allocatedMilliFec:
-    lifetimeAllocatedMilliFec,
+  allocatedMilliFec: lifetimeAllocatedMilliFec,
 
   paidWithdrawalsMilliFec,
 
   pendingWithdrawalsMilliFec,
 
-  expectedWalletBalanceMilliFec,
+  expectedWithdrawableBalanceMilliFec,
 
-  actualWalletBalanceMilliFec:
-    wallet?.balanceMilliFec ?? 0,
+  actualWithdrawableBalanceMilliFec,
 
   walletDifferenceMilliFec,
 },
@@ -522,10 +505,9 @@ lifetime: {
   walletMatches:
     walletDifferenceMilliFec === 0,
 
-  expectedWalletBalanceMilliFec,
+  expectedWithdrawableBalanceMilliFec,
 
-  actualWalletBalanceMilliFec:
-    wallet?.balanceMilliFec ?? 0,
+  actualWithdrawableBalanceMilliFec,
 
   differenceMilliFec:
     walletDifferenceMilliFec,

@@ -114,14 +114,14 @@ export default function ChatPageContent({
     <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#1E2A3A] p-6 shadow-xl">
 
       <h3 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-        Payment Received
-      </h3>
+  Client Payment Confirmed
+</h3>
 
-      <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-        The client has completed the final payment.
-        This job is now officially in progress.
-        You may begin work.
-      </p>
+<p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+  The client&apos;s payment has been successfully confirmed.
+  This job is now active and ready to begin.
+  Your <i>Earnings</i> will be credited after the work is completed and approved by the client.
+</p>
 
       <button
         type="button"

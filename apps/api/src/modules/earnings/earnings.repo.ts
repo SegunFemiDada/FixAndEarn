@@ -28,9 +28,13 @@ export class EarningsRepo {
       data: {
   fixerId: args.fixerId,
   jobId: args.jobId,
+
+  amountMilliFec: args.availableMilliFec,
+
   availableMilliFec: args.availableMilliFec,
-  status: FixerEarningStatus.AVAILABLE,
-},
+
+  status: "AVAILABLE",
+}
     });
   }
 

@@ -131,13 +131,17 @@ if (!existingPayout) {
   where: {
     jobId,
   },
-  update: {},
-  create: {
-    fixerId,
-    jobId,
-    availableMilliFec: payout,
-    status: "AVAILABLE",
-  },
+  update: {
+  amountMilliFec: payout,
+  availableMilliFec: payout,
+},
+create: {
+  fixerId,
+  jobId,
+  amountMilliFec: payout,
+  availableMilliFec: payout,
+  status: "AVAILABLE",
+},
 });
 
         // Platform receives commission (10%)
