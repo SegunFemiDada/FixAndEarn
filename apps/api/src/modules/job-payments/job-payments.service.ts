@@ -232,7 +232,7 @@ await this.prisma.jobPayment.update({
     id: payment.id,
   },
   data: {
-    paymentReference: newReference,
+    paystackReference: newReference,
     status: "PENDING",
     paidAt: null,
   },
