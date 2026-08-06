@@ -603,16 +603,16 @@ async function confirmAction() {
   <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
     <DetailField
-      label="Expected Wallet"
-      value={formatFecFromMilli(
-        traceQuery.data.integrity.expectedWalletBalanceMilliFec
-      )}
-    />
+  label="Expected Available Earnings"
+  value={formatFecFromMilli(
+    traceQuery.data.integrity.expectedWithdrawableBalanceMilliFec
+  )}
+/>
 
     <DetailField
-      label="Actual Wallet"
+      label="Current Available Earnings"
       value={formatFecFromMilli(
-        traceQuery.data.integrity.actualWalletBalanceMilliFec
+        traceQuery.data.integrity.actualWithdrawableBalanceMilliFec
       )}
     />
 

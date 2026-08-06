@@ -180,8 +180,8 @@ export type WithdrawalEarningsTrace = {
 
   integrity: {
     walletMatches: boolean;
-    expectedWalletBalanceMilliFec: number;
-    actualWalletBalanceMilliFec: number;
+    expectedWithdrawableBalanceMilliFec: number;
+    actualWithdrawableBalanceMilliFec: number;
     differenceMilliFec: number;
   };
 
