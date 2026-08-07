@@ -313,8 +313,11 @@ export default function JobDetailsPage() {
     const payment =
       await continuePostingPayment(jobId);
 
-    window.location.href =
-      payment.checkoutUrl;
+    if (!payment.authorizationUrl) {
+  throw new Error("Payment gateway did not return an authorization URL.");
+}
+
+window.location.href = payment.authorizationUrl;
   } finally {
     setContinuingPayment(false);
   }
