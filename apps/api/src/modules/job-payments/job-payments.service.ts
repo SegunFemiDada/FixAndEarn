@@ -182,6 +182,8 @@ async continuePayment(args: {
   jobId: string;
   clientId: string;
 }) {
+  console.log("==== CONTINUE PAYMENT START ====");
+
   const job = await this.prisma.job.findUnique({
     where: {
       id: args.jobId,
@@ -192,6 +194,8 @@ async continuePayment(args: {
       status: true,
     },
   });
+
+  console.log("Job:", job);
 
   if (!job) {
     throw new Error("JOB_NOT_FOUND");
@@ -205,19 +209,27 @@ async continuePayment(args: {
     throw new Error("ONLY_DRAFT_JOBS_CAN_CONTINUE_PAYMENT");
   }
 
+  console.log("Searching payments...");
+
   const payments = await this.prisma.jobPayment.findMany({
     where: {
       jobId: args.jobId,
     },
   });
 
+  console.log("Payments:", payments);
+
   const payment = payments.find(
     (p) => p.type === "POSTING" && p.status === "PENDING",
   );
 
+  console.log("Selected payment:", payment);
+
   if (!payment) {
     throw new Error("NO_PENDING_PAYMENT_FOUND");
   }
+
+  console.log("Loading user...");
 
   const user = await this.prisma.user.findUnique({
     where: {
@@ -228,11 +240,15 @@ async continuePayment(args: {
     },
   });
 
+  console.log("User:", user);
+
   if (!user) {
     throw new Error("CLIENT_NOT_FOUND");
   }
 
   const newReference = crypto.randomUUID();
+
+  console.log("Generated reference:", newReference);
 
   await this.prisma.jobPayment.update({
     where: {
@@ -245,20 +261,33 @@ async continuePayment(args: {
     },
   });
 
-  return this.initializeGatewayPayment({
-    email: user.email,
-    amountMilliFec: payment.amountMilliFec,
-    reference: newReference,
-    metadata: {
-      paymentType: payment.type,
-      jobId: job.id,
-      conversationId: payment.conversationId ?? undefined,
-      fixerId: payment.fixerId ?? undefined,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${job.id}&type=${payment.type}`,
-    },
-  });
-}
+  console.log("Database updated.");
 
+  console.log("Calling initializeGatewayPayment...");
+
+  try {
+    const response = await this.initializeGatewayPayment({
+      email: user.email,
+      amountMilliFec: payment.amountMilliFec,
+      reference: newReference,
+      metadata: {
+        paymentType: payment.type,
+        jobId: job.id,
+        conversationId: payment.conversationId ?? undefined,
+        fixerId: payment.fixerId ?? undefined,
+        redirectUrl:
+          `${process.env.FRONTEND_URL}/app/payment/return?jobId=${job.id}&type=${payment.type}`,
+      },
+    });
+
+    console.log("Gateway response:", response);
+
+    return response;
+  } catch (error) {
+    console.error("Gateway initialization failed:", error);
+    throw error;
+  }
+}
 
   async createFinalPayment(
   args: {
@@ -426,12 +455,30 @@ async initializeGatewayPayment(args: {
 }) {
   const amountKobo = args.amountMilliFec * 100;
 
-  return this.paymentProvider.initializeTransaction({
+  console.log("initializeGatewayPayment()");
+  console.log({
     email: args.email,
     amountKobo,
     reference: args.reference,
-    metadata: args.metadata ?? {},
+    metadata: args.metadata,
   });
+
+  try {
+    const response =
+      await this.paymentProvider.initializeTransaction({
+        email: args.email,
+        amountKobo,
+        reference: args.reference,
+        metadata: args.metadata ?? {},
+      });
+
+    console.log("Monnify response:", response);
+
+    return response;
+  } catch (error) {
+    console.error("Monnify initializeTransaction failed:", error);
+    throw error;
+  }
 }
   async getPaymentStatus(jobId: string) {
   const payment = await this.prisma.jobPayment.findFirst({
