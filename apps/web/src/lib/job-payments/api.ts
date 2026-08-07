@@ -1,3 +1,4 @@
+//path: apps/web/src/lib/job-payments/api.ts
 import apiClient from "@/lib/apiClient";
 
 export async function getPaymentStatus(jobId: string) {

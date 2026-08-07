@@ -205,13 +205,21 @@ async continuePayment(args: {
     throw new Error("ONLY_DRAFT_JOBS_CAN_CONTINUE_PAYMENT");
   }
 
- const payment = await this.prisma.jobPayment.findFirst({
+console.log("Searching for job:", args.jobId);
+
+const payments = await this.prisma.jobPayment.findMany({
   where: {
     jobId: args.jobId,
-    type: "POSTING",
-    status: "PENDING",
   },
 });
+
+console.log("Payments found:", payments);
+
+const payment = payments.find(
+  (p) => p.type === "POSTING" && p.status === "PENDING",
+);
+
+console.log("Selected payment:", payment);
 
   if (!payment) {
     throw new Error("NO_PENDING_PAYMENT_FOUND");
