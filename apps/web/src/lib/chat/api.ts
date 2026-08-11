@@ -97,7 +97,3 @@ export async function respondLockedPrice(
   );
   return res.data;
 }
-export async function listJobConversations(jobId: string, params?: any) {
-  const res = await apiClient.get(`/jobs/${jobId}/chats`, { params });
-  return res.data;
-}

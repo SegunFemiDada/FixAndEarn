@@ -66,7 +66,6 @@ const participantRole =
   return (
     <ChatPageShell>
       <ChatHeader
-  jobId={jobId}
   participantName={participantName}
   participantRole={participantRole}
 />

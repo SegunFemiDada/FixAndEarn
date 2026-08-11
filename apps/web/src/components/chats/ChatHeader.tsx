@@ -3,20 +3,18 @@
 import Link from "next/link";
 
 type Props = {
-  jobId: string;
   participantName: string;
   participantRole: "client" | "fixer";
 };
 
 export default function ChatHeader({
-  jobId,
   participantName,
   participantRole,
 }: Props) {
   return (
     <div className="space-y-2">
       <Link
-        href={`/app/jobs/${jobId}/chats`}
+        href={`/app/chats`}
         className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
       >
         ← Back to chats
