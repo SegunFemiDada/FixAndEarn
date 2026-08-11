@@ -144,11 +144,13 @@ export default function JobChatsPage() {
 
         <div className="grid gap-3">
           {conversations.map((c: any) => {
-            const fixerId = c.fixerId ?? c?.conversation?.fixerId ?? c?.fixerId;
-            const status = c.status ?? c?.conversation?.status ?? "UNKNOWN";
-            const negotiation = c.negotiation ?? c?.conversation?.negotiation ?? null;
+  const fixerId = c.fixerId ?? c?.conversation?.fixerId ?? c?.fixerId;
+  const fixer = c.fixer ?? c?.conversation?.fixer ?? null;
+  const fixerName = fixer?.fullName ?? "Fixer";
+  const status = c.status ?? c?.conversation?.status ?? "UNKNOWN";
+  const negotiation = c.negotiation ?? c?.conversation?.negotiation ?? null;
 
-            return (
+  return (
               <div
                 key={`${jobId}:${fixerId ?? "unknown"}`}
                 className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
@@ -156,15 +158,20 @@ export default function JobChatsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="truncate font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      Fixer: {fixerId ?? "—"}
-                    </div>
+                    {fixerName}
+                  </div>
                     <div className="mt-0.5 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                      Status: {String(status)}
-                    </div>
-                    {negotiation?.status && (
-                      <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                        Negotiation: {String(negotiation.status)}
-                      </div>
+                  Fixer
+                </div>
+
+                <div className="mt-0.5 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Status: {String(status)}
+                </div>
+
+                {negotiation?.status && (
+                  <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Negotiation: {String(negotiation.status)}
+                  </div>
                     )}
                   </div>
 

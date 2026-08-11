@@ -863,134 +863,159 @@ return {
 };
 }
 
-  async getConversationDetail(
-    jobId: string,
-    fixerId: string,
-    requesterId: string,
-    q: {
-      cursor?: string;
-      take?: number;
-    }
-  ) {
-    const convo =
-  await this.repo.upsertConversation(
+async getConversationDetail(
+  jobId: string,
+  fixerId: string,
+  requesterId: string,
+  q: {
+    cursor?: string;
+    take?: number;
+  }
+) {
+  const convo = await this.repo.upsertConversation(
     jobId,
     fixerId
   );
 
-    const isClient =
-      convo.job.clientId === requesterId;
+  const isClient =
+    convo.job.clientId === requesterId;
 
-    const isFixer =
-      convo.fixerId === requesterId;
+  const isFixer =
+    convo.fixerId === requesterId;
 
-    if (!isClient && !isFixer) {
-      throw new ForbiddenException(
-        "NOT_A_PARTICIPANT"
-      );
-    }
-
-    this.assertJobMessagingAllowed(convo.job);
-
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: requesterId
-      },
-      select: {
-        isActive: true
-      }
-    });
-
-    this.assertUserActive(user);
-
-    const take = q.take ?? 30;
-    const cursor = q.cursor;
-
-    const msgs =
-      await this.repo.getConversationMessages(
-        convo.id,
-        cursor,
-        take
-      );
-
-    const messages = [...msgs]
-      .reverse()
-      .map((m: any) => ({
-        id: m.id,
-        senderId: m.senderId,
-        body: m.body,
-        createdAt: m.createdAt,
-        flags: (m.flags ?? []).map((f: any) => ({
-          id: f.id,
-          type: f.type,
-          matched: f.matched,
-          createdAt: f.createdAt
-        }))
-      }));
-
-    const nextCursor = messages.length
-      ? messages[0].id
-      : null;
-
-    return {
-      conversation: {
-        id: convo.id,
-        status: convo.status,
-        jobId: convo.jobId,
-        fixerId: convo.fixerId,
-        updatedAt: convo.updatedAt
-      },
-      job: {
-        id: convo.job.id,
-        clientId: convo.job.clientId,
-        status: convo.job.status,
-        skillCategory:
-          convo.job.skillCategory,
-        state: convo.job.state,
-        city: convo.job.city,
-        lga: convo.job.lga,
-        area: convo.job.area,
-        priceMilliFec:
-          convo.job.priceMilliFec,
-        lockedPriceMilliFec:
-          convo.job.lockedPriceMilliFec
-      },
-      fixer: convo.fixer,
-      negotiation: convo.negotiation
-        ? {
-            status: convo.negotiation.status,
-            proposedPriceMilliFec:
-              convo.negotiation
-                .proposedPriceMilliFec,
-            lockedPriceMilliFec:
-              convo.negotiation
-                .lockedPriceMilliFec,
-            lockedByUserId:
-              convo.negotiation
-                .lockedByUserId,
-            clientAcceptedAt:
-              convo.negotiation
-                .clientAcceptedAt,
-            fixerAcceptedAt:
-              convo.negotiation
-                .fixerAcceptedAt,
-            agreedAt:
-              convo.negotiation.agreedAt,
-            rejectedAt:
-              convo.negotiation
-                .rejectedAt,
-            rejectedByUserId:
-              convo.negotiation
-                .rejectedByUserId
-          }
-        : null,
-      messages,
-      pagination: {
-        nextCursor,
-        take
-      }
-    };
+  if (!isClient && !isFixer) {
+    throw new ForbiddenException(
+      "NOT_A_PARTICIPANT"
+    );
   }
+
+  this.assertJobMessagingAllowed(convo.job);
+
+  const user = await this.prisma.user.findUnique({
+    where: {
+      id: requesterId,
+    },
+    select: {
+      isActive: true,
+    },
+  });
+
+  this.assertUserActive(user);
+
+  const take = q.take ?? 30;
+  const cursor = q.cursor;
+
+  const msgs =
+    await this.repo.getConversationMessages(
+      convo.id,
+      cursor,
+      take
+    );
+
+  const messages = [...msgs]
+    .reverse()
+    .map((m: any) => ({
+      id: m.id,
+      senderId: m.senderId,
+      body: m.body,
+      createdAt: m.createdAt,
+      flags: (m.flags ?? []).map((f: any) => ({
+        id: f.id,
+        type: f.type,
+        matched: f.matched,
+        createdAt: f.createdAt,
+      })),
+    }));
+
+  const nextCursor = messages.length
+    ? messages[0].id
+    : null;
+
+  return {
+    conversation: {
+      id: convo.id,
+      status: convo.status,
+      jobId: convo.jobId,
+      fixerId: convo.fixerId,
+      updatedAt: convo.updatedAt,
+      active: convo.active,
+    },
+
+    job: {
+      id: convo.job.id,
+      clientId: convo.job.clientId,
+      status: convo.job.status,
+      skillCategory:
+        convo.job.skillCategory,
+      state: convo.job.state,
+      city: convo.job.city,
+      lga: convo.job.lga,
+      area: convo.job.area,
+      priceMilliFec:
+        convo.job.priceMilliFec,
+      lockedPriceMilliFec:
+        convo.job.lockedPriceMilliFec,
+    },
+
+    client: convo.job.client
+      ? {
+          id: convo.job.client.id,
+          fullName:
+            convo.job.client.fullName,
+          isActive:
+            convo.job.client.isActive,
+        }
+      : null,
+
+    fixer: convo.fixer
+      ? {
+          id: convo.fixer.id,
+          fullName:
+            convo.fixer.fullName,
+          isActive:
+            convo.fixer.isActive,
+        }
+      : null,
+
+    negotiation: convo.negotiation
+      ? {
+          status:
+            convo.negotiation.status,
+          proposedPriceMilliFec:
+            convo.negotiation
+              .proposedPriceMilliFec,
+          lockedPriceMilliFec:
+            convo.negotiation
+              .lockedPriceMilliFec,
+          lockedByUserId:
+            convo.negotiation
+              .lockedByUserId,
+          clientAcceptedAt:
+            convo.negotiation
+              .clientAcceptedAt,
+          fixerAcceptedAt:
+            convo.negotiation
+              .fixerAcceptedAt,
+          agreedAt:
+            convo.negotiation
+              .agreedAt,
+          rejectedAt:
+            convo.negotiation
+              .rejectedAt,
+          rejectedByUserId:
+            convo.negotiation
+              .rejectedByUserId,
+        }
+      : null,
+
+    messages,
+
+    pagination: {
+      nextCursor,
+      take,
+    },
+  };
+}
 
   async getDisputeConversationForAdmin(
     disputeId: string,
@@ -1205,14 +1230,33 @@ return {
       : null;
 
     return {
-      conversation: {
-        id: convo.id,
-        status: convo.status,
-        jobId: convo.jobId,
-        fixerId: convo.fixerId,
-        updatedAt: convo.updatedAt
-      },
-      job: {
+  conversation: {
+    id: convo.id,
+    status: convo.status,
+    jobId: convo.jobId,
+    fixerId: convo.fixerId,
+    updatedAt: convo.updatedAt
+  },
+
+  participants: {
+    client: convo.job.client
+      ? {
+          id: convo.job.client.id,
+          fullName: convo.job.client.fullName,
+          isActive: convo.job.client.isActive,
+        }
+      : null,
+
+    fixer: convo.fixer
+      ? {
+          id: convo.fixer.id,
+          fullName: convo.fixer.fullName,
+          isActive: convo.fixer.isActive,
+        }
+      : null,
+  },
+
+  job: {
         id: convo.job.id,
         clientId: convo.job.clientId,
         status: convo.job.status,
@@ -1227,8 +1271,23 @@ return {
         lockedPriceMilliFec:
           convo.job.lockedPriceMilliFec
       },
-      fixer: convo.fixer,
-      negotiation: convo.negotiation
+      client: convo.job.client
+  ? {
+      id: convo.job.client.id,
+      fullName: convo.job.client.fullName,
+      isActive: convo.job.client.isActive,
+    }
+  : null,
+
+fixer: convo.fixer
+  ? {
+      id: convo.fixer.id,
+      fullName: convo.fixer.fullName,
+      isActive: convo.fixer.isActive,
+    }
+  : null,
+
+negotiation: convo.negotiation
         ? {
             status: convo.negotiation.status,
             proposedPriceMilliFec:

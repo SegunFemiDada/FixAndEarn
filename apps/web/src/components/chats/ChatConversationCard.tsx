@@ -1,3 +1,4 @@
+//path: apps/web/src/components/chats/ChatConversationCard.tsx
 "use client";
 
 import ChatMessages from "@/components/chats/ChatMessages";

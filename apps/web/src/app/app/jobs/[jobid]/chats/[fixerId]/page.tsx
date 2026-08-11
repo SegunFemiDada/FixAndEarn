@@ -38,6 +38,19 @@ export default function JobChatDetailPage() {
     myUserId,
     role,
   });
+  const participant =
+  role === "client"
+    ? chat.fixer
+    : chat.client;
+
+const participantName =
+  participant?.fullName ??
+  "Unknown participant";
+
+const participantRole =
+  role === "client"
+    ? "fixer"
+    : "client";
 
   const view = useChatPageView({ isLoading: chat.isLoading, error: chat.error });
   const status = useChatPageStatus({ jobId, fixerId, isLoading: chat.isLoading, error: chat.error });
@@ -52,7 +65,11 @@ export default function JobChatDetailPage() {
 
   return (
     <ChatPageShell>
-      <ChatHeader jobId={jobId} fixerId={fixerId} />
+      <ChatHeader
+  jobId={jobId}
+  participantName={participantName}
+  participantRole={participantRole}
+/>
 
       {status.showStates && (
         <ChatPageStates

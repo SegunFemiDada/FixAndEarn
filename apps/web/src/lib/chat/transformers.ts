@@ -1,5 +1,3 @@
-// Path: apps/web/src/lib/chat/transformers.ts
-
 import type {
   ConversationDetailData,
   ChatMessage,
@@ -7,7 +5,12 @@ import type {
 
 export type ChatConversationState = {
   job: ConversationDetailData["job"] | null;
+
+  client: ConversationDetailData["client"] | null;
+  fixer: ConversationDetailData["fixer"] | null;
+
   negotiation: ConversationDetailData["negotiation"] | null;
+
   messages: ChatMessage[];
 
   isCompleted: boolean;
@@ -18,7 +21,7 @@ export type ChatConversationState = {
   showAgreementBootstrap: boolean;
   error: unknown | null;
 
-  active: boolean; // NEW FIELD
+  active: boolean;
 };
 
 export function buildChatConversationState(params: {
@@ -29,49 +32,76 @@ export function buildChatConversationState(params: {
   const { data, error, isError } = params;
 
   const job = data?.job ?? null;
+
+  const client = data?.client ?? null;
+  const fixer = data?.fixer ?? null;
+
   const negotiation = data?.negotiation ?? null;
 
-  const messages: ChatMessage[] = Array.isArray(data?.messages)
-    ? data!.messages
-    : [];
+  const messages: ChatMessage[] =
+    Array.isArray(data?.messages)
+      ? data.messages
+      : [];
 
   const backendMsg = extractBackendMessage(error);
 
   const isConversationMissing =
     backendMsg === "CONVERSATION_NOT_FOUND" ||
-    Boolean(backendMsg?.includes("CONVERSATION_NOT_FOUND"));
+    Boolean(
+      backendMsg?.includes(
+        "CONVERSATION_NOT_FOUND"
+      )
+    );
 
   const needsAgreement = false;
 
-  const isCompleted = job?.status === "COMPLETED";
+  const isCompleted =
+    job?.status === "COMPLETED";
 
-  const canChat = Boolean(data) && !isError && !isCompleted;
+  const canChat =
+    Boolean(data) &&
+    !isError &&
+    !isCompleted;
 
   const showAgreementBootstrap = false;
 
   return {
     job,
+
+    client,
+    fixer,
+
     negotiation,
+
     messages,
+
     isCompleted,
     canChat,
+
     needsAgreement,
     isConversationMissing,
     showAgreementBootstrap,
     error,
-    active: data?.conversation?.active ?? false, // NEW FIELD
+
+    active:
+      data?.conversation?.active ?? false,
   };
 }
 
 // local safe extraction (no dependency risk)
-function extractBackendMessage(err: unknown): string | null {
+function extractBackendMessage(
+  err: unknown
+): string | null {
   const e = err as any;
 
-  const msg = e?.response?.data?.message;
+  const msg =
+    e?.response?.data?.message;
 
   if (!msg) return null;
 
-  if (Array.isArray(msg)) return msg.join(",");
+  if (Array.isArray(msg)) {
+    return msg.join(",");
+  }
 
   return String(msg);
 }

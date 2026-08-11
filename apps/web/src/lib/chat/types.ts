@@ -28,8 +28,8 @@ export type Negotiation = {
 
 export type ChatParticipant = {
   id?: string;
-  firstName?: string;
-  lastName?: string;
+  fullName?: string;
+  isActive?: boolean;
 };
 
 export type ChatJob = {

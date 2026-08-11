@@ -6,7 +6,7 @@ import { useEffect, useMemo } from "react";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyConversations } from "@/lib/chat/queries";
-import { getToken } from "@/lib/auth/session";
+import { getToken, getActiveRole } from "@/lib/auth/session";
 
 function renderAxiosError(err: unknown): string {
   if (!err || typeof err !== "object") return "Unknown error";
@@ -35,6 +35,7 @@ function fmtWhen(d?: string | null) {
 export default function MyChatsPage() {
   const token = getToken();
   const gateOk = !!token;
+  const activeRole = getActiveRole();
 
   const { data, isLoading, isError, error } = useMyConversations();
   const conversations = useMemo(() => (Array.isArray(data) ? data : []), [data]);
@@ -60,7 +61,7 @@ export default function MyChatsPage() {
   }, [qc, token]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
+    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
       <div className="mx-auto max-w-2xl">
         <div className="mb-6 flex items-center justify-between">
           <div className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">My Chats</div>
@@ -110,22 +111,53 @@ export default function MyChatsPage() {
             <div className="grid gap-3">
               {conversations.map((c: unknown) => {
                 const cc = c as {
-                  conversationId?: string | null;
-                  lastMessageAt?: string | null;
-                  status?: string | null;
-                  negotiation?: { status?: string | null } | null;
-                  job?: { id?: string; skillCategory?: string | null; title?: string | null; status?: string | null } | null;
-                  fixer?: { id?: string | null } | null;
-                  jobId?: string | null;
-                  fixerId?: string | null;
-                  conversation?: { jobId?: string | null; fixerId?: string | null } | null;
-                };
+  conversationId?: string | null;
+  lastMessageAt?: string | null;
+  status?: string | null;
+
+  negotiation?: {
+    status?: string | null;
+  } | null;
+
+  job?: {
+    id?: string;
+    skillCategory?: string | null;
+    title?: string | null;
+    status?: string | null;
+    client?: {
+      id?: string | null;
+      fullName?: string | null;
+      isActive?: boolean | null;
+    } | null;
+  } | null;
+
+  fixer?: {
+    id?: string | null;
+    fullName?: string | null;
+    isActive?: boolean | null;
+  } | null;
+
+  jobId?: string | null;
+  fixerId?: string | null;
+
+  conversation?: {
+    jobId?: string | null;
+    fixerId?: string | null;
+  } | null;
+};
 
                 const job = cc.job ?? null;
                 const fixer = cc.fixer ?? null;
 
                 const jobId = job?.id ?? cc.jobId ?? cc.conversation?.jobId ?? null;
                 const fixerId = fixer?.id ?? cc.fixerId ?? cc.conversation?.fixerId ?? null;
+                const participant =
+                activeRole === "FIXER"
+                  ? job?.client ?? null
+                  : fixer ?? null;
+
+              const participantName =
+                participant?.fullName ?? "Unknown participant";
 
                 const jobTitle = job?.skillCategory ?? job?.title ?? "Job";
                 const jobStatus = job?.status ?? "—";
@@ -144,6 +176,9 @@ export default function MyChatsPage() {
                         <div className="truncate font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                           {jobTitle}
                         </div>
+                        <div className="mt-1 truncate text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                        {activeRole === "FIXER" ? "Client" : "Fixer"}: {participantName}
+                      </div>
                         <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
                           Job status: {jobStatus} • Chat: {convoStatus}
                         </div>

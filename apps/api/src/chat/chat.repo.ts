@@ -31,18 +31,45 @@ export class ChatRepo {
 
 async upsertConversation(jobId: string, fixerId: string) {
   return this.prisma.conversation.upsert({
-    where: { jobId_fixerId: { jobId, fixerId } },
+    where: {
+      jobId_fixerId: {
+        jobId,
+        fixerId,
+      },
+    },
+
     update: {},
+
     create: {
       jobId,
       fixerId,
-      active: false, // NEW
+      active: false,
     },
+
     include: {
       agreements: true,
+
       negotiation: true,
-      job: true,
-      fixer: { select: { id: true, fullName: true, isActive: true } },
+
+      job: {
+        include: {
+          client: {
+            select: {
+              id: true,
+              fullName: true,
+              isActive: true,
+            },
+          },
+        },
+      },
+
+      fixer: {
+        select: {
+          id: true,
+          fullName: true,
+          isActive: true,
+        },
+      },
     },
   });
 }
@@ -143,8 +170,15 @@ async setConversationActive(conversationId: string, active: boolean) {
             status: true,
             priceMilliFec: true,
             lockedPriceMilliFec: true,
-            createdAt: true
-          }
+            createdAt: true,
+            client: {
+              select: {
+                id: true,
+                fullName: true,
+                isActive: true,
+              },
+            },
+          },
         },
         fixer: { select: { id: true, fullName: true, isActive: true } },
         negotiation: true,
@@ -234,20 +268,35 @@ async reviewModerationFlag(
     });
   }
 
-  async getConversationByJobFixer(jobId: string, fixerId: string) {
+async getConversationByJobFixer(jobId: string, fixerId: string) {
   return this.prisma.conversation.findUnique({
-    where: { jobId_fixerId: { jobId, fixerId } },
+    where: {
+      jobId_fixerId: {
+        jobId,
+        fixerId,
+      },
+    },
     include: {
-      job: true,
+      job: {
+        include: {
+          client: {
+            select: {
+              id: true,
+              fullName: true,
+              isActive: true,
+            },
+          },
+        },
+      },
       fixer: {
         select: {
           id: true,
           fullName: true,
-          isActive: true
-        }
+          isActive: true,
+        },
       },
-      negotiation: true
-    }
+      negotiation: true,
+    },
   });
 }
 
