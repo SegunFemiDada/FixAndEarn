@@ -25,8 +25,6 @@ export function isNotificationVisibleForRole(
     return [
       "JOB_APPLIED",
       "JOB_COMPLETION_REQUESTED",
-      "ESCROW_LOCKED",
-      "JOB_ESCROW_LOCKED",
       "DEPOSIT_SUCCEEDED",
       "DISPUTE_OPENED",
       "DISPUTE_RESOLVED",
@@ -49,11 +47,16 @@ export function isNotificationVisibleForRole(
   return true;
 }
 
-export function useNotificationsList(params?: { skip?: number; take?: number; unreadOnly?: boolean }) {
+export function useNotificationsList(params?: {
+  skip?: number;
+  take?: number;
+  unreadOnly?: boolean;
+}) {
   return useQuery({
     queryKey: keys.list(params),
     queryFn: () => listNotifications(params),
     staleTime: 10_000,
+    refetchInterval: 10_000,
     retry: 1,
   });
 }
@@ -62,11 +65,20 @@ export function useNotificationsUnreadCount(role?: Role | null) {
   return useQuery({
     queryKey: keys.unreadCount(role),
     queryFn: async () => {
-      const res = await listNotifications({ skip: 0, take: 200, unreadOnly: true });
-      const filtered = (res.notifications ?? []).filter((n) => isNotificationVisibleForRole(n, role));
+      const res = await listNotifications({
+        skip: 0,
+        take: 200,
+        unreadOnly: true,
+      });
+
+      const filtered = (res.notifications ?? []).filter((n) =>
+        isNotificationVisibleForRole(n, role)
+      );
+
       return filtered.length;
     },
     staleTime: 5_000,
+    refetchInterval: 10_000,
     retry: 1,
   });
 }

@@ -22,32 +22,45 @@ function formatDate(value?: string | null) {
 function resolveHref(n: NotificationRow): string | null {
   const data = (n as any)?.data ?? {};
   const jobId = typeof data.jobId === "string" ? data.jobId : null;
-  const fixerId = typeof data.fixerId === "string" ? data.fixerId : null;
 
-  if (typeof data.href === "string" && data.href.trim()) return data.href.trim();
+  if (typeof data.href === "string" && data.href.trim()) {
+    return data.href.trim();
+  }
 
   switch (n.type) {
     case "JOB_APPLIED":
-      return jobId ? `/app/jobs/${jobId}/applications` : null;
+      return jobId
+        ? `/app/jobs/${jobId}/applications`
+        : null;
+
     case "JOB_COMPLETION_REQUESTED":
-      return jobId ? `/app/jobs/${jobId}` : null;
     case "JOB_COMPLETION_APPROVED":
     case "JOB_COMPLETION_REJECTED":
-      return jobId ? `/app/jobs/${jobId}` : null;
+      return jobId
+        ? `/app/jobs/${jobId}`
+        : null;
+
     case "WITHDRAWAL_REQUESTED":
     case "WITHDRAWAL_APPROVED":
     case "WITHDRAWAL_REJECTED":
     case "WITHDRAWAL_PAID":
-      return "/app/wallet";
     case "DEPOSIT_SUCCEEDED":
       return "/app/wallet";
-    default:
-      break;
-  }
 
-  if (jobId && fixerId) return `/app/jobs/${jobId}/chats/${fixerId}`;
-  if (jobId) return `/app/jobs/${jobId}`;
-  return null;
+    case "DISPUTE_OPENED":
+    case "DISPUTE_RESOLVED":
+      return jobId
+        ? `/app/jobs/${jobId}`
+        : null;
+
+    case "SYSTEM_ANNOUNCEMENT":
+      return typeof data.href === "string" && data.href.trim()
+        ? data.href.trim()
+        : null;
+
+    default:
+      return null;
+  }
 }
 
 function roleHeading(role: Role | null) {

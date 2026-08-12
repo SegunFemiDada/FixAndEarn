@@ -87,14 +87,25 @@ export class MonnifyHttpProvider implements PaymentProvider  {
     const payload = await response.json();
 
     if (
-      !response.ok ||
-      !payload.requestSuccessful
-    ) {
-      throw new Error(
-        payload.responseMessage ??
-          "MONNIFY_AUTH_FAILED",
-      );
-    }
+  !response.ok ||
+  !payload.requestSuccessful
+) {
+  console.error("[MONNIFY_AUTH_FAILED]", {
+    httpStatus: response.status,
+    responseCode: payload?.responseCode,
+    responseMessage: payload?.responseMessage,
+    requestSuccessful: payload?.requestSuccessful,
+    baseUrl: this.baseUrl,
+    apiKeyPresent: Boolean(this.apiKey),
+    secretKeyPresent: Boolean(this.secretKey),
+    contractCodePresent: Boolean(this.contractCode),
+  });
+
+  throw new Error(
+    payload?.responseMessage ??
+      "MONNIFY_AUTH_FAILED",
+  );
+}
 
     this.accessToken =
       payload.responseBody.accessToken;
@@ -168,17 +179,29 @@ export class MonnifyHttpProvider implements PaymentProvider  {
       },
     );
 
-    const payload = await response.json();
+  const payload = await response.json();
 
-    if (
-      !response.ok ||
-      !payload.requestSuccessful
-    ) {
-      throw new Error(
-        payload.responseMessage ??
-          "MONNIFY_INITIALIZE_FAILED",
-      );
-    }
+if (
+  !response.ok ||
+  !payload.requestSuccessful
+) {
+  console.error("[MONNIFY_INITIALIZE_FAILED]", {
+    httpStatus: response.status,
+    responseCode: payload?.responseCode,
+    responseMessage: payload?.responseMessage,
+    requestSuccessful: payload?.requestSuccessful,
+    paymentReference: req.reference,
+    amountNaira: req.amountKobo / 100,
+    currencyCode: "NGN",
+    contractCodePresent: Boolean(this.contractCode),
+    baseUrl: this.baseUrl,
+  });
+
+  throw new Error(
+    payload?.responseMessage ??
+      "MONNIFY_INITIALIZE_FAILED",
+  );
+}
 
     return {
       authorizationUrl:

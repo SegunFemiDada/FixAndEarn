@@ -468,13 +468,13 @@ export default function DashboardPage() {
         <Link
   href="/app/chats"
   className="
-    inline-flex items-center justify-center
+    i   inline-flex items-center justify-center
     rounded-lg px-4 py-2.5 font-semibold
-    bg-gray-200 text-gray-700
-    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
-    transition-colors
-    dark:bg-gray-700 dark:text-gray-200
-    dark:hover:bg-gray-600 dark:focus:ring-gray-500
+    bg-green-600 text-white
+    hover:bg-green-700 focus:ring-2 focus:ring-green-400
+    transition-colors shadow-md
+    dark:bg-green-500 dark:text-white
+    dark:hover:bg-green-600 dark:focus:ring-green-300
   "
 >
   My Chats
