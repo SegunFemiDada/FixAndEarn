@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listNotifications, markNotificationRead } from "./api";
+import {
+  listNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from "./api";
 import type { NotificationRow } from "./api";
 import type { Role } from "@/lib/auth/session";
 
 const keys = {
   list: (params?: { skip?: number; take?: number; unreadOnly?: boolean }) =>
     ["notifications", "list", params ?? {}] as const,
-  unreadCount: (role?: Role | null) => ["notifications", "unreadCount", role ?? "ALL"] as const,
+  unreadCount: (role?: Role | null) =>
+    ["notifications", "unreadCount", role ?? "ALL"] as const,
 };
 
 export function isNotificationVisibleForRole(
@@ -95,31 +100,21 @@ export function useMarkNotificationRead() {
 }
 
 /**
- * Role-aware "mark all read" on the frontend.
+ * Marks all notifications for the current user as read.
+ *
+ * The backend owns this operation and marks every unread notification
+ * belonging to the authenticated user.
  *
  * IMPORTANT:
- * - Backend /notifications/read-all marks everything for the user.
- * - For role-separated UI, that is wrong because CLIENT mode should not silently
- *   mark FIXER notifications as read, and vice versa.
- * - So this hook marks only the currently visible unread notifications one by one.
+ * The frontend does not attempt to calculate or decide which
+ * notifications the backend should mark. It simply calls the
+ * existing backend endpoint.
  */
-export function useMarkAllNotificationsRead(role?: Role | null) {
+export function useMarkAllNotificationsRead() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (notifications: NotificationRow[] = []) => {
-      const visibleUnread = notifications.filter(
-        (n) => !n.readAt && isNotificationVisibleForRole(n, role)
-      );
-
-      if (visibleUnread.length === 0) {
-        return { ok: true, count: 0 };
-      }
-
-      await Promise.all(visibleUnread.map((n) => markNotificationRead(n.id)));
-
-      return { ok: true, count: visibleUnread.length };
-    },
+    mutationFn: () => markAllNotificationsRead(),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["notifications"] });
     },

@@ -37,13 +37,7 @@ describe("ChatService - Conversations + Safety", () => {
     )
   };
 
-  const walletService: any = {
-    getOrCreateWallet: jest.fn()
-  };
-
-  const ledgerService: any = {
-    addEntry: jest.fn()
-  };
+ 
 
   const notificationsService: any = {
     create: jest.fn()
@@ -54,15 +48,18 @@ describe("ChatService - Conversations + Safety", () => {
     emitToRoom: jest.fn()
   };
 
+ const jobPaymentsService: any = {
+  createFinalPayment: jest.fn(),
+};
+
   const svc = new ChatService(
-    repo,
-    moderationService,
-    prisma,
-    walletService,
-    ledgerService,
-    notificationsService,
-    realtime
-  );
+  repo,
+  moderationService,
+  prisma,
+  jobPaymentsService,
+  notificationsService,
+  realtime
+);
 
   beforeEach(() => {
     jest.clearAllMocks();

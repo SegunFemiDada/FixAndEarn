@@ -80,7 +80,7 @@ export default function NotificationsPage() {
 
   const { data, isLoading, isError, refetch } = useNotificationsList({ skip: 0, take: 50 });
   const markOne = useMarkNotificationRead();
-  const markAll = useMarkAllNotificationsRead(activeRole);
+  const markAll = useMarkAllNotificationsRead();
   const items = useMemo(() => {
     const rows = data?.notifications ?? [];
     return rows.filter((n) => isNotificationVisibleForRole(n, activeRole));
@@ -128,7 +128,7 @@ export default function NotificationsPage() {
 
 <button
   type="button"
-  onClick={() => markAll.mutate(items)}
+  onClick={() => markAll.mutate()}
   disabled={isLoading || markAll.isPending || items.length === 0 || unreadCount === 0}
   className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors
     border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900

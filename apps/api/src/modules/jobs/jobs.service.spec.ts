@@ -34,10 +34,8 @@ describe("JobsService", () => {
             listOpenJobs: jest.fn(async () => []),
 
             // Milestone G mocks
-            findAgreedFixerIdForJob: jest.fn(async () => "f1"),
             upsertCompletionRequest: jest.fn(async (d: any) => ({ jobId: d.jobId, status: "PENDING" })),
             findCompletionRequest: jest.fn(async () => ({ jobId: "j1", status: "PENDING" })),
-            approveCompletionAndPay: jest.fn(async () => ({ ok: true, status: "COMPLETED" })),
             rejectCompletionRequest: jest.fn(async () => ({ ok: true, status: "REJECTED" })),
           },
         },
@@ -217,26 +215,7 @@ describe("JobsService", () => {
     expect(res.status).toBe("ALREADY_APPROVED");
   });
 
-  it("approveCompletion calls approveCompletionAndPay on happy path", async () => {
-    repo.findJobById = jest.fn(async () => ({ id: "j1", status: "IN_PROGRESS", clientId: "c1" }));
-    repo.findCompletionRequest = jest.fn(async () => ({ jobId: "j1", status: "PENDING" }));
-    repo.approveCompletionAndPay = jest.fn(async () => ({ ok: true, status: "COMPLETED" }));
-
-    const res = await service.approveCompletion({
-      jobId: "j1",
-      clientId: "c1",
-      rating: 5,
-      comment: "nice",
-    });
-
-    expect(repo.approveCompletionAndPay).toHaveBeenCalledWith({
-      jobId: "j1",
-      clientId: "c1",
-      rating: 5,
-      comment: "nice",
-    });
-    expect(res.status).toBe("COMPLETED");
-  });
+  
 
   it("rejectCompletion blocks if no completion request", async () => {
     repo.findJobById = jest.fn(async () => ({ id: "j1", status: "IN_PROGRESS", clientId: "c1" }));

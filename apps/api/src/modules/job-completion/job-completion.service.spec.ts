@@ -42,7 +42,7 @@ describe("JobCompletionService", () => {
       lockedPriceMilliFec: 1000,
       completedRequestedAt: null
     });
-    await expect(svc.approveCompletion({ jobId: "j1", clientId: "c1", stars: 5 })).rejects.toBeTruthy();
+    await expect(svc.approveCompletion({ jobId: "j1", clientId: "c1", rating: 5 })).rejects.toBeTruthy();
   });
 
   it("approves and settles when valid", async () => {
@@ -55,7 +55,7 @@ describe("JobCompletionService", () => {
       completedRequestedAt: new Date()
     });
 
-    const res = await svc.approveCompletion({ jobId: "j1", clientId: "c1", stars: 5, comment: "Great job" });
+    const res = await svc.approveCompletion({ jobId: "j1", clientId: "c1", rating: 5, comment: "Great job" });
     expect(res.status).toBe("COMPLETED");
     expect(repo.approveAndSettle).toHaveBeenCalled();
   });

@@ -324,15 +324,19 @@ export class AdminAnalyticsRepo {
   },
 }),
 
-      this.prisma.platformRevenue.aggregate({
+      this.prisma.platformLedgerEntry.aggregate({
   _sum: {
-    platformFeeMilliFec: true,
+    amountMilliFec: true,
   },
-  where: createdAtWhere
-    ? {
-        createdAt: createdAtWhere,
-      }
-    : undefined,
+  where: {
+    type: "COMMISSION",
+    direction: "CREDIT",
+    ...(createdAtWhere
+      ? {
+          createdAt: createdAtWhere,
+        }
+      : {}),
+  },
 }),
 
       this.prisma.jobPayment.aggregate({
@@ -445,7 +449,7 @@ export class AdminAnalyticsRepo {
     const totalDepositsMilliFec = Number(totalDepositsMilliFecRows[0]?.sum ?? 0);
     const totalWithdrawalsMilliFec = withdrawalsAgg._sum.amountMilliFec ?? 0;
     const platformJobPostingFeesMilliFec = jobPostingFeesAgg._sum.amountMilliFec ?? 0;
-    const platformCommissionMilliFec = platformCommissionAgg._sum.platformFeeMilliFec  ?? 0;
+    const platformCommissionMilliFec = platformCommissionAgg._sum.amountMilliFec  ?? 0;
     const platformUrgentHireFeesMilliFec = urgentHireFeesAgg._sum.amountMilliFec ?? 0;
     const totalPlatformFundsMilliFec =
       platformJobPostingFeesMilliFec +
@@ -601,11 +605,13 @@ export class AdminAnalyticsRepo {
     },
   },
 }),
-this.prisma.platformRevenue.aggregate({
+this.prisma.platformLedgerEntry.aggregate({
   _sum: {
-    platformFeeMilliFec: true,
+    amountMilliFec: true,
   },
   where: {
+    type: "COMMISSION",
+    direction: "CREDIT",
     createdAt: {
       gte: bucket.from,
       lt: bucket.to,
@@ -625,7 +631,7 @@ this.prisma.platformRevenue.aggregate({
   postingFeesMilliFec: postingFees._sum.amountMilliFec ?? 0,
   urgentHireFeesMilliFec: urgentHireFees._sum.amountMilliFec ?? 0,
   platformCommissionMilliFec:
-    platformCommission._sum.platformFeeMilliFec ?? 0,
+    platformCommission._sum.amountMilliFec ?? 0,
 };
       })
     );
