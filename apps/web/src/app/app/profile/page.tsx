@@ -751,16 +751,35 @@ export default function ProfilePage() {
                   });
                   return;
                 }
-                  await setPinMutation.mutateAsync({ currentPin, newPin });
-                  await refetchPinStatus();
-                  setChangePinModalOpen(false);
-                  setCurrentPin("");
-                  setNewPin("");
-                  setConfirmPin("");
-                  setFeedbackModal({
-                    title: "Withdrawal PIN updated",
-                    message: "Your withdrawal PIN has been changed successfully.",
-                  });
+                  try {
+                    await setPinMutation.mutateAsync({ currentPin, newPin });
+                    await refetchPinStatus();
+                    setChangePinModalOpen(false);
+                    setCurrentPin("");
+                    setNewPin("");
+                    setConfirmPin("");
+                    setFeedbackModal({
+                      title: "Withdrawal PIN updated",
+                      message: "Your withdrawal PIN has been changed successfully.",
+                    });
+                  } catch (err) {
+                    const errorCode = (err as {
+                      response?: { data?: { message?: unknown } };
+                    })?.response?.data?.message;
+
+                    if (errorCode === "INVALID_CURRENT_PIN") {
+                      setFeedbackModal({
+                        title: "Incorrect current PIN",
+                        message: "The current withdrawal PIN you entered is incorrect. Please try again.",
+                      });
+                      return;
+                    }
+
+                    setFeedbackModal({
+                      title: "Unable to update withdrawal PIN",
+                      message: "Something went wrong while updating your withdrawal PIN. Please try again.",
+                    });
+                  }
                 }}
                 className="mt-4 space-y-4"
               >
