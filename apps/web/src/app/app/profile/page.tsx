@@ -744,7 +744,7 @@ export default function ProfilePage() {
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  if (newPin !== confirmPin) {
+                  if (newPin !== confirmPin && currentPin.trim() !== "currentPin") {
                   setFeedbackModal({
                     title: "Pin mismatch",
                     message: "The new PINs do not match.",
