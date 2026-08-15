@@ -1,43 +1,47 @@
-//path: apps/api/src/modules/job-completion/job-completion.repo.ts
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma, WalletRole } from "@prisma/client";
+// Path: apps/api/src/modules/job-completion/job-completion.repo.ts
 
-@Injectable()
+import { PrismaService } from "../../infra/prisma/prisma.service";
+import { Prisma } from "@prisma/client";
+import { WalletRole } from "@prisma/client";
+
 export class JobCompletionRepo {
   constructor(private readonly prisma: PrismaService) {}
 
-  getJob(jobId: string) {
-    return this.prisma.job.findUnique({ where: { id: jobId } });
+  async getJob(jobId: string) {
+    return this.prisma.job.findUnique({
+      where: { id: jobId },
+    });
   }
+
   async getCompletionRequest(jobId: string) {
-  return this.prisma.jobCompletionRequest.findUnique({
-    where: { jobId },
-  });
-}
+    return this.prisma.jobCompletionRequest.findUnique({
+      where: { jobId },
+    });
+  }
 
   async requestCompletion(jobId: string) {
     return this.prisma.job.update({
       where: { id: jobId },
-      data: { completedRequestedAt: new Date() }
+      data: { completedRequestedAt: new Date() },
     });
   }
 
   async rejectCompletion(jobId: string) {
     return this.prisma.job.update({
       where: { id: jobId },
-      data: { completedRequestedAt: null }
+      data: { completedRequestedAt: null },
     });
   }
 
   private async getOrCreatePlatformWallet(tx: Prisma.TransactionClient) {
     let pw = await tx.platformWallet.findFirst();
+
     if (!pw) {
       pw = await tx.platformWallet.create({ data: {} });
     }
+
     return pw;
   }
-    
 
   async approveAndSettle(args: {
     jobId: string;
@@ -47,69 +51,94 @@ export class JobCompletionRepo {
     rating: number;
     comment?: string | null;
   }) {
-    const { jobId, clientId, fixerId, amountMilliFec, rating, comment } = args;
+    const {
+      jobId,
+      clientId,
+      fixerId,
+      amountMilliFec,
+      rating,
+      comment,
+    } = args;
+
+    const commission = Math.floor(amountMilliFec * 0.1);
+    const payout = amountMilliFec - commission;
 
     return this.prisma.$transaction(async (tx) => {
-      const job = await tx.job.findUnique({ where: { id: jobId } });
-      if (!job) throw new Error("JOB_NOT_FOUND");
+      const job = await tx.job.findUnique({
+        where: { id: jobId },
+      });
 
-      if (job.status === "COMPLETED") return { ok: true, status: "COMPLETED" as const };
-      if (job.status !== "IN_PROGRESS") throw new Error("JOB_NOT_IN_PROGRESS");
+      if (!job) {
+        throw new Error("JOB_NOT_FOUND");
+      }
 
-      if (!job.lockedPriceMilliFec || job.lockedPriceMilliFec !== amountMilliFec) {
+      if (job.status === "COMPLETED") {
+        return {
+          ok: true,
+          status: "COMPLETED" as const,
+          amountMilliFec,
+          commissionMilliFec: commission,
+          payoutMilliFec: payout,
+        };
+      }
+
+      if (job.status !== "IN_PROGRESS") {
+        throw new Error("JOB_NOT_IN_PROGRESS");
+      }
+
+      if (
+        !job.lockedPriceMilliFec ||
+        job.lockedPriceMilliFec !== amountMilliFec
+      ) {
         throw new Error("INVALID_LOCKED_PRICE");
       }
+
       const payment = await tx.jobPayment.findFirst({
-  where: {
-    jobId,
-    type: "FINAL",
-  },
-});
+        where: {
+          jobId,
+          type: "FINAL",
+        },
+      });
 
-if (!payment) {
-  throw new Error("FINAL_PAYMENT_NOT_FOUND");
-}
+      if (!payment) {
+        throw new Error("FINAL_PAYMENT_NOT_FOUND");
+      }
 
-if (payment.status !== "SUCCESS") {
-  throw new Error("FINAL_PAYMENT_NOT_COMPLETED");
-}
+      if (payment.status !== "SUCCESS") {
+        throw new Error("FINAL_PAYMENT_NOT_COMPLETED");
+      }
 
-if (payment.amountMilliFec !== amountMilliFec) {
-  throw new Error("FINAL_PAYMENT_AMOUNT_MISMATCH");
-}
-const fixerWallet = await tx.wallet.upsert({
-  where: {
-    userId_role: {
-      userId: fixerId,
-      role: WalletRole.FIXER,
-    },
-  },
-  update: {},
-  create: {
-    userId: fixerId,
-    role: WalletRole.FIXER,
-    balanceMilliFec: 0,
-  },
-});
+      if (payment.amountMilliFec !== amountMilliFec) {
+        throw new Error("FINAL_PAYMENT_AMOUNT_MISMATCH");
+      }
+
+      const fixerWallet = await tx.wallet.upsert({
+        where: {
+          userId_role: {
+            userId: fixerId,
+            role: WalletRole.FIXER,
+          },
+        },
+        update: {},
+        create: {
+          userId: fixerId,
+          role: WalletRole.FIXER,
+          balanceMilliFec: 0,
+        },
+      });
 
       // Idempotency keys
       const payoutKey = `job_payout:${jobId}`;
       const commissionKey = `job_commission:${jobId}`;
 
       // If payment exists, settlement already happened
-      const existingPayout =
-  await tx.ledgerEntry.findUnique({
-    where: {
-      idempotencyKey: payoutKey,
-    },
-  });
+      const existingPayout = await tx.ledgerEntry.findUnique({
+        where: {
+          idempotencyKey: payoutKey,
+        },
+      });
 
-if (!existingPayout) {
-        
-        const commission = Math.floor(amountMilliFec * 0.1);
-        const payout = amountMilliFec - commission;
-
-
+      if (!existingPayout) {
         // Fixer receives payout (90%)
         await tx.ledgerEntry.create({
           data: {
@@ -119,30 +148,39 @@ if (!existingPayout) {
             amountMilliFec: payout,
             idempotencyKey: payoutKey,
             reference: jobId,
-            metadata: { jobId, clientId, commissionMilliFec: commission }
-          }
+            metadata: {
+              jobId,
+              clientId,
+              commissionMilliFec: commission,
+            },
+          },
         });
 
         await tx.wallet.update({
           where: { id: fixerWallet.id },
-          data: { balanceMilliFec: { increment: payout } }
+          data: {
+            balanceMilliFec: {
+              increment: payout,
+            },
+          },
         });
+
         await tx.fixerEarning.upsert({
-  where: {
-    jobId,
-  },
-  update: {
-  amountMilliFec: payout,
-  availableMilliFec: payout,
-},
-create: {
-  fixerId,
-  jobId,
-  amountMilliFec: payout,
-  availableMilliFec: payout,
-  status: "AVAILABLE",
-},
-});
+          where: {
+            jobId,
+          },
+          update: {
+            amountMilliFec: payout,
+            availableMilliFec: payout,
+          },
+          create: {
+            fixerId,
+            jobId,
+            amountMilliFec: payout,
+            availableMilliFec: payout,
+            status: "AVAILABLE",
+          },
+        });
 
         // Platform receives commission (10%)
         const platformWallet = await this.getOrCreatePlatformWallet(tx);
@@ -155,40 +193,56 @@ create: {
             amountMilliFec: commission,
             idempotencyKey: commissionKey,
             reference: jobId,
-            metadata: { jobId, clientId, fixerId }
-          }
+            metadata: {
+              jobId,
+              clientId,
+              fixerId,
+            },
+          },
         });
 
         await tx.platformWallet.update({
           where: { id: platformWallet.id },
-          data: { balanceMilliFec: { increment: commission } }
+          data: {
+            balanceMilliFec: {
+              increment: commission,
+            },
+          },
         });
       }
 
       // Rating is idempotent by unique jobId
-      // Review (idempotent by unique jobId)
-await tx.jobReview.upsert({
-  where: { jobId },
-  update: {
-    rating: rating,
-    comment: comment ?? null
-  },
-  create: {
-    jobId,
-    clientId,
-    fixerId,
-    rating: rating,
-    comment: comment ?? null
-  }
-});
+      // Review is idempotent by unique jobId
+      await tx.jobReview.upsert({
+        where: { jobId },
+        update: {
+          rating,
+          comment: comment ?? null,
+        },
+        create: {
+          jobId,
+          clientId,
+          fixerId,
+          rating,
+          comment: comment ?? null,
+        },
+      });
+
       await tx.job.update({
-  where: { id: jobId },
-  data: {
-    status: "COMPLETED",
-    completedApprovedAt: new Date()
-  }
-});
-      return { ok: true, status: "COMPLETED" as const };
+        where: { id: jobId },
+        data: {
+          status: "COMPLETED",
+          completedApprovedAt: new Date(),
+        },
+      });
+
+      return {
+        ok: true,
+        status: "COMPLETED" as const,
+        amountMilliFec,
+        commissionMilliFec: commission,
+        payoutMilliFec: payout,
+      };
     });
   }
 }

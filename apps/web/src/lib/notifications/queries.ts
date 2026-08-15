@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   listNotifications,
   markNotificationRead,
@@ -118,5 +123,35 @@ export function useMarkAllNotificationsRead() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["notifications"] });
     },
+  });
+}
+export function useNotificationsInfiniteList(params?: {
+  take?: number;
+  unreadOnly?: boolean;
+}) {
+  const take = params?.take ?? 50;
+  const unreadOnly = params?.unreadOnly ?? false;
+
+  return useInfiniteQuery({
+    queryKey: ["notifications", "infinite", { take, unreadOnly }],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      listNotifications({
+        skip: pageParam,
+        take,
+        unreadOnly,
+      }),
+    getNextPageParam: (lastPage) => {
+      const nextSkip = lastPage.skip + lastPage.notifications.length;
+
+      if (nextSkip >= lastPage.total) {
+        return undefined;
+      }
+
+      return nextSkip;
+    },
+    staleTime: 10_000,
+    refetchInterval: 10_000,
+    retry: 1,
   });
 }

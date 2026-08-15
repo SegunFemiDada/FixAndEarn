@@ -7,7 +7,6 @@ import { PaymentsModule } from "../payments/payments.module";
 import { CryptoService } from "../../common/crypto/crypto.service";
 import { AuthModule } from "../auth/auth.module";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { EscrowLockService } from "./escrow-lock.service";
 import { WithdrawalReversalService } from "./withdrawal-reversal.service";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PlatformWalletService } from "./platform-wallet.service";
@@ -20,7 +19,6 @@ import { EarningsModule } from "../earnings/earnings.module";
     LedgerService,
     CryptoService,
     PrismaService,
-    EscrowLockService,
     WithdrawalReversalService,
     PlatformWalletService,
   ],
@@ -28,7 +26,6 @@ import { EarningsModule } from "../earnings/earnings.module";
     WalletService,
     LedgerService,
     WithdrawalReversalService,
-    EscrowLockService,
     PlatformWalletService,
   ],
   controllers: [WalletController],

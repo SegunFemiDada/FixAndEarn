@@ -12,7 +12,6 @@ import {
   JobStatus,
   Prisma,
   NotificationType,
-  WalletRole,
 } from "@prisma/client";
 import { NotificationsService } from "../notifications/notifications.service";
 import { JobCompletionRepo } from "../job-completion/job-completion.repo";
@@ -340,45 +339,6 @@ export class DisputesService {
     };
   }
 
-  private async ensureEscrowUserId(
-  tx: Prisma.TransactionClient,
-): Promise<string> {
-  const key = "ESCROW_USER_ID";
-
-  const meta = await tx.appMeta.findUnique({
-    where: { key },
-  });
-
-  if (meta?.value) {
-    return meta.value;
-  }
-
-  const escrowUser = await tx.user.create({
-    data: {
-      email: "escrow@fixandearn.internal",
-      fullName: "FixAndEarn Settlement",
-      passwordHash: "DISABLED",
-      isActive: true,
-    },
-  });
-
-  await tx.wallet.create({
-    data: {
-      userId: escrowUser.id,
-      role: WalletRole.SYSTEM,
-      balanceMilliFec: 0,
-    },
-  });
-
-  await tx.appMeta.create({
-    data: {
-      key,
-      value: escrowUser.id,
-    },
-  });
-
-  return escrowUser.id;
-}
 
   async resolveDispute(args: {
     disputeId: string;
@@ -404,21 +364,6 @@ export class DisputesService {
 
       const amountMilliFec = job.lockedPriceMilliFec;
 
-      const escrowDebitKey = `dispute_resolve:${disputeId}:escrow_debit`;
-
-      const already = await tx.ledgerEntry.findUnique({ where: { idempotencyKey: escrowDebitKey } });
-      if (already) {
-        await tx.dispute.update({
-          where: { id: disputeId },
-          data: {
-            status: DisputeStatus.RESOLVED,
-            resolutionType,
-            resolvedByAdminId: adminUserId,
-            resolvedAt: dispute.resolvedAt ?? new Date(),
-          },
-        });
-        return { ok: true, status: "RESOLVED" as const };
-      }
 
       if (resolutionType === DisputeResolutionType.RELEASE_TO_FIXER) {
         await tx.dispute.update({

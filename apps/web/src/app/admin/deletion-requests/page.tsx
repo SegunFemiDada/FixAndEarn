@@ -24,6 +24,7 @@ function formatDateTime(value: string) {
 
 export default function DeletionRequestsPage() {
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
+  const [rejectReasonError, setRejectReasonError] = useState<Record<string, string>>({});
 
   const {
     data: requests = [],
@@ -142,9 +143,18 @@ export default function DeletionRequestsPage() {
                         const reason = rejectReason[req.id] ?? "";
 
                         if (!reason.trim()) {
-                          alert("Please enter a rejection reason.");
+                          setRejectReasonError((prev) => ({
+                            ...prev,
+                            [req.id]: "Please enter a rejection reason.",
+                          }));
                           return;
                         }
+
+                        setRejectReasonError((prev) => {
+                          const next = { ...prev };
+                          delete next[req.id];
+                          return next;
+                        });
 
                         rejectMutation.mutate({
                           id: req.id,
@@ -166,14 +176,29 @@ export default function DeletionRequestsPage() {
                     type="text"
                     placeholder="Rejection reason (required for reject)"
                     value={rejectReason[req.id] ?? ""}
-                    onChange={(e) =>
-                      setRejectReason((prev) => ({
-                        ...prev,
-                        [req.id]: e.target.value,
-                      }))
+                    onChange={(e) => {
+                    const value = e.target.value;
+
+                    setRejectReason((prev) => ({
+                      ...prev,
+                      [req.id]: value,
+                    }));
+
+                    if (value.trim()) {
+                      setRejectReasonError((prev) => {
+                        const next = { ...prev };
+                        delete next[req.id];
+                        return next;
+                      });
                     }
+                  }}
                     className="w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080] dark:focus:border-[#5B8FCC]"
                   />
+                  {rejectReasonError[req.id] && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-300">
+                    {rejectReasonError[req.id]}
+                  </p>
+                )}
                 </div>
               </div>
             ))}

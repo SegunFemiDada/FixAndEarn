@@ -7,7 +7,7 @@ import {
   isNotificationVisibleForRole,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
-  useNotificationsList,
+  useNotificationsInfiniteList,
 } from "@/lib/notifications/queries";
 import type { NotificationRow } from "@/lib/notifications/api";
 import { getActiveRole, type Role } from "@/lib/auth/session";
@@ -78,13 +78,27 @@ export default function NotificationsPage() {
     setActiveRole(getActiveRole());
   }, []);
 
-  const { data, isLoading, isError, refetch } = useNotificationsList({ skip: 0, take: 50 });
-  const markOne = useMarkNotificationRead();
-  const markAll = useMarkAllNotificationsRead();
-  const items = useMemo(() => {
-    const rows = data?.notifications ?? [];
-    return rows.filter((n) => isNotificationVisibleForRole(n, activeRole));
-  }, [data?.notifications, activeRole]);
+  const {
+  data,
+  isLoading,
+  isError,
+  refetch,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+} = useNotificationsInfiniteList({ take: 50 });
+
+const markOne = useMarkNotificationRead();
+const markAll = useMarkAllNotificationsRead();
+
+const items = useMemo(() => {
+  const rows =
+    data?.pages.flatMap((page) => page.notifications ?? []) ?? [];
+
+  return rows.filter((n) =>
+    isNotificationVisibleForRole(n, activeRole)
+  );
+}, [data?.pages, activeRole]);
 
   const unreadCount = useMemo(() => items.filter((n) => !n.readAt).length, [items]);
 
@@ -236,6 +250,18 @@ export default function NotificationsPage() {
             );
           })}
         </div>
+        {!isLoading && !isError && hasNextPage && (
+  <div className="flex justify-center pt-2">
+    <button
+      type="button"
+      onClick={() => fetchNextPage()}
+      disabled={isFetchingNextPage}
+      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+    >
+      {isFetchingNextPage ? "Loading…" : "Load more"}
+    </button>
+  </div>
+)}
       </div>
     </div>
   );

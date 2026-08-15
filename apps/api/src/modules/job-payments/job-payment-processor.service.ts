@@ -333,7 +333,7 @@ this.realtime.emitToRoom(
       userId: payment.job.clientId,
       type: NotificationType.SYSTEM_ANNOUNCEMENT,
       title: "Payment confirmed",
-      body: "Your payment has been received successfully. The fixer can now begin work. Funds will only be released after you approve the completion request.",
+      body: "Your payment has been confirmed successfully. The job is now in progress, and the fixer can begin work.",
       idempotencyKey: `notif:job_started_client:${payment.jobId}`,
       data: {
         jobId: payment.jobId,

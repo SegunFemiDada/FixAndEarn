@@ -24,7 +24,6 @@ import { WalletService } from "./wallet.service";
 import { SaveBankDetailsDto } from "./dto/save-bank-details.dto";
 import { WithdrawRequestDto } from "./dto/withdraw-request.dto";
 import { Public } from "../../common/auth/public.decorator";
-import { EscrowLockService } from "./escrow-lock.service";
 import { BankDetailsResponse } from "./dto/bank-details.response";
 import { WalletHistoryResponse } from "./dto/wallet-history.response";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -43,7 +42,6 @@ export class WalletController {
     private readonly walletService: WalletService,
     private readonly ledgerService: LedgerService,
     private readonly crypto: CryptoService,
-    private readonly escrowLock: EscrowLockService,
     private readonly notifications: NotificationsService,
     private readonly earningsService: EarningsService,
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: any

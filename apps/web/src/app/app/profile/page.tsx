@@ -117,6 +117,10 @@ export default function ProfilePage() {
   const [storedRoles, setStoredRolesState] = useState<Role[]>([]);
   const [switchMsg, setSwitchMsg] = useState<string | null>(null);
   const [switchErr, setSwitchErr] = useState<string | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<{
+  title: string;
+  message: string;
+} | null>(null);
 
   const switchRoleMutation = useSwitchRole();
 
@@ -141,11 +145,14 @@ export default function ProfilePage() {
   const verifyMutation = useMutation({
     mutationFn: (code: string) => verifyPhoneCode(code),
     onSuccess: () => {
-      alert("Phone verified successfully");
-      setShowCodeInput(false);
-      setVerifyCode("");
-      refetch(); // refresh profile data
-    },
+  setFeedbackModal({
+    title: "Phone verification",
+    message: "Phone verified successfully.",
+  });
+  setShowCodeInput(false);
+  setVerifyCode("");
+  refetch(); // refresh profile data
+},
   });
 
   // Account deletion
@@ -156,10 +163,13 @@ export default function ProfilePage() {
       await apiClient.post("/users/request-deletion", { reason });
     },
     onSuccess: () => {
-      alert("Deletion request submitted. Admin will review it.");
-      setDeleteModalOpen(false);
-      setDeleteReason("");
-    },
+  setFeedbackModal({
+    title: "Deletion request submitted",
+    message: "Your deletion request was submitted. An admin will review it.",
+  });
+  setDeleteModalOpen(false);
+  setDeleteReason("");
+},
   });
 
   useEffect(() => {
@@ -658,15 +668,21 @@ export default function ProfilePage() {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (newPin !== confirmPin) {
-                    alert("Pins do not match");
-                    return;
-                  }
+                  setFeedbackModal({
+                    title: "Pin mismatch",
+                    message: "The new PINs do not match.",
+                  });
+                  return;
+                }
                   await setPinMutation.mutateAsync({ newPin });
                   await refetchPinStatus();
                   setSetPinModalOpen(false);
                   setNewPin("");
                   setConfirmPin("");
-                  alert("Pin set successfully");
+                  setFeedbackModal({
+                    title: "Withdrawal PIN updated",
+                    message: "Your withdrawal PIN has been set successfully.",
+                  });
                 }}
                 className="mt-4 space-y-4"
               >
@@ -694,7 +710,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                 <button
+                <button
   type="submit"
   className={`flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-colors
     bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
@@ -729,16 +745,22 @@ export default function ProfilePage() {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (newPin !== confirmPin) {
-                    alert("New pins do not match");
-                    return;
-                  }
+                  setFeedbackModal({
+                    title: "Pin mismatch",
+                    message: "The new PINs do not match.",
+                  });
+                  return;
+                }
                   await setPinMutation.mutateAsync({ currentPin, newPin });
                   await refetchPinStatus();
                   setChangePinModalOpen(false);
                   setCurrentPin("");
                   setNewPin("");
                   setConfirmPin("");
-                  alert("Pin changed successfully");
+                  setFeedbackModal({
+                    title: "Withdrawal PIN updated",
+                    message: "Your withdrawal PIN has been changed successfully.",
+                  });
                 }}
                 className="mt-4 space-y-4"
               >
@@ -834,6 +856,38 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+        {/* Feedback Modal */}
+{feedbackModal && (
+  <div
+    className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 px-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="profile-feedback-title"
+  >
+    <div className="w-full max-w-md rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <h2
+        id="profile-feedback-title"
+        className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]"
+      >
+        {feedbackModal.title}
+      </h2>
+
+      <p className="mt-3 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
+        {feedbackModal.message}
+      </p>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setFeedbackModal(null)}
+          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
