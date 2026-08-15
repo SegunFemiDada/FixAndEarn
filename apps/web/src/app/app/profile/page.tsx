@@ -243,6 +243,7 @@ export default function ProfilePage() {
 
   const completedJobs = Number(data?.stats?.completedJobs ?? 0);
   const avg = Number(data?.rating?.average ?? 0);
+  const count = Number(data?.rating?.count ?? 0);
   function renderStars(rating: number) {
   const fullStars = Math.floor(rating);
   const halfStar = rating % 1 >= 0.5;
@@ -375,7 +376,7 @@ export default function ProfilePage() {
                 <div className="mt-2 flex items-center gap-2">
                 {renderStars(avg)}
                 <span className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                  {avg.toFixed(1)}
+                  {avg.toFixed(1)} {count} review{count === 1 ? "" : "s"}
                 </span>
               </div>
               </div>
