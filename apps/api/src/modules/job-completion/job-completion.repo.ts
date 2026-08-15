@@ -1,9 +1,10 @@
 // Path: apps/api/src/modules/job-completion/job-completion.repo.ts
 
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { Prisma } from "@prisma/client";
-import { WalletRole } from "@prisma/client";
+import { Prisma, WalletRole } from "@prisma/client";
 
+@Injectable()
 export class JobCompletionRepo {
   constructor(private readonly prisma: PrismaService) {}
 
