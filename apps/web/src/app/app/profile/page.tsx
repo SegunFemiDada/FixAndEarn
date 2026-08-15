@@ -243,7 +243,23 @@ export default function ProfilePage() {
 
   const completedJobs = Number(data?.stats?.completedJobs ?? 0);
   const avg = Number(data?.rating?.average ?? 0);
-  const count = Number(data?.rating?.count ?? 0);
+  function renderStars(rating: number) {
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {[...Array(fullStars)].map((_, i) => (
+        <span key={`full-${i}`} className="text-[#F5A623]">★</span>
+      ))}
+      {halfStar && <span className="text-[#F5A623]">½</span>}
+      {[...Array(emptyStars)].map((_, i) => (
+        <span key={`empty-${i}`} className="text-[#C5D5EE] dark:text-[#4A6080]">★</span>
+      ))}
+    </div>
+  );
+}
   const skills = parseSkills(data?.profile?.skills);
   const recentReviews = Array.isArray(data?.recentReviews) ? data.recentReviews : [];
 
@@ -356,9 +372,12 @@ export default function ProfilePage() {
                 <div className="mt-1 font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                   {completedJobs} completed jobs
                 </div>
-                <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Rating {avg.toFixed(1)} ({count} review{count === 1 ? "" : "s"})
-                </div>
+                <div className="mt-2 flex items-center gap-2">
+                {renderStars(avg)}
+                <span className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {avg.toFixed(1)}
+                </span>
+              </div>
               </div>
             )}
           </div>
