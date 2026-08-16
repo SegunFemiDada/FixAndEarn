@@ -373,9 +373,6 @@ export default function ProfilePage() {
                 <div className="mt-1 font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                   {completedJobs} completed jobs
                 </div>
-                <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                Rating
-              </div>
                 <div className="mt-2 flex items-center gap-2">
                 {renderStars(avg)}
                 <span className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">

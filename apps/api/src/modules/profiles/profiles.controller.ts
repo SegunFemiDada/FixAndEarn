@@ -197,19 +197,36 @@ export class ProfilesController {
 
   @Get("clients/:clientId")
   async getClientPublic(@Param("clientId") clientId: string) {
-    const u = await this.prisma.user.findUnique({
-      where: { id: clientId },
-      select: {
-        id: true,
-        fullName: true,
-        verification: {
-          select: {
-            status: true,
-            selfieImagePath: true,
+    const [u, jobsPosted, completedJobs] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: clientId },
+        select: {
+          id: true,
+          fullName: true,
+          createdAt: true,
+          verification: {
+            select: {
+              status: true,
+              selfieImagePath: true,
+              state: true,
+              city: true,
+            },
           },
         },
-      },
-    });
+      }),
+      this.prisma.job.count({
+        where: {
+          clientId,
+          status: { not: "DRAFT" },
+        },
+      }),
+      this.prisma.job.count({
+        where: {
+          clientId,
+          status: "COMPLETED",
+        },
+      }),
+    ]);
 
     if (!u) throw new NotFoundException("USER_NOT_FOUND");
 
@@ -225,6 +242,17 @@ export class ProfilesController {
       isVerified,
       avatarPath,
       avatarUrl: toPublicFileUrl(avatarPath),
+      memberSince: u.createdAt,
+      location: approvedWithSelfie
+        ? {
+            state: u.verification?.state ?? null,
+            city: u.verification?.city ?? null,
+          }
+        : null,
+      stats: {
+        jobsPosted,
+        completedJobs,
+      },
     };
   }
 

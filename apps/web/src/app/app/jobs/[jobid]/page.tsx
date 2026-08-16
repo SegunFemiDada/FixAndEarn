@@ -676,6 +676,15 @@ async function handleDeleteDraft() {
 
             )}
 
+            {isFixer && isAssignedFixer && jobOwnerId && (
+              <Link
+                href={`/app/clients/${jobOwnerId}`}
+                className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              >
+                View client profile
+              </Link>
+            )}
+
             {isFixer && (
               canOpenMyChat ? (
                 <Link

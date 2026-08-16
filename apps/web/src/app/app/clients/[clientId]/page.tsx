@@ -12,6 +12,15 @@ type ClientProfileResponse = {
   fullName: string;
   isVerified: boolean;
   avatarUrl?: string | null;
+  memberSince?: string | null;
+  location?: {
+    state?: string | null;
+    city?: string | null;
+  } | null;
+  stats?: {
+    jobsPosted: number;
+    completedJobs: number;
+  } | null;
 };
 
 async function getClientProfile(clientId: string): Promise<ClientProfileResponse> {
@@ -23,6 +32,26 @@ function initials(name?: string) {
   if (!name) return "U";
   const parts = name.trim().split(/\s+/).slice(0, 2);
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "U";
+}
+
+function formatMemberSince(value?: string | null) {
+  if (!value) return "Not available";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not available";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatLocation(location?: ClientProfileResponse["location"]) {
+  const parts = [location?.city, location?.state].filter(
+    (part): part is string => typeof part === "string" && part.trim().length > 0
+  );
+
+  return parts.length > 0 ? parts.join(", ") : "Not provided";
 }
 
 export default function ClientProfilePage() {
@@ -62,7 +91,10 @@ export default function ClientProfilePage() {
   }
 
   if (isError) {
-    const e: any = error;
+    const e = error as {
+      response?: { data?: { message?: unknown } };
+      message?: unknown;
+    };
     const msg = e?.response?.data?.message ?? e?.message ?? "Failed to load client profile.";
 
     return (
@@ -138,9 +170,45 @@ export default function ClientProfilePage() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Contact is chat-only through the platform.
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
+              <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Member since
+              </div>
+              <div className="mt-2 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {formatMemberSince(data?.memberSince)}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
+              <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Jobs posted
+              </div>
+              <div className="mt-2 text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {data?.stats?.jobsPosted ?? 0}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
+              <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Completed jobs
+              </div>
+              <div className="mt-2 text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {data?.stats?.completedJobs ?? 0}
+              </div>
+            </div>
           </div>
+        </section>
+
+        <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Location</div>
+          <p className="mt-2 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
+            {formatLocation(data?.location)}
+          </p>
+        </section>
+
+        <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+          Contact is chat-only through the platform.
         </section>
       </div>
     </div>
