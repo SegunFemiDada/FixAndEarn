@@ -102,7 +102,7 @@ export default function ClientProfilePage() {
         <div className="mx-auto max-w-2xl">
           <div className="mb-4">
             <Link
-              href="/app/jobs"
+              href="/app/jobs/${jobId}"
               className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
             >
               ← Back
