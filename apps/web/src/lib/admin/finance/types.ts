@@ -11,16 +11,16 @@ export type WithdrawalListItem = {
   userId: string;
   amountMilliFec: number;
   status: WithdrawalStatus;
-  payoutMode?: "PAYSTACK" | "MANUAL";
+  payoutMode?: "BANK_TRANSFER" | "MANUAL";
   reviewedBy: string | null;
   reviewNote: string | null;
   createdAt: string;
   updatedAt: string;
   reviewedAt: string | null;
   paidAt: string | null;
-  paystackTransferReference: string | null;
-  paystackTransferCode: string | null;
-  paystackTransferId: string | null;
+  transferReference: string | null;
+  transferCode: string | null;
+  transferId: string | null;
 
   user: {
     id: string;
@@ -35,16 +35,16 @@ export type WithdrawalDetail = {
   userId: string;
   amountMilliFec: number;
   status: WithdrawalStatus;
-  payoutMode?: "PAYSTACK" | "MANUAL";
+  payoutMode?: "BANK_TRANSFER" | "MANUAL";
   reviewedBy: string | null;
   reviewNote: string | null;
   createdAt: string;
   updatedAt: string;
   reviewedAt: string | null;
   paidAt: string | null;
-  paystackTransferReference: string | null;
-  paystackTransferCode: string | null;
-  paystackTransferId: string | null;
+  transferReference: string | null;
+  transferCode: string | null;
+  transferId: string | null;
 
   user: {
     id: string;
@@ -57,7 +57,6 @@ export type WithdrawalDetail = {
       accountName: string | null;
       accountNumber: string | null;
       bankCode?: string | null;
-      paystackRecipientCode?: string | null;
     } | null;
 
     wallet: {

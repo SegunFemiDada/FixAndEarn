@@ -26,8 +26,8 @@ export class ReconciliationService {
     const withdrawals = await this.prisma.withdrawalRequest.findMany({
       where: {
         status: WithdrawalStatus.PAID,
-        payoutMode: "PAYSTACK",
-        paystackTransferReference: {
+        payoutMode: "BANK_TRANSFER",
+        transferReference: {
           not: null,
         },
       },
@@ -36,13 +36,13 @@ export class ReconciliationService {
         userId: true,
         amountMilliFec: true,
         status: true,
-        paystackTransferReference: true,
+        transferReference: true,
       },
     });
 
     for (const withdrawal of withdrawals) {
       try {
-        const reference = withdrawal.paystackTransferReference;
+        const reference = withdrawal.transferReference;
         if (!reference) {
           continue;
         }
@@ -52,7 +52,7 @@ export class ReconciliationService {
 
         if (status === "failed" || status === "reversed") {
           this.logger.warn(
-            `Mismatch detected for withdrawal ${withdrawal.id}. Paystack status=${status}. Reverting payout state.`
+            `Mismatch detected for withdrawal ${withdrawal.id}. Monnify status=${status}. Reverting payout state.`
           );
 
           await this.prisma.$transaction(async (tx) => {
@@ -97,9 +97,9 @@ export class ReconciliationService {
                   reference: withdrawal.id,
                   metadata: {
                     source: "RECONCILIATION_JOB",
-                    paystackTransferReference: reference,
-                    paystackTransferCode: transfer.transferCode ?? null,
-                    paystackStatus: transfer.status,
+                    providerTransferReference: reference,
+                    providerTransferCode: transfer.transferCode ?? null,
+                    providerStatus: transfer.status,
                   },
                 },
               });
@@ -119,7 +119,7 @@ export class ReconciliationService {
               data: {
                 status: WithdrawalStatus.APPROVED,
                 paidAt: null,
-                paystackTransferCode: transfer.transferCode ?? null,
+                transferCode: transfer.transferCode ?? null,
               },
             });
           });

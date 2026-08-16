@@ -16,11 +16,11 @@ export async function initiateDeposit(payload: { amountMilliFec: number }): Prom
 }
 
 export async function simulateDepositWebhook(payload: {
-  paystackRef: string;
+  paymentReference: string;
   status?: "success" | "failed";
 }): Promise<any> {
   const res = await apiClient.post("/wallet/deposits/webhook-simulate", {
-    paystackRef: payload.paystackRef,
+    paymentReference: payload.paymentReference,
     status: payload.status ?? "success",
   });
   return res.data;
@@ -54,7 +54,7 @@ export type DepositHistoryItem = {
   id: string;
   amountMilliFec: number;
   amountKobo: number;
-  paystackRef: string;
+  paymentReference: string;
   status: "PENDING" | "SUCCEEDED" | "FAILED" | string;
   createdAt: string;
 };

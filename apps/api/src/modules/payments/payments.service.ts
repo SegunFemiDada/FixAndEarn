@@ -163,8 +163,8 @@ if (
         data: {
           status: WithdrawalStatus.PAID,
           paidAt: new Date(),
-          paystackTransferReference: reference,
-          paystackTransferCode: transferCode,
+          transferReference: reference,
+          transferCode: transferCode,
           payoutMode: "BANK_TRANSFER",
         },
       });
@@ -206,8 +206,8 @@ if (
             data: {
               status: WithdrawalStatus.APPROVED,
               paidAt: null,
-              paystackTransferReference: reference,
-              paystackTransferCode: transferCode,
+              transferReference: reference,
+              transferCode: transferCode,
               payoutMode: "BANK_TRANSFER",
             },
           });
@@ -257,8 +257,8 @@ if (
           data: {
             status: WithdrawalStatus.APPROVED,
             paidAt: null,
-            paystackTransferReference: reference,
-            paystackTransferCode: transferCode,
+            transferReference: reference,
+            transferCode: transferCode,
             payoutMode: "BANK_TRANSFER",
           },
         });
@@ -378,7 +378,7 @@ const reference =
 
 const jobPayment = await tx.jobPayment.findUnique({
   where: {
-    paystackReference: paymentReference,
+    paymentReference,
   },
   include: {
     job: true,

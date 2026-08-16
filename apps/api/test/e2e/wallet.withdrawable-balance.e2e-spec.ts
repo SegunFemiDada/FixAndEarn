@@ -74,7 +74,7 @@ describe("Wallet Withdrawable Balance E2E", () => {
     await request(app.getHttpServer())
       .post("/wallet/deposits/webhook-simulate")
       .set("X-WEBHOOK-SECRET", process.env.WEBHOOK_SECRET ?? "dev_webhook_secret_123")
-      .send({ paystackRef: init.body.paystackRef, status: "success" })
+      .send({ paymentReference: init.body.paymentReference, status: "success" })
       .expect(201);
 
     // Register client (used only to satisfy Job.clientId relation)

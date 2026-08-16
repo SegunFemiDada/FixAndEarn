@@ -45,7 +45,7 @@ export function useInitiateDeposit() {
 export function useSimulateDepositWebhook() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { paystackRef: string; status?: "success" | "failed" }) =>
+    mutationFn: (payload: { paymentReference: string; status?: "success" | "failed" }) =>
       simulateDepositWebhook(payload),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["wallet", "balance"] });

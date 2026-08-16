@@ -62,7 +62,6 @@ export type AdminUserBankDetails = {
   accountName?: string | null;
   accountNumber?: string | null;
   bankCode?: string | null;
-  paystackRecipientCode?: string | null;
 } | null;
 
 export type AdminUserVerificationDetail = {

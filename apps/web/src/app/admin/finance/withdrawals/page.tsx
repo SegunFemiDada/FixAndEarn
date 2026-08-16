@@ -178,8 +178,8 @@ export default function AdminWithdrawalsPage() {
                       Payout Mode
                     </span>
                     <span className="mt-1 block text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {withdrawal.payoutMode === "PAYSTACK"
-                        ? "Paystack"
+                      {withdrawal.payoutMode === "BANK_TRANSFER"
+                        ? "Bank Transfer"
                         : withdrawal.payoutMode === "MANUAL"
                         ? "Manual"
                         : "—"}

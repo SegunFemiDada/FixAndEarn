@@ -478,11 +478,6 @@ export default function AdminUserDetailPage() {
                   <DetailField label="Account name" value={detail.bankDetails.accountName ?? null} />
                   <DetailField label="Account number" value={detail.bankDetails.accountNumber ?? null} />
                   <DetailField label="Bank code" value={detail.bankDetails.bankCode ?? null} />
-                  <DetailField
-                    label="Recipient code"
-                    value={detail.bankDetails.paystackRecipientCode ?? null}
-                    breakAll
-                  />
                 </div>
               )}
             </div>

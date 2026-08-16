@@ -24,7 +24,7 @@ const BANKS_LIST = [
   "Access Bank", "Zenith Bank", "United Bank for Africa (UBA)", "First Bank of Nigeria (FBN)",
   "Guaranty Trust Bank (GTB)", "Fidelity Bank", "Union Bank of Nigeria (UBN)", "Stanbic IBTC Bank",
   "Wema Bank", "FCMB (First City Monument Bank)", "Sterling Bank", "Keystone Bank", "Moniepoint",
-  "Opay", "PalmPay", "Kuda Bank", "Paystack", "Flutterwave", "Paga", "PiggyVest", "FairMoney",
+  "Opay", "PalmPay", "Kuda Bank", "Flutterwave", "Paga", "PiggyVest", "FairMoney",
   "Carbon (formerly Paylater)", "ALAT by Wema", "V Bank (VFD Group)", "LemFi",
   "MoMo Payment Service Bank (MoMo PSB)", "Interswitch"
 ];
@@ -62,7 +62,6 @@ const withdrawSchema = z.object({
 });
 
 type WithdrawForm = z.input<typeof withdrawSchema>;
-type WithdrawData = z.output<typeof withdrawSchema>;
 
 function toMilliFec(amountFec: number) {
   return Math.round(amountFec * 1000);

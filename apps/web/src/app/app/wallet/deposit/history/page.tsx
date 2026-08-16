@@ -67,7 +67,7 @@ export default function DepositHistoryPage() {
                   >
                     <div className="min-w-0">
                       <div className="truncate font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                        {d.paystackRef}
+                        {d.paymentReference}
                       </div>
                       <div className="mt-0.5 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
                         {d.createdAt ? new Date(d.createdAt).toLocaleString() : "—"}

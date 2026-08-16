@@ -151,41 +151,40 @@ model LedgerEntry {
 }
 
 model BankDetails {
-  id                    String   @id @default(uuid())
-  userId                String   @unique
-  bankName              String
-  accountName           String
-  accountNumber         String
-  bvnEncrypted          String
-  bvnIv                 String
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  paystackRecipientCode String?
-  bankCode              String
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  bankName      String
+  accountName   String
+  accountNumber String
+  bvnEncrypted  String
+  bvnIv         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  bankCode      String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("bank_details")
 }
 
 model WithdrawalRequest {
-  id                        String                 @id @default(uuid())
-  userId                    String
-  amountMilliFec            Int
-  status                    WithdrawalStatus       @default(PENDING)
-  paystackTransferReference String?                @unique
-  paystackTransferCode      String?
-  paystackTransferStatus    String?
-  payoutMode                String?
-  earnings                  FixerEarning[]
-  allocations               WithdrawalAllocation[]
-  failureReason             String?
-  reviewedBy                String?
-  reviewNote                String?
-  createdAt                 DateTime               @default(now())
-  updatedAt                 DateTime               @updatedAt
-  reviewedAt                DateTime?
-  paidAt                    DateTime?
-  user                      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String                 @id @default(uuid())
+  userId            String
+  amountMilliFec    Int
+  status            WithdrawalStatus       @default(PENDING)
+  transferReference String?                @unique
+  transferCode      String?
+  transferStatus    String?
+  payoutMode        String?
+  earnings          FixerEarning[]
+  allocations       WithdrawalAllocation[]
+  failureReason     String?
+  reviewedBy        String?
+  reviewNote        String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  reviewedAt        DateTime?
+  paidAt            DateTime?
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("withdrawal_requests")
@@ -576,12 +575,12 @@ model JobPayment {
   id                  String           @id @default(cuid())
   jobId               String
   amountMilliFec      Int
-  paystackFeeMilliFec Int
+  paymentFeeMilliFec  Int
   status              JobPaymentStatus @default(PENDING)
   paidAt              DateTime?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
-  paystackReference   String           @unique
+  paymentReference    String           @unique
   type                JobPaymentType
   conversationId      String?
   fixerId             String?

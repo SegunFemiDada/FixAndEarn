@@ -36,7 +36,7 @@ export class JobPaymentsService {
     throw new Error("CLIENT_NOT_FOUND");
   }
 
-  const paystackReference = crypto.randomUUID();
+  const paymentReference = crypto.randomUUID();
 
   await this.prisma.jobPayment.upsert({
     where: {
@@ -46,9 +46,9 @@ export class JobPaymentsService {
       },
     },
     update: {
-      paystackReference,
+      paymentReference,
       amountMilliFec: 1000,
-      paystackFeeMilliFec: 0,
+      paymentFeeMilliFec: 0,
       status: "PENDING",
       fixerId: null,
       conversationId: null,
@@ -58,9 +58,9 @@ export class JobPaymentsService {
     create: {
       jobId: args.jobId,
       type: "POSTING",
-      paystackReference,
+      paymentReference,
       amountMilliFec: 1000,
-      paystackFeeMilliFec: 0,
+      paymentFeeMilliFec: 0,
       status: "PENDING",
     },
   });
@@ -68,7 +68,7 @@ export class JobPaymentsService {
   return this.initializeGatewayPayment({
     email: user.email,
     amountMilliFec: 1000,
-    reference: paystackReference,
+    reference: paymentReference,
     metadata: {
     paymentType: "POSTING",
     jobId: args.jobId,
@@ -116,7 +116,7 @@ async createUrgentHirePayment(
     throw new Error("NOT_JOB_OWNER");
   }
 
-  const paystackReference = crypto.randomUUID();
+  const paymentReference = crypto.randomUUID();
 
 const conversation = await db.conversation.upsert({
   where: {
@@ -144,9 +144,9 @@ await db.jobPayment.upsert({
     },
   },
   update: {
-    paystackReference,
+    paymentReference,
     amountMilliFec: 2000,
-    paystackFeeMilliFec: 0,
+    paymentFeeMilliFec: 0,
     fixerId: args.fixerId,
     conversationId: conversation.id,
     lockedPriceMilliFec: null,
@@ -156,9 +156,9 @@ await db.jobPayment.upsert({
   create: {
     jobId: args.jobId,
     type: "URGENT",
-    paystackReference,
+    paymentReference,
     amountMilliFec: 2000,
-    paystackFeeMilliFec: 0,
+    paymentFeeMilliFec: 0,
     fixerId: args.fixerId,
     conversationId: conversation.id,
     status: "PENDING",
@@ -168,7 +168,7 @@ await db.jobPayment.upsert({
   return this.initializeGatewayPayment({
     email: user.email,
     amountMilliFec: 2000,
-    reference: paystackReference,
+    reference: paymentReference,
     metadata: {
       paymentType: "URGENT",
       jobId: args.jobId,
@@ -239,7 +239,7 @@ async continuePayment(args: {
       id: payment.id,
     },
     data: {
-      paystackReference: newReference,
+      paymentReference: newReference,
       status: "PENDING",
       paidAt: null,
     },
@@ -329,7 +329,7 @@ async continuePayment(args: {
     throw new Error("LOCKED_PRICE_MISSING");
   }
 
-  const paystackReference = crypto.randomUUID();
+  const paymentReference = crypto.randomUUID();
 
   await db.jobPayment.upsert({
     where: {
@@ -339,27 +339,27 @@ async continuePayment(args: {
       },
     },
     update: {
-      paystackReference,
+      paymentReference,
       fixerId: negotiation.conversation.fixerId,
       conversationId: args.conversationId,
       lockedPriceMilliFec:
         negotiation.lockedPriceMilliFec,
       amountMilliFec:
         negotiation.lockedPriceMilliFec,
-      paystackFeeMilliFec: 0,
+      paymentFeeMilliFec: 0,
       status: "PENDING",
     },
     create: {
       jobId: args.jobId,
       type: "FINAL",
-      paystackReference,
+      paymentReference,
       fixerId: negotiation.conversation.fixerId,
       conversationId: args.conversationId,
       lockedPriceMilliFec:
         negotiation.lockedPriceMilliFec,
       amountMilliFec:
         negotiation.lockedPriceMilliFec,
-      paystackFeeMilliFec: 0,
+      paymentFeeMilliFec: 0,
       status: "PENDING",
     },
   });
@@ -368,7 +368,7 @@ async continuePayment(args: {
     email: user.email,
     amountMilliFec:
       negotiation.lockedPriceMilliFec,
-    reference: paystackReference,
+    reference: paymentReference,
     metadata: {
       paymentType: "FINAL",
       jobId: args.jobId,
@@ -399,7 +399,7 @@ async handleFailedPayment(jobPaymentId: string) {
       type: true,
       status: true,
       amountMilliFec: true,
-      paystackReference: true,
+      paymentReference: true,
       paidAt: true,
       createdAt: true,
       updatedAt: true,

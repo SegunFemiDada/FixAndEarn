@@ -6,7 +6,6 @@ import {
   Body,
   Controller,
   Get,
-  Inject,
   Post,
   Query,
   UseGuards,
@@ -18,7 +17,6 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
 import { CryptoService } from "../../common/crypto/crypto.service";
-import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import { LedgerService } from "./ledger.service";
 import { WalletService } from "./wallet.service";
 import { SaveBankDetailsDto } from "./dto/save-bank-details.dto";
@@ -44,7 +42,6 @@ export class WalletController {
     private readonly crypto: CryptoService,
     private readonly notifications: NotificationsService,
     private readonly earningsService: EarningsService,
-    @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: any
   ) {}
 
   // ==========================
@@ -217,21 +214,6 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
 async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
   const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
 
-  let recipientCode: string | null = null;
-
-  const payoutsEnabled = process.env.PAYSTACK_PAYOUTS_ENABLED === "true";
-  if (payoutsEnabled && dto.bankCode) {
-    try {
-      const recipient = await this.paymentProvider.createTransferRecipient({
-        name: dto.accountName,
-        accountNumber: dto.accountNumber,
-        bankCode: dto.bankCode,
-      });
-      recipientCode = recipient.recipientCode;
-    } catch (err) {
-      console.error("Paystack recipient creation failed:", err);
-    }
-  }
 
   // Use dummy bank code if not provided (required by DB)
   const finalBankCode = dto.bankCode ?? "000000";
@@ -245,7 +227,6 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
       bankCode: finalBankCode,
       bvnEncrypted: encrypted.ciphertextB64,
       bvnIv: encrypted.ivB64,
-      paystackRecipientCode: recipientCode,
     },
     create: {
       userId: user.userId,
@@ -255,7 +236,6 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
       bankCode: finalBankCode,
       bvnEncrypted: encrypted.ciphertextB64,
       bvnIv: encrypted.ivB64,
-      paystackRecipientCode: recipientCode,
     },
   });
 
@@ -263,9 +243,9 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
     ok: true,
     bankName: record.bankName,
     accountName: record.accountName,
-    accountNumber: record.accountNumber,
-    hasRecipientCode: Boolean(record.paystackRecipientCode),
-  };
+    accountNumber: record.accountNumber, 
+    hasBankDetails: true,
+ };
 }
 
   // ==========================

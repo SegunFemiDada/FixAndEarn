@@ -123,7 +123,6 @@ if (
 ): boolean {
   /**
    * Monnify sandbox does not sign webhook
-   * payloads the same way Paystack does.
    *
    * Until production webhook verification
    * is enabled, accept the request.
@@ -263,24 +262,6 @@ if (
       payload.responseBody
         .transactionReference ?? null,
   };
-}
-
-  async transfer(args: {
-  amount: number;
-  accountNumber: string;
-  bankCode: string;
-  accountName: string;
-  reference: string;
-  reason?: string;
-}) {
-  return this.initiateTransfer({
-    amountKobo: args.amount,
-    accountNumber: args.accountNumber,
-    bankCode: args.bankCode,
-    accountName: args.accountName,
-    reference: args.reference,
-    reason: args.reason,
-  });
 }
 
   async fetchTransfer(

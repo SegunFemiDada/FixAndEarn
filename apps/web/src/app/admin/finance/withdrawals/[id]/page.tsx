@@ -88,7 +88,7 @@ function getPayoutModeClass(mode: string | null | undefined) {
     case "BANK_TRANSFER":
       return "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200";
 
-    case "PAYSTACK":
+    case "MONNIFY":
       return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 text-[#5B8FCC] dark:text-[#7AAEE0]";
 
     case "MANUAL":
@@ -299,8 +299,8 @@ async function confirmAction() {
                   <DetailField label="Paid at" value={formatDateTime(detail.paidAt)} />
                   <DetailField label="Reviewed by" value={detail.reviewedBy} breakAll />
                   <DetailField label="Review note" value={detail.reviewNote} />
-                  <DetailField label="Transfer reference" value={detail.paystackTransferReference} breakAll />
-                  <DetailField label="Transfer code" value={detail.paystackTransferCode} breakAll />
+                  <DetailField label="Transfer reference" value={detail.transferReference} breakAll />
+                  <DetailField label="Transfer code" value={detail.transferCode} breakAll />
                   <div>
   <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
     Payout Mode
@@ -335,11 +335,6 @@ async function confirmAction() {
                   <DetailField label="Account number" value={detail.user.bankDetails?.accountNumber ?? null} />
                   <DetailField label="Amount" value={formatFecFromMilli(Number(detail.amountMilliFec ?? 0))} />
                   <DetailField label="Bank code" value={detail.user.bankDetails?.bankCode ?? null} />
-                  <DetailField
-                    label="Recipient code"
-                    value={detail.user.bankDetails?.paystackRecipientCode ?? null}
-                    breakAll
-                  />
                 </div>
               </div>
             </div>

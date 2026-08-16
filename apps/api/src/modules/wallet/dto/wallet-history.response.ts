@@ -4,7 +4,7 @@ export type WalletHistoryItem = {
   amountMilliFec: number;
   status: string;
   createdAt: string;
-  paystackRef?: string | null;
+  paymentReference?: string | null;
   amountKobo?: number | null;
 };
 
