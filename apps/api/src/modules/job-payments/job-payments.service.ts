@@ -190,6 +190,7 @@ async continuePayment(args: {
       id: true,
       clientId: true,
       status: true,
+      postingType: true,
     },
   });
 
@@ -211,9 +212,12 @@ async continuePayment(args: {
     },
   });
 
+  const expectedPaymentType =
+    job.postingType === "URGENT" ? "URGENT" : "POSTING";
+
   const payment = payments.find(
     (p) =>
-      ["POSTING", "URGENT"].includes(p.type) &&
+      p.type === expectedPaymentType &&
       p.status === "PENDING",
   );
 

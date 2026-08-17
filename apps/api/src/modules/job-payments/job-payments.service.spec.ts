@@ -39,11 +39,20 @@ describe("JobPaymentsService", () => {
       id: "job-1",
       clientId: "user-1",
       status: "DRAFT",
+      postingType: "URGENT",
     });
 
     prisma.jobPayment.findMany.mockResolvedValue([
       {
-        id: "payment-1",
+        id: "posting-payment",
+        type: "POSTING",
+        status: "PENDING",
+        amountMilliFec: 1000,
+        conversationId: null,
+        fixerId: null,
+      },
+      {
+        id: "urgent-payment",
         type: "URGENT",
         status: "PENDING",
         amountMilliFec: 2000,
@@ -65,7 +74,7 @@ describe("JobPaymentsService", () => {
 
     expect(prisma.jobPayment.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "payment-1" },
+        where: { id: "urgent-payment" },
         data: expect.objectContaining({
           paymentReference: expect.any(String),
           status: "PENDING",
