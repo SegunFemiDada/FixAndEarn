@@ -520,18 +520,6 @@ export default function WalletWithdrawPage() {
 
               <div className="mt-6 flex gap-2">
                 <button
-  onClick={submitWithdrawalWithPin}
-  disabled={withdraw.isPending || pin.length < 4}
-  className={`flex-1 rounded-lg py-3 text-sm font-semibold text-white transition-colors
-    ${withdraw.isPending || pin.length < 4
-      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
-      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
-  `}
->
-  {withdraw.isPending ? "Submitting..." : "Confirm withdrawal"}
-</button>
-
-<button
   onClick={() => {
     setPinModalOpen(false);
     setPin("");
@@ -541,6 +529,17 @@ export default function WalletWithdrawPage() {
     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
 >
   Cancel
+</button>
+                <button
+  onClick={submitWithdrawalWithPin}
+  disabled={withdraw.isPending || pin.length < 4}
+  className={`flex-1 rounded-lg py-3 text-sm font-semibold text-white transition-colors
+    ${withdraw.isPending || pin.length < 4
+      ? "cursor-not-allowed bg-blue-200 text-blue-400 dark:bg-blue-900 dark:text-blue-500 opacity-50"
+      : "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"}
+  `}
+>
+  {withdraw.isPending ? "Submitting..." : "Confirm withdrawal"}
 </button>
 
               </div>

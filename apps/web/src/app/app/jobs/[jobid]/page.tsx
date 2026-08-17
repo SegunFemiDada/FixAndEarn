@@ -428,10 +428,10 @@ async function handleDeleteDraft() {
       {/* Header */}
       <div>
         <Link
-          href="/app/jobs"
+          href={`/app/jobs/${jobId}`}
           className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
         >
-          ← Back to jobs
+          ← Back to job
         </Link>
 
         <h1 className="mt-2 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
@@ -660,7 +660,7 @@ async function handleDeleteDraft() {
 
             )}
 
-            {isClient && isJobOwner && effectiveFixerId && job?.status !== "COMPLETED" && (
+            {isClient && isJobOwner && effectiveFixerId && job?.status !== "COMPLETED" && job?.status !== "DRAFT" && (
               <Link
   href={`/app/jobs/${jobId}/chats/${effectiveFixerId}${
     queryConversationId

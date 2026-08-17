@@ -879,17 +879,17 @@ export default function ProfilePage() {
               />
               <div className="mt-4 flex gap-2">
                 <button
+                  onClick={() => setDeleteModalOpen(false)}
+                  className="flex-1 rounded-lg border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition"
+                >
+                  Cancel
+                </button>
+                <button
                   onClick={() => requestDeletionMutation.mutate(deleteReason)}
                   disabled={!deleteReason.trim() || requestDeletionMutation.isPending}
                   className="flex-1 rounded-lg bg-[#D9534F] hover:bg-[#C13E3A] dark:bg-red-700 dark:hover:bg-red-800 py-2 text-sm font-medium text-white transition disabled:opacity-50"
                 >
                   {requestDeletionMutation.isPending ? "Submitting..." : "Submit request"}
-                </button>
-                <button
-                  onClick={() => setDeleteModalOpen(false)}
-                  className="flex-1 rounded-lg border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] transition"
-                >
-                  Cancel
                 </button>
               </div>
             </div>

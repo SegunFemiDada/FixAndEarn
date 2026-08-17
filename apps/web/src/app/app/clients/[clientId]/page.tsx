@@ -101,12 +101,6 @@ export default function ClientProfilePage() {
       <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
         <div className="mx-auto max-w-2xl">
           <div className="mb-4">
-            <Link
-              href="/app/jobs/${jobId}"
-              className="text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
-            >
-              ← Back
-            </Link>
           </div>
 
           <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
