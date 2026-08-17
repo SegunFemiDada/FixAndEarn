@@ -212,7 +212,9 @@ async continuePayment(args: {
   });
 
   const payment = payments.find(
-    (p) => p.type === "POSTING" && p.status === "PENDING",
+    (p) =>
+      ["POSTING", "URGENT"].includes(p.type) &&
+      p.status === "PENDING",
   );
 
   if (!payment) {
