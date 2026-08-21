@@ -6,7 +6,7 @@ import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import * as crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import { JobPaymentProcessorService } from "./job-payment-processor.service";
-
+import { FINAL_PAYMENT_EXPIRATION_MINUTES } from "./job-payment.constants";
 
 @Injectable()
 export class JobPaymentsService {
@@ -337,7 +337,11 @@ async continuePayment(args: {
 
   const paymentReference = crypto.randomUUID();
 
-  await db.jobPayment.upsert({
+const expiresAt = new Date(
+  Date.now() + FINAL_PAYMENT_EXPIRATION_MINUTES * 60 * 1000,
+);
+
+await db.jobPayment.upsert({
     where: {
       jobId_type: {
         jobId: args.jobId,
@@ -354,6 +358,8 @@ async continuePayment(args: {
         negotiation.lockedPriceMilliFec,
       paymentFeeMilliFec: 0,
       status: "PENDING",
+      paidAt: null,
+      expiresAt,
     },
     create: {
       jobId: args.jobId,
@@ -367,6 +373,8 @@ async continuePayment(args: {
         negotiation.lockedPriceMilliFec,
       paymentFeeMilliFec: 0,
       status: "PENDING",
+      paidAt: null,
+      expiresAt,
     },
   });
 
@@ -406,6 +414,7 @@ async handleFailedPayment(jobPaymentId: string) {
       status: true,
       amountMilliFec: true,
       paymentReference: true,
+      expiresAt: true,
       paidAt: true,
       createdAt: true,
       updatedAt: true,

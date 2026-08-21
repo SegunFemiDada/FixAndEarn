@@ -7,6 +7,7 @@ import { JobPaymentsController } from "./job-payments.controller";
 import { JobPaymentsService } from "./job-payments.service";
 import { JobPaymentProcessorService } from "./job-payment-processor.service";
 import { ChatModule } from "../../chat/chat.module";
+import { FinalPaymentExpirationService } from "./final-payment-expiration.service";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ChatModule } from "../../chat/chat.module";
   providers: [
   JobPaymentsService,
   JobPaymentProcessorService,
+  FinalPaymentExpirationService,
 ],
 
 exports: [
