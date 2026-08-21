@@ -94,13 +94,13 @@ export default function HiringPathModal({ open, onClose }: Props) {
               Urgent
             </p>
             <p className="mt-2 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
-              Browse ready fixers and hire immediately.
+              Browse ready fixers and request an urgent connection.
             </p>
             <div className="mt-4 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Fee: 2 FEC (₦2000)
+              Fee: 2 FEC (₦2,000)
             </div>
 
-           <button
+          <button
   type="button"
   onClick={handleUrgent}
   className="mt-5 inline-flex w-full items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition-colors

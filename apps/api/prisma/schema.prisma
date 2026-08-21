@@ -578,6 +578,7 @@ model JobPayment {
   paymentFeeMilliFec  Int
   status              JobPaymentStatus @default(PENDING)
   paidAt              DateTime?
+  expiresAt           DateTime?
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   paymentReference    String           @unique
@@ -591,6 +592,7 @@ model JobPayment {
   @@index([fixerId])
   @@index([conversationId])
   @@index([jobId, status])
+  @@index([status, expiresAt])
 }
 
 model FixerEarning {
@@ -784,6 +786,7 @@ enum JobPaymentStatus {
   PENDING
   SUCCESS
   FAILED
+  EXPIRED
 }
 
 enum JobPostingType {

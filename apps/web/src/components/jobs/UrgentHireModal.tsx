@@ -49,6 +49,7 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
     setStep("summary");
     setError(null);
     setForm(getInitialFormState(fixer));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, fixer?.id]);
 
   if (!open || !fixer) {
@@ -141,13 +142,13 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 dark:bg-black/70">
       <div className="w-full max-w-md rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_8px_32px_rgba(91,143,204,0.16)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
         <h2 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-          {step === "summary" ? "Confirm urgent hire" : "Complete job details"}
+          {step === "summary" ? "Confirm urgent connection" : "Complete job details"}
         </h2>
 
         {step === "summary" ? (
           <>
             <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-              You are about to hire{" "}
+              You are about to request an urgent connection with{" "}
               <span className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                 {selectedFixer.fullName}
               </span>
@@ -155,11 +156,11 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
             </p>
 
             <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-              <p className="font-medium">Urgent hire fee</p>
+              <p className="font-medium">Urgent connection fee</p>
 
               <p className="mt-1">
-                A 2 FEC (₦2000) platform service fee payment is required
-                before the fixer can be assigned.
+                A 2 FEC (₦2,000) urgent connection fee is required to connect you directly with this fixer.
+                This fee is for the FixAndEarn platform service that connects you directly with your selected fixer. It is separate from the job payment.
               </p>
 
               <p className="mt-2 text-xs">
@@ -183,7 +184,7 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
                 disabled={urgentHire.isPending}
                 className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:disabled:bg-blue-900"
               >
-                Hire now
+                Pay ₦2,000 & Connect
               </button>
             </div>
           </>

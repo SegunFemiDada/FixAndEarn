@@ -302,7 +302,7 @@ export default function FixerCard({
                 ? `Currently ${availabilityLabel(
                     effectiveAvailability
                   )}`
-                : "Hire now"}
+                : "Connect now"}
             </button>
 
             <span
@@ -312,7 +312,7 @@ export default function FixerCard({
                 dark:text-[#8FA0BC]
               "
             >
-              Secure payment required
+              Secure payment required for direct hire.
             </span>
           </div>
         </div>
