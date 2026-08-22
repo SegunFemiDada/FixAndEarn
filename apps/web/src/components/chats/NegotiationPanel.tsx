@@ -89,36 +89,6 @@ function parseMilliFromInput(
   return Math.round(n * 1000);
 }
 
-function formatRemainingTime(
-  milliseconds: number
-): string {
-  const totalSeconds =
-    Math.max(
-      0,
-      Math.floor(
-        milliseconds / 1000
-      )
-    );
-
-  const hours =
-    Math.floor(
-      totalSeconds / 3600
-    );
-
-  const minutes =
-    Math.floor(
-      (totalSeconds % 3600) / 60
-    );
-
-  const seconds =
-    totalSeconds % 60;
-
-  return [
-    String(hours).padStart(2, "0"),
-    String(minutes).padStart(2, "0"),
-    String(seconds).padStart(2, "0"),
-  ].join(":");
-}
 
 export default function NegotiationPanel({
   negotiation,
@@ -134,9 +104,6 @@ export default function NegotiationPanel({
   onRespond,
   myUserId,
   role,
-  jobStatus,
-  continuingToPayment,
-  onContinueToPayment,
 }: Props) {
   const [
     showModal,
@@ -244,11 +211,6 @@ export default function NegotiationPanel({
   const paymentWindowActive =
     remainingMs > 0;
 
-  const showContinuePayment =
-    role === "client" &&
-    jobStatus === "OPEN" &&
-    showAgreedState &&
-    paymentWindowActive;
 
   return (
     <div className="space-y-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -390,35 +352,6 @@ export default function NegotiationPanel({
                   : "Waiting for the client's payment."}
 
               </div>
-
-              <div className="mt-3 rounded-lg bg-white/60 dark:bg-black/10 p-3">
-
-                <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Payment window
-                </div>
-
-                <div className="mt-1 text-lg font-bold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                  {formatRemainingTime(
-                    remainingMs
-                  )}
-                </div>
-
-              </div>
-
-              {showContinuePayment && (
-                <Button
-                  disabled={
-                    continuingToPayment
-                  }
-                  onClick={
-                    onContinueToPayment
-                  }
-                >
-                  {continuingToPayment
-                    ? "Opening Payment..."
-                    : "Continue to Payment"}
-                </Button>
-              )}
 
             </>
           ) : (

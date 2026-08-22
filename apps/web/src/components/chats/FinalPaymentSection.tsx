@@ -95,7 +95,7 @@ export default function FinalPaymentSection({
   }
 
   return (
-    <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+    <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
       <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
         Price Agreed
       </div>

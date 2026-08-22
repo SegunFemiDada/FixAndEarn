@@ -344,17 +344,17 @@ if (
             );
 
           const checkoutUrl =
-            response?.payment?.authorizationUrl;
+          response?.payment?.authorizationUrl ??
+          response?.authorizationUrl;
 
-          if (!checkoutUrl) {
-            throw new Error(
-              "Payment checkout URL was not returned."
-            );
-          }
-
-          window.location.assign(
-            checkoutUrl
+        if (!checkoutUrl) {
+          throw new Error(
+            "Payment checkout URL was not returned."
           );
+        }
+
+        window.location.assign(checkoutUrl);
+
         } catch (e) {
           setActionErr(
             renderAxiosError(e)
