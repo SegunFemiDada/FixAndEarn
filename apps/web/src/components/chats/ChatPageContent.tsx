@@ -6,6 +6,7 @@ import ChatAgreementSection from "@/components/chats/ChatAgreementSection";
 
 import ChatConversationSection from "@/components/chats/ChatConversationSection";
 import ChatNegotiationSectionContainer from "@/components/chats/ChatNegotiationSectionContainer";
+import FinalPaymentSection from "@/components/chats/FinalPaymentSection";
 
 import type {
   ChatJob,
@@ -42,6 +43,14 @@ export type NegotiationSectionProps = {
   lockingPrice: boolean;
 
   respondingToLockedPrice: boolean;
+  
+  role: "client" | "fixer";
+
+  jobStatus: string | null;
+
+  continuingToPayment: boolean;
+
+  onContinueToPayment: () => void | Promise<void>;
 
   onChangeProposeFec: (
     value: string
@@ -76,6 +85,14 @@ type Props = {
   onClosePaymentModal: () => void;
 
   onRefresh: () => void;
+
+  role: "client" | "fixer";
+
+  paymentPendingForClient: boolean;
+
+  initializingFinalPayment: boolean;
+
+  onContinuePayment: () => void | Promise<void>;
 };
 
 export default function ChatPageContent({
@@ -86,7 +103,11 @@ export default function ChatPageContent({
   showPaymentModal,
   onClosePaymentModal,
   onRefresh,
-}: Props)
+  role,
+  paymentPendingForClient,
+  initializingFinalPayment,
+  onContinuePayment,
+}: Props) 
 {
   return (
     <>
@@ -106,6 +127,15 @@ export default function ChatPageContent({
       <ChatNegotiationSectionContainer
         {...negotiationSection}
       />
+      <FinalPaymentSection
+      role={role}
+      jobStatus={job?.status}
+      negotiationStatus={negotiationSection.negotiation?.status}
+      agreedAt={negotiationSection.negotiation?.agreedAt}
+      paymentPendingForClient={paymentPendingForClient}
+      initializing={initializingFinalPayment}
+      onContinuePayment={onContinuePayment}
+    />
 
       <ChatConversationSection
         {...conversation}      />

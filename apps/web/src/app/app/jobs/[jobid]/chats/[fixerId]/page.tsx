@@ -80,17 +80,21 @@ const participantRole =
 
       {status.showContent && (
         <ChatPageContent
-        job={chat.job ?? null}
-        needsAgreement={chat.needsAgreement}
-        conversation={{
-          ...conversationSection,
-          onReport: actions.openReportModal,
-        }}
-        negotiationSection={negotiationSection}
-        showPaymentModal={chat.showPaymentModal}
-        onClosePaymentModal={chat.dismissPaymentModal}
-        onRefresh={chat.refetch}
-      />
+  job={chat.job ?? null}
+  needsAgreement={chat.needsAgreement}
+  conversation={{
+    ...conversationSection,
+    onReport: actions.openReportModal,
+  }}
+  negotiationSection={negotiationSection}
+  showPaymentModal={chat.showPaymentModal}
+  onClosePaymentModal={chat.dismissPaymentModal}
+  onRefresh={chat.refetch}
+  role={role}
+  paymentPendingForClient={chat.paymentPendingForClient}
+  initializingFinalPayment={chat.continuingToPayment}
+  onContinuePayment={chat.continueToPayment}
+/>
       )}
 
       <ChatActionError error={chat.actionErr} />

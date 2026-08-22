@@ -1,36 +1,123 @@
-//path: apps/web/src/components/chats/NegotiationPanel.tsx
 "use client";
-import { useState, useEffect } from "react";
-import {Button} from "@/components/ui/Button";
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import { Button } from "@/components/ui/Button";
 import LockedPriceModal from "@/components/chats/LockedPriceModal";
+
 import type { Negotiation } from "@/lib/chat/types";
 
 type Props = {
   negotiation: Negotiation | null;
+
   proposeFec: string;
+
   lockFec: string;
+
   proposingPrice: boolean;
+
   lockingPrice: boolean;
+
   respondingToLockedPrice: boolean;
-  onChangeProposeFec: (value: string) => void;
-  onChangeLockFec: (value: string) => void;
- onPropose: () => void | Promise<void>;
+
+  onChangeProposeFec: (
+    value: string
+  ) => void;
+
+  onChangeLockFec: (
+    value: string
+  ) => void;
+
+  onPropose: () => void | Promise<void>;
+
   onLock: () => void | Promise<void>;
-  onRespond: (accept: boolean) => void | Promise<void>;
+
+  onRespond: (
+    accept: boolean
+  ) => void | Promise<void>;
+
   myUserId?: string | null;
+
+  role: "client" | "fixer";
+
+  jobStatus: string | null;
+
+  continuingToPayment: boolean;
+
+  onContinueToPayment: () =>
+    | void
+    | Promise<void>;
 };
 
-function fmtFecFromMilli(milli?: number | null): string {
-  if (typeof milli !== "number") return "—";
-  return `${(milli / 1000).toFixed(2)} FEC`;
+const PAYMENT_WINDOW_MS =
+  60 * 60 * 1000;
+
+function fmtFecFromMilli(
+  milli?: number | null
+): string {
+  if (typeof milli !== "number") {
+    return "—";
+  }
+
+  return `${(
+    milli / 1000
+  ).toFixed(2)} FEC`;
 }
 
-function parseMilliFromInput(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
+function parseMilliFromInput(
+  value: string
+): number | null {
+  const trimmed =
+    value.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
   const n = Number(trimmed);
-  if (!Number.isFinite(n) || n <= 0) return null;
+
+  if (
+    !Number.isFinite(n) ||
+    n <= 0
+  ) {
+    return null;
+  }
+
   return Math.round(n * 1000);
+}
+
+function formatRemainingTime(
+  milliseconds: number
+): string {
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.floor(
+        milliseconds / 1000
+      )
+    );
+
+  const hours =
+    Math.floor(
+      totalSeconds / 3600
+    );
+
+  const minutes =
+    Math.floor(
+      (totalSeconds % 3600) / 60
+    );
+
+  const seconds =
+    totalSeconds % 60;
+
+  return [
+    String(hours).padStart(2, "0"),
+    String(minutes).padStart(2, "0"),
+    String(seconds).padStart(2, "0"),
+  ].join(":");
 }
 
 export default function NegotiationPanel({
@@ -46,112 +133,305 @@ export default function NegotiationPanel({
   onLock,
   onRespond,
   myUserId,
+  role,
+  jobStatus,
+  continuingToPayment,
+  onContinueToPayment,
 }: Props) {
-  const [showModal, setShowModal] = useState(false);
+  const [
+    showModal,
+    setShowModal,
+  ] = useState(false);
 
-  const status = negotiation?.status ?? "OPEN";
-  const canSubmitPropose = parseMilliFromInput(proposeFec) !== null;
-  const canSubmitLock = parseMilliFromInput(lockFec) !== null;
+  const [
+    remainingMs,
+    setRemainingMs,
+  ] = useState(0);
 
-  const showOpenActions = status === "OPEN" || status === "REJECTED";
-  const showLockedActions = status === "LOCKED";
-  const showAgreedState = status === "AGREED";
+  const status =
+    negotiation?.status ??
+    "OPEN";
 
-  const lockedByMe = negotiation?.lockedByUserId === myUserId;
+  const canSubmitPropose =
+    parseMilliFromInput(
+      proposeFec
+    ) !== null;
 
-  // ✅ Only open modal for counterparty
+  const canSubmitLock =
+    parseMilliFromInput(
+      lockFec
+    ) !== null;
+
+  const showOpenActions =
+    status === "OPEN" ||
+    status === "REJECTED";
+
+  const showLockedActions =
+    status === "LOCKED";
+
+  const showAgreedState =
+    status === "AGREED";
+
+  const lockedByMe =
+    negotiation?.lockedByUserId ===
+    myUserId;
+
+  const agreedAt =
+    negotiation?.agreedAt
+      ? new Date(
+          negotiation.agreedAt
+        ).getTime()
+      : null;
+
+  const paymentExpiresAt =
+    agreedAt !== null
+      ? agreedAt +
+        PAYMENT_WINDOW_MS
+      : null;
+
   useEffect(() => {
-    if (showLockedActions && !lockedByMe) {
-      setShowModal(true);
-    } else {
+    if (
+      !showLockedActions ||
+      lockedByMe
+    ) {
       setShowModal(false);
+      return;
     }
-  }, [showLockedActions, lockedByMe]);
+
+    setShowModal(true);
+  }, [
+    showLockedActions,
+    lockedByMe,
+  ]);
+
+  useEffect(() => {
+    if (
+      !showAgreedState ||
+      paymentExpiresAt === null
+    ) {
+      setRemainingMs(0);
+      return;
+    }
+
+    const updateTimer = () => {
+      setRemainingMs(
+        Math.max(
+          0,
+          paymentExpiresAt -
+            Date.now()
+        )
+      );
+    };
+
+    updateTimer();
+
+    const interval =
+      window.setInterval(
+        updateTimer,
+        1000
+      );
+
+    return () => {
+      window.clearInterval(
+        interval
+      );
+    };
+  }, [
+    showAgreedState,
+    paymentExpiresAt,
+  ]);
+
+  const paymentWindowActive =
+    remainingMs > 0;
+
+  const showContinuePayment =
+    role === "client" &&
+    jobStatus === "OPEN" &&
+    showAgreedState &&
+    paymentWindowActive;
 
   return (
     <div className="space-y-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-      <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Negotiation</div>
-      <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Status: {status}</div>
 
-      {/* Proposed & Locked summary */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] p-3">
-          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Proposed</div>
-          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            {fmtFecFromMilli(negotiation?.proposedPriceMilliFec)}
-          </div>
-        </div>
-        <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] p-3">
-          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Locked</div>
-          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            {fmtFecFromMilli(negotiation?.lockedPriceMilliFec)}
-          </div>
-        </div>
+      <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        Negotiation
       </div>
 
-      {/* Open actions */}
+      <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        Status: {status}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+        <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] p-3">
+
+          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Proposed
+          </div>
+
+          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            {fmtFecFromMilli(
+              negotiation?.proposedPriceMilliFec
+            )}
+          </div>
+
+        </div>
+
+        <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] p-3">
+
+          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Locked
+          </div>
+
+          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            {fmtFecFromMilli(
+              negotiation?.lockedPriceMilliFec
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
       {showOpenActions && (
         <>
           <div className="space-y-2">
+
             <input
               value={proposeFec}
-              onChange={(e) => onChangeProposeFec(e.target.value)}
+              onChange={(e) =>
+                onChangeProposeFec(
+                  e.target.value
+                )
+              }
               placeholder="Propose price"
               inputMode="decimal"
               className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2.5 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none"
             />
+
             <Button
-              disabled={proposingPrice || !canSubmitPropose}
+              disabled={
+                proposingPrice ||
+                !canSubmitPropose
+              }
               onClick={onPropose}
             >
-              {proposingPrice ? "Submitting..." : "Propose"}
+              {proposingPrice
+                ? "Submitting..."
+                : "Propose"}
             </Button>
+
           </div>
 
           <div className="space-y-2">
+
             <input
               value={lockFec}
-              onChange={(e) => onChangeLockFec(e.target.value)}
+              onChange={(e) =>
+                onChangeLockFec(
+                  e.target.value
+                )
+              }
               placeholder="Lock price"
               inputMode="decimal"
               className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2.5 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none"
             />
+
             <Button
-            disabled={lockingPrice || !canSubmitLock}
-            onClick={onLock}
-          >
-              {lockingPrice ? "Locking..." : "Lock"}
+              disabled={
+                lockingPrice ||
+                !canSubmitLock
+              }
+              onClick={onLock}
+            >
+              {lockingPrice
+                ? "Locking..."
+                : "Lock"}
             </Button>
+
           </div>
         </>
       )}
 
-      {/* Locked actions — modal for counterparty only */}
-      {showModal && !lockedByMe && (
-        <LockedPriceModal
-          lockedPrice={negotiation?.lockedPriceMilliFec ?? null}
-          busy={respondingToLockedPrice}
-          onAccept={() => {
-            onRespond(true);
-            setShowModal(false);
-          }}
-          onReject={() => {
-            onRespond(false);
-            setShowModal(false);
-          }}
-        />
+      {showModal &&
+        !lockedByMe && (
+          <LockedPriceModal
+            lockedPrice={
+              negotiation?.lockedPriceMilliFec ??
+              null
+            }
+            busy={
+              respondingToLockedPrice
+            }
+            onAccept={() => {
+              onRespond(true);
+              setShowModal(false);
+            }}
+            onReject={() => {
+              onRespond(false);
+              setShowModal(false);
+            }}
+          />
+        )}
+
+      {showAgreedState && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
+
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Price agreed successfully.
+          </div>
+
+          {paymentWindowActive ? (
+            <>
+              <div className="mt-2 text-[#6B7C99] dark:text-[#8FA0BC]">
+
+                {role === "client"
+                  ? "Complete payment to start the job."
+                  : "Waiting for the client's payment."}
+
+              </div>
+
+              <div className="mt-3 rounded-lg bg-white/60 dark:bg-black/10 p-3">
+
+                <div className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Payment window
+                </div>
+
+                <div className="mt-1 text-lg font-bold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {formatRemainingTime(
+                    remainingMs
+                  )}
+                </div>
+
+              </div>
+
+              {showContinuePayment && (
+                <Button
+                  disabled={
+                    continuingToPayment
+                  }
+                  onClick={
+                    onContinueToPayment
+                  }
+                >
+                  {continuingToPayment
+                    ? "Opening Payment..."
+                    : "Continue to Payment"}
+                </Button>
+              )}
+
+            </>
+          ) : (
+            <div className="mt-2 text-[#6B7C99] dark:text-[#8FA0BC]">
+              The 60-minute payment
+              window for this agreement
+              has expired.
+            </div>
+          )}
+
+        </div>
       )}
 
- {showAgreedState && (
-  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-    Price agreed successfully.
-
-    <div className="mt-2">
-      The job will move to <strong>IN&nbsp;PROGRESS</strong> only after the
-      client&apos;s payment has been successfully confirmed.
-    </div>
-  </div>
-)}
     </div>
   );
 }

@@ -14,13 +14,16 @@ import {
   sendMessage,
 } from "@/lib/chat/api";
 
+
 import type { AxiosError } from "axios";
+import { initializeFinalPayment } from "@/lib/jobs/api";
 
 type Params = {
   jobId: string;
   fixerId: string;
   myUserId?: string | null;
   role: "client" | "fixer";
+  conversationId?: string | null;
 
   refetch: () => Promise<any>;
 
@@ -69,6 +72,7 @@ export function useChatActions({
   fixerId,
   myUserId,
   role,
+  conversationId,
   refetch,
   addOptimisticMessage,
   markFailedMessage,
@@ -97,6 +101,12 @@ export function useChatActions({
     respondingToLockedPrice,
     setRespondingToLockedPrice,
   ] = React.useState(false);
+
+  const [
+  continuingToPayment,
+  setContinuingToPayment,
+] = React.useState(false);
+
 
   const sendChatMessage =
     React.useCallback(
@@ -313,19 +323,67 @@ if (
       },
       [fixerId, jobId, refetch, role]
     );
+      const continueToPayment =
+    React.useCallback(
+      async () => {
+        if (
+          role !== "client" ||
+          !conversationId
+        ) {
+          return;
+        }
+
+        try {
+          setContinuingToPayment(true);
+          setActionErr(null);
+
+          const response =
+            await initializeFinalPayment(
+              jobId,
+              conversationId
+            );
+
+          const checkoutUrl =
+            response?.payment?.authorizationUrl;
+
+          if (!checkoutUrl) {
+            throw new Error(
+              "Payment checkout URL was not returned."
+            );
+          }
+
+          window.location.assign(
+            checkoutUrl
+          );
+        } catch (e) {
+          setActionErr(
+            renderAxiosError(e)
+          );
+        } finally {
+          setContinuingToPayment(false);
+        }
+      },
+      [
+        conversationId,
+        jobId,
+        role,
+      ]
+    );
 
   return {
-    actionErr,
-    setActionErr,
+  actionErr,
+  setActionErr,
 
-    sendingMessage,
-    proposingPrice,
-    lockingPrice,
-    respondingToLockedPrice,
+  sendingMessage,
+  proposingPrice,
+  lockingPrice,
+  respondingToLockedPrice,
+  continuingToPayment,
 
-    sendChatMessage,
-    submitProposePrice,
-    submitLockPrice,
-    submitLockedPriceResponse,
-  };
+  sendChatMessage,
+  submitProposePrice,
+  submitLockPrice,
+  submitLockedPriceResponse,
+  continueToPayment,
+};
 }

@@ -52,10 +52,16 @@ const previousStatus = useRef<string | null>(null);
     markFailedMessage,
   } = useChatMessages(state.messages ?? []);
 
+  const paymentPendingForClient =
+  role === "client" &&
+  state.negotiation?.status === "AGREED" &&
+  state.job?.status === "OPEN";
 
 
   return {
     ...state,
+    conversationId:
+    (query.data as ConversationDetailData | undefined)?.conversation?.id ?? null,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     refetch: query.refetch,
@@ -71,6 +77,7 @@ const previousStatus = useRef<string | null>(null);
       false,
     role,              // expose role
     myUserId,          // expose myUserId
+    paymentPendingForClient,
     showPaymentModal,
     dismissPaymentModal: () => {
     setShowPaymentModal(false);

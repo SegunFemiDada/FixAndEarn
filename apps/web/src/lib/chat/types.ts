@@ -23,6 +23,7 @@ export type Negotiation = {
   lockedPriceMilliFec?: number | null;
   // ✅ Add this field
   lockedByUserId?: string | null;
+  agreedAt: string | null;
 };
 
 

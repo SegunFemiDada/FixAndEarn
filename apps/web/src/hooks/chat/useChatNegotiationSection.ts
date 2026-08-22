@@ -50,8 +50,20 @@ export function useChatNegotiationSection(
       onRespond:
         chat.submitLockedPriceResponse,
 
-        myUserId:
-        chat.myUserId,
+       myUserId:
+      chat.myUserId,
+
+      role:
+        chat.role,
+
+      jobStatus:
+        chat.job?.status ?? null,
+
+      continuingToPayment:
+        chat.continuingToPayment,
+
+      onContinueToPayment:
+        chat.continueToPayment,
     }),
     [chat]
   );

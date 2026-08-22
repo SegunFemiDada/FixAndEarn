@@ -22,6 +22,14 @@ type Props = {
 
   respondingToLockedPrice: boolean;
 
+    role: "client" | "fixer";
+
+  jobStatus: string | null;
+
+  continuingToPayment: boolean;
+
+  onContinueToPayment: () => void | Promise<void>;
+
   onChangeProposeFec: (
     value: string
   ) => void;
@@ -47,6 +55,10 @@ export default function ChatNegotiationSection({
   proposingPrice,
   lockingPrice,
   respondingToLockedPrice,
+  role,
+  jobStatus,
+  continuingToPayment,
+  onContinueToPayment,
   onChangeProposeFec,
   onChangeLockFec,
   onPropose,
@@ -90,6 +102,18 @@ export default function ChatNegotiationSection({
         onRespond
       }
       myUserId={myUserId}
+
+      role={role}
+
+      jobStatus={jobStatus}
+
+      continuingToPayment={
+        continuingToPayment
+      }
+
+      onContinueToPayment={
+        onContinueToPayment
+      }
     />
   );
 }

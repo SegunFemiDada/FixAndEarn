@@ -50,14 +50,15 @@ export function useChatController({
   });
 
   const actions = useChatActions({
-    jobId,
-    fixerId,
-    myUserId,
-    role,
-    refetch: conversation.refetch,
-    addOptimisticMessage,
-    markFailedMessage,
-  });
+  jobId,
+  fixerId,
+  myUserId,
+  role,
+  conversationId: conversation.conversationId,
+  refetch: conversation.refetch,
+  addOptimisticMessage,
+  markFailedMessage,
+});
 
   useChatRealtime({
     jobId,

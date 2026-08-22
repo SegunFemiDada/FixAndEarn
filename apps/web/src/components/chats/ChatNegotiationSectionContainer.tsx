@@ -14,6 +14,10 @@ export default function ChatNegotiationSectionContainer({
   proposingPrice,
   lockingPrice,
   respondingToLockedPrice,
+  role,
+  jobStatus,
+  continuingToPayment,
+  onContinueToPayment,
   onChangeProposeFec,
   onChangeLockFec,
   onPropose,
@@ -51,6 +55,12 @@ export default function ChatNegotiationSectionContainer({
       onLock={onLock}
       onRespond={
         onRespond
+      }
+      role={role}
+      jobStatus={jobStatus}
+      continuingToPayment={continuingToPayment}
+      onContinueToPayment={
+        onContinueToPayment
       }
       myUserId={myUserId}
     />
