@@ -2,7 +2,6 @@
 "use client";
 
 import JobSummaryCard from "@/components/chats/JobSummaryCard";
-import ChatAgreementSection from "@/components/chats/ChatAgreementSection";
 
 import ChatConversationSection from "@/components/chats/ChatConversationSection";
 import ChatNegotiationSectionContainer from "@/components/chats/ChatNegotiationSectionContainer";
@@ -74,8 +73,6 @@ export type NegotiationSectionProps = {
 type Props = {
   job: ChatJob | null;
 
-  needsAgreement: boolean;
-
   conversation: ConversationSectionProps;
 
   negotiationSection: NegotiationSectionProps;
@@ -97,7 +94,6 @@ type Props = {
 
 export default function ChatPageContent({
   job,
-  needsAgreement,
   conversation,
   negotiationSection,
   showPaymentModal,
@@ -113,15 +109,6 @@ export default function ChatPageContent({
     <>
       <JobSummaryCard
         job={job}
-      />
-
-      <ChatAgreementSection
-        canChat={
-          conversation.canChat
-        }
-        needsAgreement={
-          needsAgreement
-        }
       />
 
       <ChatNegotiationSectionContainer

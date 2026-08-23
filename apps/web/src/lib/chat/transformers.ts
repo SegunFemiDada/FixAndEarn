@@ -16,9 +16,7 @@ export type ChatConversationState = {
   isCompleted: boolean;
   canChat: boolean;
 
-  needsAgreement: boolean;
   isConversationMissing: boolean;
-  showAgreementBootstrap: boolean;
   error: unknown | null;
 
   active: boolean;
@@ -53,25 +51,15 @@ export function buildChatConversationState(params: {
       )
     );
 
-  const needsAgreement = false;
 
   const isCompleted =
     job?.status === "COMPLETED";
 
-  const conversationStatus =
-  data?.conversation?.status ?? "CLOSED";
-
-  const conversationActive =
-    data?.conversation?.active ?? false;
-
   const canChat =
     Boolean(data) &&
     !isError &&
-    !isCompleted &&
-    conversationStatus === "OPEN" &&
-    conversationActive;
+    !isCompleted;
 
-  const showAgreementBootstrap = false;
 
   return {
     job,
@@ -86,9 +74,7 @@ export function buildChatConversationState(params: {
     isCompleted,
     canChat,
 
-    needsAgreement,
     isConversationMissing,
-    showAgreementBootstrap,
     error,
 
     active:
