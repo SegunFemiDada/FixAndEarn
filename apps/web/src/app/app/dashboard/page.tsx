@@ -68,14 +68,15 @@ function JobCard({
           <div className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
             {location || "Location not available"}
           </div>
+          
+        </div>
+
+        <div className="shrink-0 text-right">
           {isNegotiatedPrice ? (
             <div className="mt-2 inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
               Locked agreed price
             </div>
           ) : null}
-        </div>
-
-        <div className="shrink-0 text-right">
           <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
             {formatFecFromMilli(displayAmountMilliFec)}
           </div>

@@ -54,28 +54,43 @@ export default function ChatConversationCard({
 
       <ChatMessages messages={messages} myUserId={myUserId} onReport={onReport} />
 
+      {canChat && (
       <TypingIndicator users={typingUsers} />
+    )}
 
       {/* ✅ Input box logic */}
-      {role === "client" ? (
-        // Client always sees input box
-        <ChatInput
-          value={messageValue}
-          disabled={!canChat}
-          busy={sendingMessage}
-          onChange={onMessageChange}
-          onSend={onSend}
-        />
-      ) : (isActive || clientHasMessaged) ? (
-        // Fixer sees input box only after client has messaged or chat is active
-        <ChatInput
-          value={messageValue}
-          disabled={!canChat}
-          busy={sendingMessage}
-          onChange={onMessageChange}
-          onSend={onSend}
-        />
-      ) : null}
+      {canChat ? (
+  role === "client" ? (
+    // Client can always start the conversation while the conversation is open.
+    <ChatInput
+      value={messageValue}
+      disabled={sendingMessage}
+      busy={sendingMessage}
+      onChange={onMessageChange}
+      onSend={onSend}
+    />
+  ) : (
+    // Fixer gets the input only after the client has activated the conversation.
+    (isActive || clientHasMessaged) && (
+      <ChatInput
+        value={messageValue}
+        disabled={sendingMessage}
+        busy={sendingMessage}
+        onChange={onMessageChange}
+        onSend={onSend}
+      />
+    )
+  )
+) : (
+  <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/60">
+    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+      This chat has been closed.
+    </p>
+    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      No further messages can be sent in this conversation.
+    </p>
+  </div>
+)}
     </Card>
   );
 }
