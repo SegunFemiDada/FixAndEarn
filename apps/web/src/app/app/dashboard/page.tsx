@@ -72,24 +72,25 @@ function JobCard({
     </div>
 
     {/* Right content */}
-    <div className="flex flex-col items-end space-y-2 shrink-0 text-right">
-      {isNegotiatedPrice && (
-        <div className="inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-          Locked agreed price
-        </div>
-      )}
-      <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-        {formatFecFromMilli(displayAmountMilliFec)}
-      </div>
-      <div
-        className={[
-          "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
-          getStatusBadgeClass(status),
-        ].join(" ")}
-      >
-        {status}
-      </div>
+<div className="flex flex-col items-end justify-center gap-2 pt-1 shrink-0 text-right">
+  {isNegotiatedPrice && (
+    <div className="inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+      Locked agreed price
     </div>
+  )}
+  <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+    {formatFecFromMilli(displayAmountMilliFec)}
+  </div>
+  <div
+    className={[
+      "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
+      getStatusBadgeClass(status),
+    ].join(" ")}
+  >
+    {status}
+  </div>
+</div>
+
   </div>
 
   {/* Actions */}
