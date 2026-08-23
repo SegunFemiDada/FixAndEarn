@@ -81,7 +81,6 @@ const participantRole =
       {status.showContent && (
         <ChatPageContent
   job={chat.job ?? null}
-  needsAgreement={chat.needsAgreement}
   conversation={{
     ...conversationSection,
     onReport: actions.openReportModal,
