@@ -60,73 +60,64 @@ function JobCard({
 
   return (
     <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="truncate text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            {job.skillCategory}
-          </div>
-          <div className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            {location || "Location not available"}
-          </div>
-          
-        </div>
-
-        <div className="shrink-0 text-right">
-          {isNegotiatedPrice ? (
-            <div className="mt-2 inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Locked agreed price
-            </div>
-          ) : null}
-          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            {formatFecFromMilli(displayAmountMilliFec)}
-          </div>
-          <div
-            className={[
-              "mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
-              getStatusBadgeClass(status),
-            ].join(" ")}
-          >
-            {status}
-          </div>
-        </div>
+  <div className="flex items-center justify-between gap-4">
+    {/* Left content */}
+    <div className="min-w-0">
+      <div className="truncate text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        {job.skillCategory}
       </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-  href={`/app/jobs/${job.id}`}
-  className="
-    inline-flex items-center justify-center
-    rounded-lg px-4 py-2.5 font-semibold
-    bg-blue-600 text-white
-    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
-    transition-colors shadow-md
-    dark:bg-blue-500 dark:text-white
-    dark:hover:bg-blue-600 dark:focus:ring-blue-300
-  "
->
-  View job
-</Link>
-
-
-        {secondaryAction ? (
-          <Link
-  href={secondaryAction.href}
-  className="
-    inline-flex items-center justify-center
-    rounded-lg px-4 py-2.5 font-semibold
-    bg-gray-200 text-gray-700
-    hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
-    transition-colors
-    dark:bg-gray-700 dark:text-gray-200
-    dark:hover:bg-gray-600 dark:focus:ring-gray-500
-  "
->
-  {secondaryAction.label}
-</Link>
-
-        ) : null}
+      <div className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        {location || "Location not available"}
       </div>
     </div>
+
+    {/* Right content */}
+    <div className="flex flex-col items-end space-y-2 shrink-0 text-right">
+      {isNegotiatedPrice && (
+        <div className="inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+          Locked agreed price
+        </div>
+      )}
+      <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+        {formatFecFromMilli(displayAmountMilliFec)}
+      </div>
+      <div
+        className={[
+          "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
+          getStatusBadgeClass(status),
+        ].join(" ")}
+      >
+        {status}
+      </div>
+    </div>
+  </div>
+
+  {/* Actions */}
+  <div className="mt-4 flex flex-wrap gap-2">
+    <Link
+      href={`/app/jobs/${job.id}`}
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold
+        bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+        transition-colors shadow-md
+        dark:bg-blue-500 dark:text-white dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+    >
+      View job
+    </Link>
+
+    {secondaryAction && (
+      <Link
+        href={secondaryAction.href}
+        className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold
+          bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+          transition-colors
+          dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"
+      >
+        {secondaryAction.label}
+      </Link>
+    )}
+  </div>
+</div>
+
   );
 }
 
