@@ -44,27 +44,122 @@ export class FinalPaymentExpirationService {
         job: {
           select: {
             clientId: true,
+            status: true,
+            postingType: true,
           },
         },
       },
     });
 
     for (const payment of payments) {
-      const expired = await this.prisma.jobPayment.updateMany({
-        where: {
-          id: payment.id,
-          type: "FINAL",
-          status: JobPaymentStatus.PENDING,
-          expiresAt: {
-            lte: now,
+      const expired = await this.prisma.$transaction(async (tx) => {
+        /*
+         * First atomically claim the expiration.
+         *
+         * If the payment was successfully paid by a webhook between
+         * findMany() and this update, updateMany() returns 0 and we
+         * must not reset the job.
+         */
+        const paymentUpdate = await tx.jobPayment.updateMany({
+          where: {
+            id: payment.id,
+            type: "FINAL",
+            status: JobPaymentStatus.PENDING,
+            expiresAt: {
+              lte: now,
+            },
           },
-        },
-        data: {
-          status: JobPaymentStatus.EXPIRED,
-        },
+          data: {
+            status: JobPaymentStatus.EXPIRED,
+          },
+        });
+
+        if (paymentUpdate.count !== 1) {
+          return false;
+        }
+
+        /*
+         * FINAL payment expiration only applies before the job starts.
+         * A successful final-payment webhook changes the job to
+         * IN_PROGRESS, so an IN_PROGRESS job must never be reset here.
+         */
+        if (payment.job.status !== "OPEN") {
+          return true;
+        }
+
+        /*
+         * STANDARD job:
+         *
+         * OPEN
+         * fixer assigned
+         * final payment expires
+         *        ↓
+         * OPEN
+         * fixer removed
+         * locked price removed
+         *
+         * This makes the job eligible for the marketplace again.
+         *
+         * URGENT job:
+         *
+         * OPEN
+         * fixer assigned
+         * final payment expires
+         *        ↓
+         * DRAFT
+         * fixer removed
+         * locked price removed
+         *
+         * The urgent job therefore becomes owner-only again.
+         */
+        if (payment.job.postingType === "URGENT") {
+          await tx.job.update({
+            where: {
+              id: payment.jobId,
+            },
+            data: {
+              status: "DRAFT",
+              fixerId: null,
+              lockedPriceMilliFec: null,
+            },
+          });
+        } else {
+          await tx.job.update({
+            where: {
+              id: payment.jobId,
+            },
+            data: {
+              status: "OPEN",
+              fixerId: null,
+              lockedPriceMilliFec: null,
+            },
+          });
+        }
+
+        /*
+         * The negotiation/payment conversation is finished once
+         * the final payment window expires.
+         *
+         * Both fields are closed explicitly:
+         * - status prevents further chat/negotiation access
+         * - active prevents the UI from treating it as live
+         */
+        if (payment.conversationId) {
+          await tx.conversation.updateMany({
+            where: {
+              id: payment.conversationId,
+            },
+            data: {
+              status: "CLOSED",
+              active: false,
+            },
+          });
+        }
+
+        return true;
       });
 
-      if (expired.count !== 1) {
+      if (!expired) {
         continue;
       }
 
@@ -82,6 +177,8 @@ export class FinalPaymentExpirationService {
     expiresAt: Date | null;
     job: {
       clientId: string;
+      status: string;
+      postingType: string;
     };
   }) {
     try {
@@ -90,13 +187,16 @@ export class FinalPaymentExpirationService {
         type: NotificationType.SYSTEM_ANNOUNCEMENT,
         title: "Final payment expired",
         body:
-          "The final payment window has expired. The job has not started. You can initiate the final payment again from the agreed job.",
+          payment.job.postingType === "URGENT"
+            ? "The final payment window has expired. The urgent hire has not started. You can review the job from your jobs."
+            : "The final payment window has expired. The job has not started and is available again on the marketplace.",
         idempotencyKey:
           `notif:final_payment_expired:client:${payment.id}`,
         data: {
           jobId: payment.jobId,
           paymentId: payment.id,
           paymentType: "FINAL",
+          postingType: payment.job.postingType,
           expiresAt: payment.expiresAt,
         },
       });
@@ -116,13 +216,14 @@ export class FinalPaymentExpirationService {
         type: NotificationType.SYSTEM_ANNOUNCEMENT,
         title: "Final payment expired",
         body:
-          "The client's final payment window has expired. The job has not started.",
+          "The client's final payment window has expired. The job has not started and the negotiation has been closed.",
         idempotencyKey:
           `notif:final_payment_expired:fixer:${payment.id}`,
         data: {
           jobId: payment.jobId,
           paymentId: payment.id,
           paymentType: "FINAL",
+          postingType: payment.job.postingType,
           expiresAt: payment.expiresAt,
         },
       });

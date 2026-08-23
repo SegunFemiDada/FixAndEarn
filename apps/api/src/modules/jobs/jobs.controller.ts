@@ -84,8 +84,14 @@ async marketplaceStats() {
   }
 
   @Get(":id")
-  async get(@Param("id") id: string) {
-    return this.jobsService.getJob(id);
+  async get(
+    @CurrentUser() user: { userId: string },
+    @Param("id") id: string
+  ) {
+    return this.jobsService.getJob({
+      jobId: id,
+      requesterId: user.userId,
+    });
   }
 
   @Get(":id/applications")

@@ -58,10 +58,18 @@ export function buildChatConversationState(params: {
   const isCompleted =
     job?.status === "COMPLETED";
 
+  const conversationStatus =
+  data?.conversation?.status ?? "CLOSED";
+
+  const conversationActive =
+    data?.conversation?.active ?? false;
+
   const canChat =
     Boolean(data) &&
     !isError &&
-    !isCompleted;
+    !isCompleted &&
+    conversationStatus === "OPEN" &&
+    conversationActive;
 
   const showAgreementBootstrap = false;
 

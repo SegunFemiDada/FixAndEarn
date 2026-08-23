@@ -103,7 +103,6 @@ export default function NegotiationPanel({
   onLock,
   onRespond,
   myUserId,
-  role,
 }: Props) {
   const [
     showModal,
@@ -111,7 +110,7 @@ export default function NegotiationPanel({
   ] = useState(false);
 
   const [
-    remainingMs,
+,
     setRemainingMs,
   ] = useState(0);
 
@@ -207,10 +206,6 @@ export default function NegotiationPanel({
     showAgreedState,
     paymentExpiresAt,
   ]);
-
-  const paymentWindowActive =
-    remainingMs > 0;
-
 
   return (
     <div className="space-y-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -336,34 +331,7 @@ export default function NegotiationPanel({
           />
         )}
 
-      {showAgreedState && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
-
-          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            Price agreed successfully.
-          </div>
-
-          {paymentWindowActive ? (
-            <>
-              <div className="mt-2 text-[#6B7C99] dark:text-[#8FA0BC]">
-
-                {role === "client"
-                  ? "Complete payment to start the job."
-                  : "Waiting for the client's payment."}
-
-              </div>
-
-            </>
-          ) : (
-            <div className="mt-2 text-[#6B7C99] dark:text-[#8FA0BC]">
-              The 60-minute payment
-              window for this agreement
-              has expired.
-            </div>
-          )}
-
-        </div>
-      )}
+      
 
     </div>
   );

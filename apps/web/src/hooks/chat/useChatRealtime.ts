@@ -91,7 +91,7 @@ export function useChatRealtime({
   safeRefetch();
 });
 
-    const notificationEvents = [
+      const notificationEvents = [
       "negotiation:update",
       "agreement:update",
       "job:update",
@@ -100,6 +100,7 @@ export function useChatRealtime({
       "negotiation:response",
       "negotiation:agreed",
       "job:status",
+      "payment:expired",
     ];
 
     notificationEvents.forEach((event) => {

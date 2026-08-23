@@ -39,12 +39,6 @@ export class JobsService {
     }
   }
 
-  private ensureRating(n: number) {
-    if (!Number.isInteger(n) || n < 1 || n > 5) {
-      throw new BadRequestException("rating must be an integer 1..5.");
-    }
-  }
-
   async assertVerifiedUser(userId: string): Promise<void> {
     const rec = await this.repo.findIdentityVerificationByUserId(userId);
     if (!rec) {
@@ -282,11 +276,34 @@ return {
     };
   }
 
-  async getJob(jobId: string) {
-    const job = await this.repo.findJobById(jobId);
-    if (!job) throw new NotFoundException("Job not found.");
-    return this.mapJob(job);
+  async getJob(args: {
+  jobId: string;
+  requesterId: string;
+}) {
+  const job = await this.repo.findJobById(args.jobId);
+
+  if (!job) {
+    throw new NotFoundException("Job not found.");
   }
+
+  /*
+   * URGENT jobs that have returned to DRAFT after an expired
+   * final-payment window are private to the client who owns them.
+   *
+   * This prevents the expired urgent hire from becoming visible
+   * to the fixer or another authenticated user through a direct
+   * GET /jobs/:id request.
+   */
+  if (
+    job.postingType === JobPostingType.URGENT &&
+    job.status === JobStatus.DRAFT &&
+    job.clientId !== args.requesterId
+  ) {
+    throw new ForbiddenException("JOB_NOT_AVAILABLE");
+  }
+
+  return this.mapJob(job);
+}
 
   async createJob(args: {
   clientId: string;
