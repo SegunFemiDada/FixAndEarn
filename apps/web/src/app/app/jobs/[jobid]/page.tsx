@@ -141,6 +141,7 @@ type JobShape = {
   id: string;
   clientId?: string | null;
   fixerId?: string | null;
+  postingType?: "STANDARD" | "URGENT" | string | null;
   skillCategory?: string | null;
   city?: string | null;
   state?: string | null;
@@ -245,8 +246,19 @@ export default function JobDetailsPage() {
 
   const applicationsQuery = useJobApplications(jobId, { skip: 0, take: 1, enabled: isClient && isJobOwner && !!jobId });
   const hasApplications = (applicationsQuery.data?.total ?? 0) > 0;
-  const canEdit = isClient && isJobOwner && job?.status === "OPEN" && !hasApplications;
-  const isDraftJob = isClient && isJobOwner && job?.status === "DRAFT";
+  const isUrgentJob = job?.postingType === "URGENT";
+
+  const canEdit =
+    isClient &&
+    isJobOwner &&
+    !isUrgentJob &&
+    job?.status === "OPEN" &&
+    !hasApplications;
+
+  const isDraftJob =
+    isClient &&
+    isJobOwner &&
+    job?.status === "DRAFT";
 
   const canApply = useMemo(() => {
     if (!isFixer) return false;
@@ -609,16 +621,18 @@ async function handleDeleteDraft() {
             )}
             {isDraftJob && (
   <>
-    {/* Edit Draft */}
-    <Link
-      href={`/app/jobs/${jobId}/edit`}
-      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold
-        bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg focus:ring-2 focus:ring-blue-400
-        transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-        dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
-    >
-      Edit Draft
-    </Link>
+   {/* Standard jobs can edit their draft. Urgent jobs cannot. */}
+{!isUrgentJob && (
+  <Link
+    href={`/app/jobs/${jobId}/edit`}
+    className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold
+      bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg focus:ring-2 focus:ring-blue-400
+      transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+      dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-2 dark:focus:ring-blue-300"
+  >
+    Edit Draft
+  </Link>
+)}
 
     {/* Continue to Payment */}
     <button

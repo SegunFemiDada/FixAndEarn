@@ -54,12 +54,14 @@ function resolveHref(n: NotificationRow): string | null {
         : null;
 
     case "SYSTEM_ANNOUNCEMENT":
-      return typeof data.href === "string" && data.href.trim()
-        ? data.href.trim()
+      return jobId
+        ? `/app/jobs/${jobId}`
         : null;
 
     default:
-      return null;
+      return jobId
+        ? `/app/jobs/${jobId}`
+        : null;
   }
 }
 

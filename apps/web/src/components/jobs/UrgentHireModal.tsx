@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useUrgentDirectHire } from "@/lib/jobs/queries";
 import { FixerItem, extractErrorMessage } from "@/types/fixer";
+import Link from "next/link";
 
 type Props = {
   fixer: FixerItem | null;
@@ -35,6 +36,12 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
 
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"summary" | "form">("summary");
+
+  const [acknowledgements, setAcknowledgements] = useState({
+  profileReviewed: false,
+  selectionUnderstood: false,
+  feeUnderstood: false,
+});
   const [form, setForm] = useState<UrgentHireFormState>(
     getInitialFormState(fixer),
   );
@@ -46,9 +53,16 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
       return;
     }
 
-    setStep("summary");
-    setError(null);
-    setForm(getInitialFormState(fixer));
+  setStep("summary");
+  setError(null);
+
+  setAcknowledgements({
+    profileReviewed: false,
+    selectionUnderstood: false,
+    feeUnderstood: false,
+  });
+
+  setForm(getInitialFormState(fixer));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, fixer?.id]);
 
@@ -137,6 +151,10 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
       },
     );
   }
+  const allAcknowledgementsAccepted =
+  acknowledgements.profileReviewed &&
+  acknowledgements.selectionUnderstood &&
+  acknowledgements.feeUnderstood;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 dark:bg-black/70">
@@ -155,18 +173,129 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
               .
             </p>
 
-            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-              <p className="font-medium">Urgent connection fee</p>
+            <div className="mt-4 space-y-4">
+  <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+    <p className="font-semibold">
+      Before you continue
+    </p>
 
-              <p className="mt-1">
-                A 2 FEC (₦2,000) urgent connection fee is required to connect you directly with this fixer.
-                This fee is for the FixAndEarn platform service that connects you directly with your selected fixer. It is separate from the job payment.
-              </p>
+    <p className="mt-2">
+      Please review the fixer&apos;s public profile and confirm that you
+      understand the terms of the urgent connection before proceeding.
+    </p>
 
-              <p className="mt-2 text-xs">
-                You will be redirected to secure payment. Fixer only get payment when you approve job completion.
-              </p>
-            </div>
+    <Link
+      href={`/app/fixers/${selectedFixer.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 inline-flex items-center font-semibold text-blue-700 underline hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200"
+    >
+      View {selectedFixer.fullName}&apos;s public profile
+    </Link>
+  </div>
+
+  <div className="space-y-3">
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+      <input
+        type="checkbox"
+        checked={acknowledgements.profileReviewed}
+        onChange={(e) =>
+          setAcknowledgements((current) => ({
+            ...current,
+            profileReviewed: e.target.checked,
+          }))
+        }
+        className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+      />
+
+      <span className="text-sm leading-6 text-gray-700 dark:text-gray-200">
+        I have reviewed this fixer&apos;s public profile and understand
+        the fixer&apos;s profile information before proceeding.
+      </span>
+    </label>
+
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+      <input
+        type="checkbox"
+        checked={acknowledgements.selectionUnderstood}
+        onChange={(e) =>
+          setAcknowledgements((current) => ({
+            ...current,
+            selectionUnderstood: e.target.checked,
+          }))
+        }
+        className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+      />
+
+      <span className="text-sm leading-6 text-gray-700 dark:text-gray-200">
+        I am satisfied with my selection and understand that this
+        payment connects me with this fixer for direct negotiation.
+      </span>
+    </label>
+
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
+      <input
+        type="checkbox"
+        checked={acknowledgements.feeUnderstood}
+        onChange={(e) =>
+          setAcknowledgements((current) => ({
+            ...current,
+            feeUnderstood: e.target.checked,
+          }))
+        }
+        className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+      />
+
+      <span className="text-sm leading-6 text-gray-700 dark:text-gray-200">
+        I understand that the 2 FEC (₦2,000) urgent connection fee
+        does not guarantee that I will reach an agreement with the
+        fixer, does not guarantee acceptance of my proposed price,
+        and is not a payment for the fixer&apos;s work.
+      </span>
+    </label>
+  </div>
+
+  <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+    <p className="font-bold">
+      Important
+    </p>
+
+    <p className="mt-2 leading-6">
+      FixAndEarn does not determine or guarantee the price agreed
+      between the client and fixer. Both parties are free to negotiate.
+      The urgent connection fee is not refundable because the parties
+      fail to agree on a price or because the client chooses not to
+      proceed.
+    </p>
+  </div>
+
+  <div className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 text-sm text-[#1A2B4A] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]">
+    <p className="font-semibold">
+      Final payment timing
+    </p>
+
+    <p className="mt-2 leading-6">
+      After you and the fixer agree on a final price, the price will
+      be locked and you will have 60 minutes to complete the final job
+      payment. If payment is not successfully completed within 60
+      minutes, the locked price and payment opportunity will expire
+      and the job will not proceed.
+    </p>
+  </div>
+
+  <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+    <p className="font-medium">
+      Urgent connection fee
+    </p>
+
+    <p className="mt-1 leading-6">
+      A 2 FEC (₦2,000) urgent connection fee is required to connect
+      you directly with this fixer. This fee is for the FixAndEarn
+      platform service that connects you directly with your selected
+      fixer. It is separate from the job payment.
+    </p>
+  </div>
+</div>
 
             <div className="mt-6 flex gap-3">
               <button
@@ -178,10 +307,10 @@ export default function UrgentHireModal({ fixer, open, onClose }: Props) {
                 Cancel
               </button>
 
-              <button
+                <button
                 type="button"
                 onClick={handleOpenForm}
-                disabled={urgentHire.isPending}
+                disabled={urgentHire.isPending || !allAcknowledgementsAccepted}
                 className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 dark:bg-blue-500 dark:hover:bg-blue-600 dark:disabled:bg-blue-900"
               >
                 Pay ₦2,000 & Connect
