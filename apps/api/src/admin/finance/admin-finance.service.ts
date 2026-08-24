@@ -131,144 +131,70 @@ export class AdminFinanceService {
   // apps/api/src/admin/finance/admin-finance.service.ts
 // ... keep all imports and other methods unchanged
 
-async markPaid(args: { withdrawalId: string; adminId: string; note?: string }) {
-  const note = args.note?.trim() || null;
-  const payoutsEnabled =
-  process.env.MONNIFY_PAYOUTS_ENABLED === "true";
+  async markPaid(args: {
+    withdrawalId: string;
+    adminId: string;
+    note?: string;
+  }) {
+    const note = args.note?.trim() || undefined;
 
-if (payoutsEnabled) {
-  const result = await this.prisma.withdrawalRequest.updateMany({
-    where: {
-      id: args.withdrawalId,
-      status: WithdrawalStatus.APPROVED,
-    },
-    data: {
-      status: WithdrawalStatus.PROCESSING,
-      reviewedBy: args.adminId,
-      reviewNote: note,
-      reviewedAt: new Date(),
-      payoutMode: "BANK_TRANSFER",
-    },
-  });
+    try {
+      const result = await this.repo.markpaid({
+        withdrawalId: args.withdrawalId,
+        adminId: args.adminId,
+        note,
+      });
 
-  if (result.count === 0) {
-    throw new ForbiddenException(
-      "WITHDRAWAL_NOT_APPROVED_OR_ALREADY_PROCESSED",
-    );
-  }
+      if (result.status !== WithdrawalStatus.PAID) {
+        throw new BadRequestException("WITHDRAWAL_NOT_PAID");
+      }
 
-  const wr = await this.prisma.withdrawalRequest.findUnique({
-    where: {
-      id: args.withdrawalId,
-    },
-    include: {
-      user: {
-        include: {
-          bankDetails: true,
+      await this.audit.log({
+        actorAdminId: args.adminId,
+        action: "WITHDRAWAL_PAID",
+        description: "Withdrawal manually marked as paid by admin",
+        metadata: {
+          withdrawalId: args.withdrawalId,
+          note: note ?? null,
         },
-      },
-    },
-  });
+      });
 
-  if (!wr) {
-    throw new NotFoundException("WITHDRAWAL_NOT_FOUND");
+      try {
+        const withdrawal = await this.repo.getWithdrawal(args.withdrawalId);
+
+        if (withdrawal?.userId) {
+          await this.notifications.create({
+            userId: withdrawal.userId,
+            type: NotificationType.WITHDRAWAL_PAID,
+            title: "Withdrawal paid",
+            body: `Your withdrawal of ${(withdrawal.amountMilliFec / 1000).toFixed(2)} FEC has been paid.`,
+            idempotencyKey: `notif:withdrawal_paid:${withdrawal.id}`,
+            data: {
+              withdrawalId: withdrawal.id,
+            },
+          });
+        }
+      } catch {}
+
+      return {
+        ok: true,
+        withdrawalId: args.withdrawalId,
+        status: WithdrawalStatus.PAID,
+      };
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+
+      if (msg === "WITHDRAWAL_NOT_FOUND") {
+        throw new NotFoundException(msg);
+      }
+
+      if (msg === "WITHDRAWAL_NOT_APPROVED") {
+        throw new ForbiddenException(msg);
+      }
+
+      throw e;
+    }
   }
-
-  const bank = wr.user.bankDetails;
-
-  if (
-    !bank ||
-    !bank.accountNumber ||
-    !bank.bankCode ||
-    !bank.accountName
-  ) {
-    await this.prisma.withdrawalRequest.update({
-      where: { id: wr.id },
-      data: {
-        status: WithdrawalStatus.APPROVED,
-      },
-    });
-
-    throw new BadRequestException(
-      "BANK_DETAILS_INCOMPLETE",
-    );
-  }
-
-  const amountKobo = Math.round(
-    (wr.amountMilliFec / 1000) * 100,
-  );
-
-  if (amountKobo <= 0) {
-    await this.prisma.withdrawalRequest.update({
-      where: { id: wr.id },
-      data: {
-        status: WithdrawalStatus.APPROVED,
-      },
-    });
-
-    throw new BadRequestException("INVALID_AMOUNT");
-  }
-
-  const reference = `WDR_${wr.id}`;
-
-  try {
-    await this.paymentsService.initiateWithdrawalPayout({
-      withdrawalId: wr.id,
-    });
-
-    await this.prisma.withdrawalRequest.update({
-      where: {
-        id: wr.id,
-      },
-      data: {
-        transferReference: reference,
-        payoutMode: "BANK_TRANSFER",
-      },
-    });
-  } catch (err: any) {
-    const message = String(
-      err?.message ?? "MONNIFY_PAYOUT_FAILED",
-    );
-
-    await this.prisma.withdrawalRequest.update({
-      where: {
-        id: wr.id,
-      },
-      data: {
-        status: WithdrawalStatus.APPROVED,
-      },
-    });
-
-    await this.audit.log({
-      actorAdminId: args.adminId,
-      action: "WITHDRAWAL_PAID_FAILED",
-      description: message,
-      metadata: {
-        withdrawalId: wr.id,
-        reference,
-      },
-    });
-
-    throw new BadRequestException(message);
-  }
-
-  await this.audit.log({
-    actorAdminId: args.adminId,
-    action: "WITHDRAWAL_PROCESSING",
-    description: "Monnify bank transfer initiated",
-    metadata: {
-      withdrawalId: wr.id,
-      reference,
-    },
-  });
-
-  return {
-    ok: true,
-    withdrawalId: wr.id,
-    status: WithdrawalStatus.PROCESSING,
-  };
-}
-}
 
   /**
    * Webhook SUCCESS → PROCESSING → PAID
