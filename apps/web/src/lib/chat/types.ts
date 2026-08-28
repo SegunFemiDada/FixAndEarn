@@ -36,6 +36,7 @@ export type ChatParticipant = {
 export type ChatJob = {
   id?: string;
   status?: string;
+  fixerId?: string | null;
   skillCategory?: string;
   city?: string;
   state?: string;

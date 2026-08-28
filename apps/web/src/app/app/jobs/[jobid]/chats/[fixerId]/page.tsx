@@ -90,6 +90,7 @@ const participantRole =
   onClosePaymentModal={chat.dismissPaymentModal}
   onRefresh={chat.refetch}
   role={role}
+  myUserId={chat.myUserId}
   paymentPendingForClient={chat.paymentPendingForClient}
   initializingFinalPayment={chat.continuingToPayment}
   onContinuePayment={chat.continueToPayment}

@@ -84,6 +84,7 @@ type Props = {
   onRefresh: () => void;
 
   role: "client" | "fixer";
+  myUserId: string | null;
 
   paymentPendingForClient: boolean;
 
@@ -100,6 +101,7 @@ export default function ChatPageContent({
   onClosePaymentModal,
   onRefresh,
   role,
+  myUserId,
   paymentPendingForClient,
   initializingFinalPayment,
   onContinuePayment,
@@ -108,8 +110,10 @@ export default function ChatPageContent({
   return (
     <>
       <JobSummaryCard
-        job={job}
-      />
+      job={job}
+      myUserId={myUserId}
+      role={role}
+    />
 
       <ChatNegotiationSectionContainer
         {...negotiationSection}

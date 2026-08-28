@@ -30,11 +30,17 @@ const previousStatus = useRef<string | null>(null);
     });
   }, [query.data, query.error, query.isError]);
   
-  useEffect(() => {
+useEffect(() => {
   const currentStatus = state.job?.status;
+  const selectedFixerId = (state.job as { fixerId?: string | null } | null)?.fixerId;
+
+  const isSelectedFixer =
+    role === "fixer" &&
+    Boolean(myUserId) &&
+    selectedFixerId === myUserId;
 
   if (
-    role === "fixer" &&
+    isSelectedFixer &&
     previousStatus.current === "OPEN" &&
     currentStatus === "IN_PROGRESS"
   ) {
@@ -42,7 +48,8 @@ const previousStatus = useRef<string | null>(null);
   }
 
   previousStatus.current = currentStatus ?? null;
-}, [role, state.job?.status]);
+}, [role, myUserId, state.job?.status, state.job]);
+
 
   const {
     messages,

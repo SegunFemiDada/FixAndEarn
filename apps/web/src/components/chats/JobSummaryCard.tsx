@@ -9,6 +9,8 @@ import type {
 
 type Props = {
   job: ChatJob | null;
+  myUserId: string | null;
+  role: "client" | "fixer";
 };
 
 function fmtFecFromMilli(
@@ -28,10 +30,15 @@ function fmtFecFromMilli(
 
 export default function JobSummaryCard({
   job,
+  myUserId,
+  role,
 }: Props) {
   if (!job) {
     return null;
   }
+  const isSelectedFixer =
+  role === "client" ||
+  job.fixerId === myUserId;
 
   return (
     <Card>
@@ -78,12 +85,17 @@ export default function JobSummaryCard({
 
   <span
     className={`rounded-full px-2 py-0.5 font-semibold ${
-      job.status === "IN_PROGRESS"
+      job.status === "IN_PROGRESS" &&
+      isSelectedFixer
         ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
         : "bg-gray-100 text-[#6B7C99] dark:bg-[#25344F] dark:text-[#8FA0BC]"
     }`}
   >
-    {String(job.status ?? "—")}
+    {String(
+  role === "fixer" && !isSelectedFixer
+    ? "CLOSED"
+    : job.status ?? "—"
+)}
   </span>
 </div>
         </div>

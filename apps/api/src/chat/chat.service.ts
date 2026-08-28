@@ -944,6 +944,7 @@ async getConversationDetail(
     job: {
       id: convo.job.id,
       clientId: convo.job.clientId,
+      fixerId: convo.job.fixerId,
       status: convo.job.status,
       skillCategory:
         convo.job.skillCategory,

@@ -162,6 +162,7 @@ async setConversationActive(conversationId: string, active: boolean) {
           select: {
             id: true,
             clientId: true,
+            fixerId: true,
             skillCategory: true,
             state: true,
             city: true,
