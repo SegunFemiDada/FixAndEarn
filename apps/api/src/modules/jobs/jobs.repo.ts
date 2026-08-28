@@ -177,22 +177,46 @@ async getMarketplaceStats() {
   take: number;
 }) {
   const [applications, urgentJobs] = await Promise.all([
-    this.prisma.jobApplication.findMany({
-      where: {
-        fixerId: args.fixerId,
-      },
-      include: {
-        job: true,
-      },
-    }),
+  this.prisma.jobApplication.findMany({
+    where: {
+      fixerId: args.fixerId,
 
-    this.prisma.job.findMany({
-      where: {
-        fixerId: args.fixerId,
-        postingType: "URGENT",
-      },
-    }),
-  ]);
+      /*
+       * Once another fixer has been selected and the job is
+       * IN_PROGRESS, this application is no longer an active
+       * job for this fixer.
+       *
+       * Keep the selected fixer visible, but hide the job from
+       * every other applicant.
+       */
+      OR: [
+        {
+          job: {
+            status: {
+              not: "IN_PROGRESS",
+            },
+          },
+        },
+        {
+          job: {
+            status: "IN_PROGRESS",
+            fixerId: args.fixerId,
+          },
+        },
+      ],
+    },
+    include: {
+      job: true,
+    },
+  }),
+
+  this.prisma.job.findMany({
+    where: {
+      fixerId: args.fixerId,
+      postingType: "URGENT",
+    },
+  }),
+]);
 
   const applied = applications.map((a) => ({
     type: "APPLICATION" as const,

@@ -276,7 +276,7 @@ return {
     };
   }
 
-  async getJob(args: {
+async getJob(args: {
   jobId: string;
   requesterId: string;
 }) {
@@ -287,12 +287,8 @@ return {
   }
 
   /*
-   * URGENT jobs that have returned to DRAFT after an expired
-   * final-payment window are private to the client who owns them.
-   *
-   * This prevents the expired urgent hire from becoming visible
-   * to the fixer or another authenticated user through a direct
-   * GET /jobs/:id request.
+   * URGENT jobs returned to DRAFT after an expired final-payment
+   * window are private to the client.
    */
   if (
     job.postingType === JobPostingType.URGENT &&
@@ -300,6 +296,22 @@ return {
     job.clientId !== args.requesterId
   ) {
     throw new ForbiddenException("JOB_NOT_AVAILABLE");
+  }
+
+  /*
+   * Once a job is IN_PROGRESS, only the client and the
+   * selected/assigned fixer may access the job.
+   *
+   * This prevents other fixers who previously applied to the
+   * job from viewing the active job after another fixer was hired.
+   */
+  if (job.status === JobStatus.IN_PROGRESS) {
+    const isClient = job.clientId === args.requesterId;
+    const isAssignedFixer = job.fixerId === args.requesterId;
+
+    if (!isClient && !isAssignedFixer) {
+      throw new ForbiddenException("JOB_NOT_AVAILABLE");
+    }
   }
 
   return this.mapJob(job);
