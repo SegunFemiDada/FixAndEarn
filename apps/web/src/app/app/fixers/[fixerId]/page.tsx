@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
+import React from "react";
 
 type FixerProfileResponse = {
   id: string;
@@ -38,6 +39,7 @@ type FixerReviewsResponse = {
   fixerId: string;
   averageRating: number;
   totalRatings: number;
+
   reviews: Array<{
     id: string;
     rating: number;
@@ -47,6 +49,13 @@ type FixerReviewsResponse = {
       displayName?: string | null;
     } | null;
   }>;
+
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 async function getFixerProfile(fixerId: string): Promise<FixerProfileResponse> {
@@ -54,8 +63,20 @@ async function getFixerProfile(fixerId: string): Promise<FixerProfileResponse> {
   return res.data;
 }
 
-async function getFixerReviews(fixerId: string): Promise<FixerReviewsResponse> {
-  const res = await apiClient.get(`/profiles/fixers/${fixerId}/reviews`);
+async function getFixerReviews(
+  fixerId: string,
+  page: number
+): Promise<FixerReviewsResponse> {
+  const res = await apiClient.get(
+    `/profiles/fixers/${fixerId}/reviews`,
+    {
+      params: {
+        page,
+        limit: 10,
+      },
+    }
+  );
+
   return res.data;
 }
 
@@ -137,14 +158,25 @@ export default function FixerProfilePage() {
     staleTime: 10_000,
     retry: 1,
   });
+  const [reviewsPage, setReviewsPage] = React.useState(1);
 
   const reviewsQuery = useQuery({
-    queryKey: ["profiles", "fixer", fixerId, "reviews"],
-    enabled: !!fixerId,
-    queryFn: () => getFixerReviews(fixerId!),
-    staleTime: 10_000,
-    retry: 1,
-  });
+  queryKey: [
+    "profiles",
+    "fixer",
+    fixerId,
+    "reviews",
+    reviewsPage,
+  ],
+  enabled: !!fixerId,
+  queryFn: () =>
+    getFixerReviews(
+      fixerId!,
+      reviewsPage
+    ),
+  staleTime: 10_000,
+  retry: 1,
+});
 
   if (!fixerId) {
     return (
@@ -214,7 +246,17 @@ export default function FixerProfilePage() {
   const primarySkill = firstSkill(data?.profile?.skills);
   const skills = parseSkills(data?.profile?.skills);
 
-  const reviews = Array.isArray(reviewsQuery.data?.reviews) ? reviewsQuery.data!.reviews : [];
+ const reviews = Array.isArray(
+  reviewsQuery.data?.reviews
+)
+  ? reviewsQuery.data!.reviews
+  : [];
+
+const reviewsPagination =
+  reviewsQuery.data?.pagination;
+
+const reviewsTotalPages =
+  reviewsPagination?.totalPages ?? 0;
 
   return (
     <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
@@ -343,47 +385,102 @@ export default function FixerProfilePage() {
 
         {/* Reviews */}
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Recent reviews</div>
+          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Reviews</div>
 
-          {reviewsQuery.isLoading ? (
-            <div className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading reviews…</div>
+                    {reviewsQuery.isLoading ? (
+            <div className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+              Loading reviews…
+            </div>
           ) : reviewsQuery.isError ? (
-            <div className="mt-3 text-sm text-[#D9534F] dark:text-red-300">Failed to load reviews.</div>
+            <div className="mt-3 text-sm text-[#D9534F] dark:text-red-300">
+              Failed to load reviews.
+            </div>
           ) : reviews.length === 0 ? (
-            <div className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No reviews yet.</div>
+            <div className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+              No reviews yet.
+            </div>
           ) : (
-            <div className="mt-4 space-y-3">
-              {reviews.map((r) => (
-                <div key={r.id} className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      {renderStars(r.rating)}
-                      <span className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                        {r.rating}/5
-                      </span>
+            <div>
+              <div className="mt-4 space-y-3">
+                {reviews.map((r) => (
+                  <div
+                    key={r.id}
+                    className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {renderStars(r.rating)}
+                        <span className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                          {r.rating}/5
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                        {formatIsoDate(r.createdAt)}
+                      </div>
                     </div>
-                    <div className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      {formatIsoDate(r.createdAt)}
-                    </div>
+
+                    {r.comment ? (
+                      <div className="mt-2 text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
+                        {r.comment}
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                        No written review.
+                      </div>
+                    )}
+
+                    {r.client?.displayName && (
+                      <div className="mt-2 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                        {r.client.displayName}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {reviewsTotalPages > 1 && (
+                <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setReviewsPage((page) =>
+                        Math.max(1, page - 1)
+                      )
+                    }
+                    disabled={
+                      reviewsPage === 1 ||
+                      reviewsQuery.isFetching
+                    }
+                    className="rounded-xl border border-[#C5D5EE] bg-white px-4 py-2 text-sm font-medium text-[#1A2B4A] transition hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA] dark:hover:bg-[#16202E]"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Page {reviewsPage} of {reviewsTotalPages}
                   </div>
 
-                  {r.comment ? (
-                    <div className="mt-2 text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {r.comment}
-                    </div>
-                  ) : (
-                    <div className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                      No written review.
-                    </div>
-                  )}
-
-                  {r.client?.displayName && (
-                    <div className="mt-2 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      {r.client.displayName}
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setReviewsPage((page) =>
+                        Math.min(
+                          reviewsTotalPages,
+                          page + 1
+                        )
+                      )
+                    }
+                    disabled={
+                      reviewsPage === reviewsTotalPages ||
+                      reviewsQuery.isFetching
+                    }
+                    className="rounded-xl border border-[#C5D5EE] bg-white px-4 py-2 text-sm font-medium text-[#1A2B4A] transition hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA] dark:hover:bg-[#16202E]"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </section>

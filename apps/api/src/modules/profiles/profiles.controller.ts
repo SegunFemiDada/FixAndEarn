@@ -1,5 +1,13 @@
 //path: apps/api/src/modules/profiles/profiles.controller.ts
-import { Controller, Get, NotFoundException, Param, Req, UseGuards } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
@@ -154,18 +162,55 @@ export class ProfilesController {
   }
 
   @Get("fixers/:fixerId/reviews")
-  async getFixerReviews(@Param("fixerId") fixerId: string) {
-    const fixer = await this.prisma.user.findUnique({
-      where: { id: fixerId },
-      select: { id: true, averageRating: true, totalRatings: true },
-    });
+async getFixerReviews(
+  @Param("fixerId") fixerId: string,
+  @Query("page") pageParam?: string,
+  @Query("limit") limitParam?: string
+) {
+  const fixer = await this.prisma.user.findUnique({
+    where: { id: fixerId },
+    select: {
+      id: true,
+      averageRating: true,
+      totalRatings: true,
+    },
+  });
 
-    if (!fixer) throw new NotFoundException("USER_NOT_FOUND");
+  if (!fixer) {
+    throw new NotFoundException("USER_NOT_FOUND");
+  }
 
-    const reviews = await this.prisma.jobReview.findMany({
-      where: { fixerId },
-      orderBy: { createdAt: "desc" },
-      take: 5,
+  const page = Math.max(
+    1,
+    Number.parseInt(pageParam ?? "1", 10) || 1
+  );
+
+  const limit = Math.min(
+    50,
+    Math.max(
+      1,
+      Number.parseInt(limitParam ?? "10", 10) || 10
+    )
+  );
+
+  const skip = (page - 1) * limit;
+
+  const where = {
+    fixerId,
+  };
+
+  const [total, reviews] = await Promise.all([
+    this.prisma.jobReview.count({
+      where,
+    }),
+
+    this.prisma.jobReview.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip,
+      take: limit,
       select: {
         id: true,
         rating: true,
@@ -177,23 +222,36 @@ export class ProfilesController {
           },
         },
       },
-    });
+    }),
+  ]);
 
-    return {
-      fixerId,
-      averageRating: fixer.averageRating ?? 0,
-      totalRatings: fixer.totalRatings ?? 0,
-      reviews: reviews.map((r) => ({
-        id: r.id,
-        rating: r.rating,
-        comment: r.comment ?? null,
-        createdAt: r.createdAt,
-        client: {
-          displayName: maskClientName(r.client?.fullName),
-        },
-      })),
-    };
-  }
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    fixerId,
+    averageRating: fixer.averageRating ?? 0,
+    totalRatings: fixer.totalRatings ?? 0,
+
+    reviews: reviews.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      comment: r.comment ?? null,
+      createdAt: r.createdAt,
+      client: {
+        displayName: maskClientName(
+          r.client?.fullName
+        ),
+      },
+    })),
+
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+    },
+  };
+}
 
   @Get("clients/:clientId")
   async getClientPublic(@Param("clientId") clientId: string) {

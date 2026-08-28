@@ -157,9 +157,7 @@ export default function JobSummaryCard({
                   final payment process with
                   another fixer for this job.
                   This conversation is now
-                  closed, but your previous
-                  messages remain available
-                  for reference.
+                  closed.
                 </p>
               </div>
             </div>
