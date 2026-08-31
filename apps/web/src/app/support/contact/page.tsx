@@ -64,8 +64,10 @@ async function onSubmit(data: ContactForm) {
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Contact Support</h1>
           <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Fill out the form below. We&apos;ll respond within 24 hours.
-          </p>
+          Fill out the form below and describe your issue clearly. Please include
+          your email address and phone number in your message so our Support Team
+          can identify you and respond to you.
+        </p>
 
           {status === "success" && (
             <div className="mt-4 rounded-xl border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 p-3 text-sm text-[#2E7D32] dark:text-green-200">
@@ -93,12 +95,21 @@ async function onSubmit(data: ContactForm) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Message</label>
+            <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Message
+            </label>
+
+            <p className="mt-1 text-xs leading-5 text-[#6B7C99] dark:text-[#8FA0BC]">
+              Please include your email address and phone number in your message so our
+              Support Team can identify you and contact you. Your message is sent from a
+              system email address, so your account details are not automatically shown to
+              Support.
+            </p>
               <textarea
                 {...form.register("message")}
                 rows={6}
                 className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-                placeholder="Describe your issue in detail..."
+                placeholder="Describe your issue and include your email address and phone number..."
               />
               {form.formState.errors.message && (
                 <p className="mt-1 text-sm text-[#D9534F] dark:text-red-300">{form.formState.errors.message.message}</p>
