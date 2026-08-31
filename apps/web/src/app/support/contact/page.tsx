@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { getToken } from "@/lib/auth/session";
+import apiClient from "@/lib/apiClient";
 
 const contactSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
@@ -22,40 +22,41 @@ export default function ContactSupportPage() {
     resolver: zodResolver(contactSchema),
   });
 
-  async function onSubmit(data: ContactForm) {
-    setStatus("loading");
-    setErrorMsg(null);
+async function onSubmit(data: ContactForm) {
+  setStatus("loading");
+  setErrorMsg(null);
 
-    const token = getToken();
-    let userId: string | null = null;
-    if (token) {
-      try {
-        // Simulate decoding the user ID from the token
-        userId = "user123"; // Replace with actual user ID decoding logic
-      } catch (error) {
-        console.error("Failed to decode user ID from token", error);
-      }
-    }
+  try {
+    await apiClient.post("/support/contact", {
+      subject: data.subject.trim(),
+      message: data.message.trim(),
+    });
 
-    try {
-      const res = await fetch("/api/support/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          subject: data.subject,
-          message: data.message,
-        }),
-      });
-      if (!res.ok) throw new Error("Server error");
-      setStatus("success");
-      form.reset();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      setStatus("error");
-      setErrorMsg("Something went wrong. Please try again later or email us directly at support@fixandearn.com.");
-    }
+    setStatus("success");
+    form.reset();
+  } catch (error) {
+    setStatus("error");
+
+    const message =
+      error &&
+      typeof error === "object" &&
+      "response" in error &&
+      typeof error.response === "object" &&
+      error.response !== null &&
+      "data" in error.response &&
+      typeof error.response.data === "object" &&
+      error.response.data !== null &&
+      "message" in error.response.data &&
+      typeof error.response.data.message === "string"
+        ? error.response.data.message
+        : null;
+
+    setErrorMsg(
+      message ??
+        "Something went wrong. Please try again later or email us directly at support@fixandearn.com."
+    );
   }
+}
 
   return (
     <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-6">
