@@ -65,17 +65,25 @@ export class JobsService {
   }
 
   async listJobs(query: {
-    skill?: string;
-    state?: string;
-    city?: string;
-    minPriceMilliFec?: number;
-    maxPriceMilliFec?: number;
-    take: number;
-    skip: number;
-  }) {
-    const jobs = await this.repo.listOpenJobs(query);
-    return Array.isArray(jobs) ? jobs.map((job) => this.mapJob(job)) : [];
-  }
+  skill?: string;
+  state?: string;
+  city?: string;
+  minPriceMilliFec?: number;
+  maxPriceMilliFec?: number;
+  take: number;
+  skip: number;
+}) {
+  const result = await this.repo.listOpenJobs(query);
+
+  return {
+    items: result.jobs.map((job) =>
+      this.mapJob(job)
+    ),
+    total: result.total,
+    skip: query.skip,
+    take: query.take,
+  };
+}
   async getMarketplaceStats() {
   return this.repo.getMarketplaceStats();
 }

@@ -15,6 +15,12 @@ export default function WithdrawalHistoryPage() {
   React.useEffect(() => {
     setMounted(true);
   }, []);
+const [historyPage, setHistoryPage] = React.useState(1);
+
+const HISTORY_PER_PAGE = 10;
+
+const historySkip =
+  (historyPage - 1) * HISTORY_PER_PAGE;
 
   const token = mounted ? getToken() : null;
   const activeRole = mounted ? getActiveRole() : null;
@@ -25,7 +31,17 @@ export default function WithdrawalHistoryPage() {
   const isVerifiedApproved = verificationStatus === "APPROVED";
 
   const gateOk = !!token && isVerifiedApproved && isFixerMode;
-  const withdrawals = useWithdrawalHistory(50, gateOk);
+  const withdrawals = useWithdrawalHistory(
+  historySkip,
+  HISTORY_PER_PAGE,
+  gateOk
+);
+const totalWithdrawals = withdrawals.data?.total ?? 0;
+
+const totalPages = Math.max(
+  1,
+  Math.ceil(totalWithdrawals / HISTORY_PER_PAGE)
+);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-4 py-5">
@@ -43,7 +59,7 @@ export default function WithdrawalHistoryPage() {
             </Link>
           </div>
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Your last 50 fixer withdrawal requests.
+            Your withdrawal history.
           </p>
         </div>
 
@@ -85,6 +101,55 @@ export default function WithdrawalHistoryPage() {
                 ))}
               </div>
             )}
+            {totalPages > 1 && (
+  <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+    <button
+      type="button"
+      onClick={() => {
+        setHistoryPage((page) =>
+          Math.max(1, page - 1),
+        );
+      }}
+      disabled={
+        historyPage === 1 ||
+        withdrawals.isFetching
+      }
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        historyPage === 1 ||
+        withdrawals.isFetching
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Previous
+    </button>
+
+    <div className="text-center text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
+      Page {historyPage} of {totalPages}
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
+        setHistoryPage((page) =>
+          Math.min(totalPages, page + 1),
+        );
+      }}
+      disabled={
+        historyPage === totalPages ||
+        withdrawals.isFetching
+      }
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        historyPage === totalPages ||
+        withdrawals.isFetching
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Next
+    </button>
+  </div>
+)}
           </div>
         ) : (
           // Show guidance card when not authorized

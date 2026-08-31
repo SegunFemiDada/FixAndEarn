@@ -123,12 +123,27 @@ function JobCard({
 }
 
 function ClientDashboard() {
-  const { data: jobs, isLoading, isError } = useMyJobs(
-    { skip: 0, take: 50 },
-    { enabled: true }
-  );
+  const DASHBOARD_PAGE_SIZE = 10;
 
-  const list = Array.isArray(jobs) ? jobs : [];
+const [dashboardPage, setDashboardPage] = useState(1);
+
+const dashboardSkip =
+  (dashboardPage - 1) * DASHBOARD_PAGE_SIZE;
+
+const { data: jobs, isLoading, isError, isFetching } = useMyJobs(
+  {
+    skip: dashboardSkip,
+    take: DASHBOARD_PAGE_SIZE + 1,
+  },
+  { enabled: true }
+);
+
+const fetchedJobs = Array.isArray(jobs) ? jobs : [];
+
+const hasNextPage =
+  fetchedJobs.length > DASHBOARD_PAGE_SIZE;
+
+const list = fetchedJobs.slice(0, DASHBOARD_PAGE_SIZE);
 
   const grouped = useMemo(() => {
     const byStatus: Record<string, any[]> = {};
@@ -166,7 +181,7 @@ function ClientDashboard() {
 
       {!isLoading && !isError && list.length > 0 ? (
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Status summary</div>
+          <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Status on this page</div>
           <div className="mt-3 flex flex-wrap gap-2">
             {Object.entries(grouped).map(([status, items]) => (
               <span
@@ -184,18 +199,78 @@ function ClientDashboard() {
       ) : null}
 
       <div className="grid gap-3">
-        {list.map((job: any) => (
-          <JobCard key={job.id} job={job} />
-        ))}
-      </div>
+  {list.map((job: any) => (
+    <JobCard key={job.id} job={job} />
+  ))}
+</div>
+
+{(dashboardPage > 1 || hasNextPage) && (
+  <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+    <button
+      type="button"
+      onClick={() =>
+        setDashboardPage((page) =>
+          Math.max(1, page - 1)
+        )
+      }
+      disabled={
+        dashboardPage === 1 ||
+        isFetching
+      }
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        dashboardPage === 1 || isFetching
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Previous
+    </button>
+
+    <div className="text-center text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
+      Page {dashboardPage}
+    </div>
+
+    <button
+      type="button"
+      onClick={() =>
+        setDashboardPage((page) =>
+          page + 1
+        )
+      }
+      disabled={
+        !hasNextPage ||
+        isFetching
+      }
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        !hasNextPage || isFetching
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Next
+    </button>
+  </div>
+)}
     </div>
   );
 }
 
 function FixerDashboard() {
   const myUserId = useMemo(() => decodeJwtUserId(getToken()), []);
-  const { data: apps, isLoading, isError } = useMyApplications(
-    { skip: 0, take: 50 },
+
+const DASHBOARD_PAGE_SIZE = 10;
+
+const [dashboardPage, setDashboardPage] = useState(1);
+
+const dashboardSkip =
+  (dashboardPage - 1) * DASHBOARD_PAGE_SIZE;
+
+const { data: apps, isLoading, isError, isFetching } =
+  useMyApplications(
+    {
+      skip: dashboardSkip,
+      take: DASHBOARD_PAGE_SIZE + 1,
+    },
     { enabled: true }
   );
 
@@ -237,8 +312,17 @@ function FixerDashboard() {
     };
   }, []);
 
-  const applications = Array.isArray(apps) ? apps : [];
-  const jobs = applications.map((a: any) => a?.job).filter(Boolean);
+  const fetchedApplications = Array.isArray(apps) ? apps : [];
+
+const hasNextPage =
+  fetchedApplications.length > DASHBOARD_PAGE_SIZE;
+
+const applications =
+  fetchedApplications.slice(0, DASHBOARD_PAGE_SIZE);
+
+const jobs = applications
+  .map((a: any) => a?.job)
+  .filter(Boolean);
 
 return (
   <div className="space-y-4">
@@ -365,6 +449,53 @@ return (
           />
         ))}
       </div>
+      {(dashboardPage > 1 || hasNextPage) && (
+  <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+    <button
+      type="button"
+      onClick={() =>
+        setDashboardPage((page) =>
+          Math.max(1, page - 1)
+        )
+      }
+      disabled={
+        dashboardPage === 1 ||
+        isFetching
+      }
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        dashboardPage === 1 || isFetching
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Previous
+    </button>
+
+    <div className="text-center text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
+      Page {dashboardPage}
+    </div>
+
+    <button
+      type="button"
+      onClick={() =>
+        setDashboardPage((page) =>
+          page + 1
+        )
+      }
+      disabled={
+        !hasNextPage ||
+        isFetching
+      }
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        !hasNextPage || isFetching
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Next
+    </button>
+  </div>
+)}
     </div>
   );
 }

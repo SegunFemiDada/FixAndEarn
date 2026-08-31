@@ -262,16 +262,54 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
   }
 
   @Get("withdrawals/history")
-  @Roles("FIXER")
-  async withdrawalHistory(@CurrentUser() user: { userId: string }) {
-    const items = await this.prisma.withdrawalRequest.findMany({
-      where: { userId: user.userId },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
+@Roles("FIXER")
+async withdrawalHistory(
+  @CurrentUser() user: { userId: string },
+  @Query("skip") skipParam?: string,
+  @Query("take") takeParam?: string,
+) {
+  const parsedSkip = Number.parseInt(skipParam ?? "0", 10);
+  const parsedTake = Number.parseInt(takeParam ?? "10", 10);
 
-    return { items };
-  }
+  const skip =
+    Number.isFinite(parsedSkip) && parsedSkip >= 0
+      ? parsedSkip
+      : 0;
+
+  const take =
+    Number.isFinite(parsedTake) &&
+    parsedTake > 0 &&
+    parsedTake <= 50
+      ? parsedTake
+      : 10;
+
+  const where = {
+    userId: user.userId,
+  };
+
+  const [items, total] = await this.prisma.$transaction([
+    this.prisma.withdrawalRequest.findMany({
+      where,
+      orderBy: [
+        { createdAt: "desc" },
+        { id: "desc" },
+      ],
+      skip,
+      take,
+    }),
+
+    this.prisma.withdrawalRequest.count({
+      where,
+    }),
+  ]);
+
+  return {
+    items,
+    total,
+    skip,
+    take,
+  };
+}
 @Post("set-withdrawal-pin")
 @Roles("FIXER")
 async setWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: SetWithdrawalPinDto) {

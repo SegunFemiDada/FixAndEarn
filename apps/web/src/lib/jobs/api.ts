@@ -79,6 +79,8 @@ export async function listJobs(params?: {
   city?: string;
   minPriceMilliFec?: number;
   maxPriceMilliFec?: number;
+  skip?: number;
+  take?: number;
 }): Promise<any[]> {
   const res = await apiClient.get("/jobs", { params });
   return res.data;

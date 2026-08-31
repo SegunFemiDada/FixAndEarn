@@ -62,7 +62,7 @@ export class JobsRepo {
     return this.prisma.jobApplication.count({ where: { jobId } });
   }
 
-listOpenJobs(query: {
+async listOpenJobs(query: {
   skill?: string;
   state?: string;
   city?: string;
@@ -71,16 +71,30 @@ listOpenJobs(query: {
   take: number;
   skip: number;
 }) {
-  const where: Prisma.JobWhereInput = { status: "OPEN", fixerId: null };
+  const where: Prisma.JobWhereInput = {
+    status: "OPEN",
+    fixerId: null,
+  };
 
   if (query.skill) {
-    where.skillCategory = { contains: query.skill, mode: "insensitive" };
+    where.skillCategory = {
+      contains: query.skill,
+      mode: "insensitive",
+    };
   }
+
   if (query.state) {
-    where.state = { contains: query.state, mode: "insensitive" }; // ✅ changed from equals
+    where.state = {
+      contains: query.state,
+      mode: "insensitive",
+    };
   }
+
   if (query.city) {
-    where.city = { contains: query.city, mode: "insensitive" };   // ✅ changed from equals
+    where.city = {
+      contains: query.city,
+      mode: "insensitive",
+    };
   }
 
   if (
@@ -88,26 +102,41 @@ listOpenJobs(query: {
     typeof query.maxPriceMilliFec === "number"
   ) {
     where.priceMilliFec = {};
+
     if (typeof query.minPriceMilliFec === "number") {
-      (where.priceMilliFec as any).gte = query.minPriceMilliFec;
+      (where.priceMilliFec as any).gte =
+        query.minPriceMilliFec;
     }
+
     if (typeof query.maxPriceMilliFec === "number") {
-      (where.priceMilliFec as any).lte = query.maxPriceMilliFec;
+      (where.priceMilliFec as any).lte =
+        query.maxPriceMilliFec;
     }
   }
 
-  return this.prisma.job.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    skip: query.skip,
-    take: query.take,
-    include: {
-      images: {
-        orderBy: { sortOrder: "asc" },
-        take: 1,
+  const [jobs, total] = await Promise.all([
+    this.prisma.job.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: query.skip,
+      take: query.take,
+      include: {
+        images: {
+          orderBy: { sortOrder: "asc" },
+          take: 1,
+        },
       },
-    },
-  });
+    }),
+
+    this.prisma.job.count({
+      where,
+    }),
+  ]);
+
+  return {
+    jobs,
+    total,
+  };
 }
 async getMarketplaceStats() {
   const [openJobs, inProgressJobs, completedJobs] = await Promise.all([

@@ -95,7 +95,7 @@ export default function WalletWithdrawPage() {
   const canLoad = !!token && isFixerMode;
 
   const bankDetails = useBankDetails(canLoad);
-  const withdrawals = useWithdrawalHistory(50, canLoad);
+  const withdrawals = useWithdrawalHistory(0, 10, canLoad);
   const [bankSavedLocal, setBankSavedLocal] = React.useState(false);
 
   const hasBank =

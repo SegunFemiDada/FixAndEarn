@@ -51,17 +51,35 @@ export default function JobApplicantsPage() {
   const isCompleted = jobDetail?.status === "COMPLETED";
 
   const canFetch = mounted && !!jobId && uiRole === "CLIENT";
+  const [applicationsPage, setApplicationsPage] = useState(1);
 
-  const { data, isLoading, isError, error } = useJobApplications(jobId ?? "", {
-    skip: 0,
-    take: 50,
+  const APPLICATIONS_PER_PAGE = 10;
+
+  const applicationsSkip =
+  (applicationsPage - 1) * APPLICATIONS_PER_PAGE;
+
+  const { data, isLoading, isError, error, isFetching } =
+  useJobApplications(jobId ?? "", {
+    skip: applicationsSkip,
+    take: APPLICATIONS_PER_PAGE,
     enabled: canFetch,
-  });
+  });;
 
   const apps = useMemo(
     () => (Array.isArray(data?.applications) ? data.applications : []),
     [data]
   );
+  const applicationsTotal = data?.total ?? 0;
+
+const applicationsTotalPages = Math.max(
+  1,
+  Math.ceil(
+    applicationsTotal / APPLICATIONS_PER_PAGE
+  )
+);
+useEffect(() => {
+  setApplicationsPage(1);
+}, [jobId]);
 
   if (!jobId) {
     return (
@@ -255,6 +273,45 @@ export default function JobApplicantsPage() {
           );
         })}
       </div>
+      {applicationsTotal > 0 && applicationsTotalPages > 1 && (
+  <div className="flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+    <button
+      type="button"
+      onClick={() =>
+        setApplicationsPage((page) =>
+          Math.max(1, page - 1)
+        )
+      }
+      disabled={applicationsPage === 1 || isFetching}
+      className="rounded-xl border border-[#C5D5EE] bg-white px-4 py-2 text-sm font-medium text-[#1A2B4A] transition hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA] dark:hover:bg-[#16202E]"
+    >
+      Previous
+    </button>
+
+    <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+      Page {applicationsPage} of {applicationsTotalPages}
+    </div>
+
+    <button
+      type="button"
+      onClick={() =>
+        setApplicationsPage((page) =>
+          Math.min(
+            applicationsTotalPages,
+            page + 1
+          )
+        )
+      }
+      disabled={
+        applicationsPage === applicationsTotalPages ||
+        isFetching
+      }
+      className="rounded-xl border border-[#C5D5EE] bg-white px-4 py-2 text-sm font-medium text-[#1A2B4A] transition hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA] dark:hover:bg-[#16202E]"
+    >
+      Next
+    </button>
+  </div>
+)}
     </div>
   );
 }

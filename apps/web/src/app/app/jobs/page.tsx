@@ -79,29 +79,45 @@ export default function JobsPage() {
   const isClient = uiRole === "CLIENT";
   const isFixer = uiRole === "FIXER";
   const isAuthed = !!token;
-
+  
   const { data: verification, isLoading, isError } = useMyVerification();
   const isApproved = verification?.status === "APPROVED";
-
+  
   const showGate = mounted && (!isAuthed || isLoading || isError || !isApproved);
+  
+  const JOBS_PER_PAGE = 10;
+  const [jobsPage, setJobsPage] = useState(1);
 
   useEffect(() => {
     if (mounted && isClient && isApproved) {
       setShowHiringModal(true);
     }
   }, [mounted, isClient, isApproved]);
-
+  
   const jobsFilters = useMemo(() => {
-    if (!isFixer) return undefined;
+  if (!isFixer) return undefined;
 
-    return {
-      skill: skill.trim() || undefined,
-      state: state.trim() || undefined,
-      city: city.trim() || undefined,
-      minPriceMilliFec: parseFecInputToMilliFec(minPrice),
-      maxPriceMilliFec: parseFecInputToMilliFec(maxPrice),
-    };
-  }, [isFixer, skill, state, city, minPrice, maxPrice]);
+  return {
+    skill: skill.trim() || undefined,
+    state: state.trim() || undefined,
+    city: city.trim() || undefined,
+    minPriceMilliFec: parseFecInputToMilliFec(minPrice),
+    maxPriceMilliFec: parseFecInputToMilliFec(maxPrice),
+    skip: (jobsPage - 1) * JOBS_PER_PAGE,
+    take: JOBS_PER_PAGE + 1,
+  };
+}, [
+  isFixer,
+  skill,
+  state,
+  city,
+  minPrice,
+  maxPrice,
+  jobsPage,
+]);
+useEffect(() => {
+  setJobsPage(1);
+}, [skill, state, city, minPrice, maxPrice]);
 
   const {
     data,
@@ -110,7 +126,11 @@ export default function JobsPage() {
     error,
   } = useJobsList(jobsFilters);
 
-  const items = data ?? [];
+  const rawItems = data ?? [];
+  const hasNextPage = rawItems.length > JOBS_PER_PAGE;
+  const items = hasNextPage
+  ? rawItems.slice(0, JOBS_PER_PAGE)
+  : rawItems;
   const { data: stats } = useMarketplaceStats();
 
   return (
@@ -327,6 +347,45 @@ export default function JobsPage() {
                   );
                 })
               )}
+              {!jobsLoading && !jobsError && items.length > 0 && (
+  <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+    <button
+      type="button"
+      onClick={() => {
+        setJobsPage((page) => Math.max(1, page - 1));
+      }}
+      disabled={jobsPage === 1 || jobsLoading}
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        jobsPage === 1 || jobsLoading
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Previous
+    </button>
+
+    <div className="text-center text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
+      Page {jobsPage}
+    </div>
+
+    <button
+      type="button"
+      onClick={() => {
+        if (hasNextPage) {
+          setJobsPage((page) => page + 1);
+        }
+      }}
+      disabled={!hasNextPage || jobsLoading}
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+        !hasNextPage || jobsLoading
+          ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
+          : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
+      }`}
+    >
+      Next
+    </button>
+  </div>
+)}
             </div>
           )}
         </>

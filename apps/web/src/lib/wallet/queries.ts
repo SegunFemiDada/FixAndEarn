@@ -19,7 +19,8 @@ const keys = {
   balance: (role?: "CLIENT" | "FIXER") => ["wallet", "balance", role ?? "AUTO"] as const,
   bankDetails: ["wallet", "bankDetails"] as const,
   depositHistory: (take: number) => ["wallet", "depositHistory", take] as const,
-  withdrawalHistory: (take: number) => ["wallet", "withdrawalHistory", take] as const,
+  withdrawalHistory: (skip: number, take: number) =>
+  ["wallet", "withdrawalHistory", skip, take] as const,
 };
 
 export function useWalletBalance(role?: "CLIENT" | "FIXER") {
@@ -86,7 +87,7 @@ export function useRequestWithdrawal() {
     mutationFn: (data: { amountMilliFec: number; pin: string }) => requestWithdrawal(data),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["wallet", "balance"] });
-      await qc.invalidateQueries({ queryKey: keys.withdrawalHistory(50) });
+      await qc.invalidateQueries({ queryKey: keys.withdrawalHistory(0, 10) });
     },
   });
 }
@@ -112,10 +113,14 @@ export function useDepositHistory(take: number, enabled: boolean) {
   });
 }
 
-export function useWithdrawalHistory(take: number, enabled: boolean) {
+export function useWithdrawalHistory(
+  skip: number,
+  take: number,
+  enabled: boolean
+) {
   return useQuery({
-    queryKey: keys.withdrawalHistory(take),
-    queryFn: () => listWithdrawalHistory({ take }),
+    queryKey: keys.withdrawalHistory(skip, take),
+    queryFn: () => listWithdrawalHistory({ skip, take }),
     enabled,
     staleTime: 10_000,
     retry: 1,
