@@ -44,16 +44,20 @@ export default function JobSummaryCard({
     role === "client" ||
     job.fixerId === myUserId;
 
-  const displayStatus =
-    role === "fixer" && !isSelectedFixer
-      ? "CLOSED"
-      : job.status ?? "—";
+  const shouldShowClosed =
+  role === "fixer" &&
+  !isSelectedFixer &&
+  job.status === "IN_PROGRESS";
+
+const displayStatus =
+  shouldShowClosed
+    ? "CLOSED"
+    : job.status ?? "—";
 
   const isInProgress =
     displayStatus === "IN_PROGRESS";
 
-  const isClosed =
-    displayStatus === "CLOSED";
+  const isClosed = shouldShowClosed;
 
   return (
     <>
