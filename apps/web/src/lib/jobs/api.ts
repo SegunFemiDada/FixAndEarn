@@ -73,6 +73,13 @@ export async function urgentDirectHire(payload: {
   return res.data;
 }
 
+export type JobsListResponse = {
+  items: any[];
+  total: number;
+  skip: number;
+  take: number;
+};
+
 export async function listJobs(params?: {
   skill?: string;
   state?: string;
@@ -81,12 +88,12 @@ export async function listJobs(params?: {
   maxPriceMilliFec?: number;
   skip?: number;
   take?: number;
-}): Promise<any[]> {
+}): Promise<JobsListResponse> {
   const res = await apiClient.get("/jobs", { params });
   return res.data;
 }
 
-export async function listMyJobs(params?: { skip?: number; take?: number; status?: string }): Promise<any[]> {
+export async function listMyJobs(params?: { skip?: number; take?: number; status?: string }): Promise<JobsListResponse> {
   const res = await apiClient.get("/jobs/mine", { params });
   return res.data;
 }

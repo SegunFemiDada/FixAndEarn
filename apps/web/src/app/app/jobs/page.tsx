@@ -104,7 +104,7 @@ export default function JobsPage() {
     minPriceMilliFec: parseFecInputToMilliFec(minPrice),
     maxPriceMilliFec: parseFecInputToMilliFec(maxPrice),
     skip: (jobsPage - 1) * JOBS_PER_PAGE,
-    take: JOBS_PER_PAGE + 1,
+    take: JOBS_PER_PAGE,
   };
 }, [
   isFixer,
@@ -126,11 +126,14 @@ useEffect(() => {
     error,
   } = useJobsList(jobsFilters);
 
-  const rawItems = data ?? [];
-  const hasNextPage = rawItems.length > JOBS_PER_PAGE;
-  const items = hasNextPage
-  ? rawItems.slice(0, JOBS_PER_PAGE)
-  : rawItems;
+  const items = data?.items ?? [];
+
+  const totalJobs = data?.total ?? 0;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalJobs / JOBS_PER_PAGE)
+  );
   const { data: stats } = useMarketplaceStats();
 
   return (
@@ -347,7 +350,7 @@ useEffect(() => {
                   );
                 })
               )}
-              {!jobsLoading && !jobsError && items.length > 0 && (
+{totalPages > 1 && (
   <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
     <button
       type="button"
@@ -365,19 +368,19 @@ useEffect(() => {
     </button>
 
     <div className="text-center text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
-      Page {jobsPage}
+      Page {jobsPage} of {totalPages}
     </div>
 
     <button
       type="button"
       onClick={() => {
-        if (hasNextPage) {
-          setJobsPage((page) => page + 1);
-        }
+        setJobsPage((page) =>
+          Math.min(totalPages, page + 1)
+        );
       }}
-      disabled={!hasNextPage || jobsLoading}
+      disabled={jobsPage === totalPages || jobsLoading}
       className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-        !hasNextPage || jobsLoading
+        jobsPage === totalPages || jobsLoading
           ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-[#25344F] dark:text-[#64748B]"
           : "bg-[#5B8FCC] text-white hover:bg-[#4A7BB5]"
       }`}
