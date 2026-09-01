@@ -15,7 +15,9 @@ import { AdminChangePasswordDto } from "./dto/admin-change-password.dto";
 import { Response } from "express";
 import { Res } from "@nestjs/common";
 import { UnauthorizedException } from "@nestjs/common";
+import { Public } from "../common/auth/public.decorator";
 
+@Public()
 @ApiTags("admin")
 @Controller("admin")
 export class AdminController {
@@ -166,10 +168,19 @@ async mySessions(@Req() req: any) {
 async logoutAll(@Req() req: any) {
   return this.admins.logoutAll(req.user.adminId);
 }
-  @Get("me")
-  async me(@Req() req: any) {
-    return { admin: req.user };
-  }
+  @ApiBearerAuth()
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
+@AdminRoles(
+  AdminRole.SUPER_ADMIN,
+  AdminRole.SECURITY_OFFICER,
+  AdminRole.SUPPORT_OFFICER,
+  AdminRole.FINANCE_OFFICER,
+  AdminRole.VERIFICATION_OFFICER,
+)
+@Get("me")
+async me(@Req() req: any) {
+  return { admin: req.user };
+}
 
   @ApiBearerAuth()
   @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
