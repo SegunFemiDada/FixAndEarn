@@ -14,6 +14,7 @@ import { WalletModule } from "./modules/wallet/wallet.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { RolesGuard } from "./common/auth/roles.guard";
 import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { JobsModule } from "./modules/jobs/jobs.module";
 import { AdminModule } from "./admin/admin.module";
 import { ChatModule } from "./chat/chat.module";
@@ -39,6 +40,13 @@ import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/a
       isGlobal: true,
       envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
     }),
+    ThrottlerModule.forRoot([
+  {
+    name: "default",
+    ttl: 60_000,
+    limit: 100,
+  },
+]),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
@@ -76,6 +84,10 @@ import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/a
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+    provide: APP_GUARD,
+    useClass: ThrottlerGuard,
     },
   ]
 })
