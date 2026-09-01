@@ -13,6 +13,7 @@ import { VerificationModule } from "./modules/verification/verification.module";
 import { WalletModule } from "./modules/wallet/wallet.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { RolesGuard } from "./common/auth/roles.guard";
+import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
 import { JobsModule } from "./modules/jobs/jobs.module";
 import { AdminModule } from "./admin/admin.module";
 import { ChatModule } from "./chat/chat.module";
@@ -67,11 +68,15 @@ import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/a
     AdminSidebarNotificationsModule,
     ScheduleModule.forRoot(),
   ],
-  providers: [
+    providers: [
     {
       provide: APP_GUARD,
-      useClass: RolesGuard
-    }
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
   ]
 })
 export class AppModule {}
