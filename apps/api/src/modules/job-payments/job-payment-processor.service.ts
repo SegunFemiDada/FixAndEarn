@@ -217,16 +217,39 @@ export class JobPaymentProcessorService {
       };
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.jobPayment.update({
+    /*
+     * Only one concurrent processor is allowed to change the
+     * payment from PENDING to SUCCESS.
+     *
+     * This is intentionally done with updateMany and a status
+     * condition instead of an unconditional update.
+     *
+     * If two successful webhooks arrive simultaneously:
+     *
+     * Processor A:
+     *   PENDING -> SUCCESS
+     *
+     * Processor B:
+     *   PENDING condition no longer matches
+     *   -> does not process the payment again
+     */
+    const result = await this.prisma.$transaction(async (tx) => {
+      const paymentUpdate = await tx.jobPayment.updateMany({
         where: {
           id: payment.id,
+          status: JobPaymentStatus.PENDING,
         },
         data: {
           status: JobPaymentStatus.SUCCESS,
           paidAt: new Date(),
         },
       });
+
+      if (paymentUpdate.count === 0) {
+        return {
+          processed: false,
+        };
+      }
 
       await tx.job.update({
         where: {
@@ -236,7 +259,45 @@ export class JobPaymentProcessorService {
           status: JobStatus.OPEN,
         },
       });
+
+      return {
+        processed: true,
+      };
     });
+
+    /*
+     * Another concurrent webhook may have completed the payment
+     * before this process acquired the update lock.
+     */
+    if (!result.processed) {
+      const currentPayment = await this.prisma.jobPayment.findUnique({
+        where: {
+          id: payment.id,
+        },
+        select: {
+          status: true,
+        },
+      });
+
+      if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
+        return {
+          ok: true,
+          alreadyProcessed: true,
+        };
+      }
+
+      if (currentPayment?.status === JobPaymentStatus.EXPIRED) {
+        return {
+          ok: true,
+          paymentType: payment.type,
+          expired: true,
+        };
+      }
+
+      return {
+        ok: true,
+      };
+    }
 
     try {
       await this.notifications.create({
@@ -294,16 +355,30 @@ export class JobPaymentProcessorService {
 
     const conversationId = payment.conversationId;
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.jobPayment.update({
+    /*
+     * Only one concurrent processor is allowed to change the
+     * payment from PENDING to SUCCESS.
+     *
+     * The payment state transition, job assignment, and
+     * conversation activation remain in the same transaction.
+     */
+    const result = await this.prisma.$transaction(async (tx) => {
+      const paymentUpdate = await tx.jobPayment.updateMany({
         where: {
           id: payment.id,
+          status: JobPaymentStatus.PENDING,
         },
         data: {
           status: JobPaymentStatus.SUCCESS,
           paidAt: new Date(),
         },
       });
+
+      if (paymentUpdate.count === 0) {
+        return {
+          processed: false,
+        };
+      }
 
       await tx.job.update({
         where: {
@@ -323,7 +398,45 @@ export class JobPaymentProcessorService {
           status: "OPEN",
         },
       });
+
+      return {
+        processed: true,
+      };
     });
+
+    /*
+     * Another concurrent webhook may have completed the payment
+     * before this process acquired the update lock.
+     */
+    if (!result.processed) {
+      const currentPayment = await this.prisma.jobPayment.findUnique({
+        where: {
+          id: payment.id,
+        },
+        select: {
+          status: true,
+        },
+      });
+
+      if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
+        return {
+          ok: true,
+          alreadyProcessed: true,
+        };
+      }
+
+      if (currentPayment?.status === JobPaymentStatus.EXPIRED) {
+        return {
+          ok: true,
+          paymentType: payment.type,
+          expired: true,
+        };
+      }
+
+      return {
+        ok: true,
+      };
+    }
 
     if (payment.fixerId) {
       const room = this.realtime.roomFor(
