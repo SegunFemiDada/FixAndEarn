@@ -1,5 +1,9 @@
 //path: apps/api/src/modules/job-payments/job-payments.service.ts
-import { Inject, Injectable } from "@nestjs/common";
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+} from "@nestjs/common";
 import { PrismaService, } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PAYMENT_PROVIDER } from "../payments/payments.constants";
@@ -36,9 +40,25 @@ export class JobPaymentsService {
     throw new Error("CLIENT_NOT_FOUND");
   }
 
-  const paymentReference = crypto.randomUUID();
+  const existingPayment = await this.prisma.jobPayment.findUnique({
+  where: {
+    jobId_type: {
+      jobId: args.jobId,
+      type: "POSTING",
+    },
+  },
+  select: {
+    status: true,
+  },
+});
 
-  await this.prisma.jobPayment.upsert({
+if (existingPayment?.status === "SUCCESS") {
+  throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+}
+
+const paymentReference = crypto.randomUUID();
+
+await this.prisma.jobPayment.upsert({
     where: {
       jobId_type: {
         jobId: args.jobId,
@@ -116,7 +136,23 @@ async createUrgentHirePayment(
     throw new Error("NOT_JOB_OWNER");
   }
 
-  const paymentReference = crypto.randomUUID();
+  const existingPayment = await db.jobPayment.findUnique({
+  where: {
+    jobId_type: {
+      jobId: args.jobId,
+      type: "URGENT",
+    },
+  },
+  select: {
+    status: true,
+  },
+});
+
+if (existingPayment?.status === "SUCCESS") {
+  throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+}
+
+const paymentReference = crypto.randomUUID();
 
 const conversation = await db.conversation.upsert({
   where: {
@@ -335,7 +371,23 @@ async continuePayment(args: {
     throw new Error("LOCKED_PRICE_MISSING");
   }
 
-  const paymentReference = crypto.randomUUID();
+  const existingPayment = await db.jobPayment.findUnique({
+  where: {
+    jobId_type: {
+      jobId: args.jobId,
+      type: "FINAL",
+    },
+  },
+  select: {
+    status: true,
+  },
+});
+
+if (existingPayment?.status === "SUCCESS") {
+  throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+}
+
+const paymentReference = crypto.randomUUID();
 
 const expiresAt = new Date(
   Date.now() + FINAL_PAYMENT_EXPIRATION_MINUTES * 60 * 1000,
