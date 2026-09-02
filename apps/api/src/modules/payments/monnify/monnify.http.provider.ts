@@ -1,5 +1,6 @@
 //path: apps/api/src/modules/payments/monnify/monnify.http.provider.ts
 import { Injectable } from "@nestjs/common";
+import * as crypto from "crypto";
 import { ConfigService } from "@nestjs/config";
 import type {
   PaymentProvider,
@@ -121,17 +122,50 @@ if (
   rawBody: Buffer,
   signature?: string,
 ): boolean {
-  /**
-   * Monnify sandbox does not sign webhook
-   *
-   * Until production webhook verification
-   * is enabled, accept the request.
-   */
+  const normalizedSignature =
+    typeof signature === "string"
+      ? signature.trim().toLowerCase()
+      : "";
 
-  void rawBody;
-  void signature;
+  const isSandbox = this.baseUrl.includes("sandbox.monnify.com");
 
-  return true;
+  // Monnify sandbox webhooks do not include a signature.
+  // Keep sandbox testing functional.
+  if (isSandbox && !normalizedSignature) {
+    return true;
+  }
+
+  // Production webhooks must contain a signature.
+  if (!normalizedSignature) {
+    return false;
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha512", this.secretKey)
+    .update(rawBody)
+    .digest("hex");
+
+  const expectedBuffer = Buffer.from(
+    expectedSignature,
+    "utf8",
+  );
+
+  const receivedBuffer = Buffer.from(
+    normalizedSignature,
+    "utf8",
+  );
+
+  if (
+    expectedBuffer.length !==
+    receivedBuffer.length
+  ) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(
+    expectedBuffer,
+    receivedBuffer,
+  );
 }
 
   async initializeTransaction(

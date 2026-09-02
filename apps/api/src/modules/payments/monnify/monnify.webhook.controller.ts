@@ -1,4 +1,5 @@
 //path: apps/api/src/modules/payments/monnify/monnify.webhook.controller.ts
+
 import {
   Body,
   Controller,
@@ -6,10 +7,16 @@ import {
   HttpCode,
   Inject,
   Post,
+  Req,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { PaymentsService } from "../payments.service";
 import { PAYMENT_PROVIDER } from "../payments.constants";
 import type { PaymentProvider } from "../payment.provider";
+
+type RawBodyRequest = Request & {
+  rawBody?: Buffer;
+};
 
 @Controller("payments/monnify")
 export class MonnifyWebhookController {
@@ -24,14 +31,22 @@ export class MonnifyWebhookController {
   @HttpCode(200)
   async webhook(
     @Headers("monnify-signature")
-    signature: string |undefined,
+    signature: string | undefined,
+
+    @Req()
+    req: RawBodyRequest,
 
     @Body()
     payload: any,
   ) {
-    const rawBody = Buffer.from(
-      JSON.stringify(payload),
-    );
+    const rawBody = req.rawBody;
+
+    if (!rawBody) {
+      return {
+        received: false,
+        reason: "RAW_BODY_UNAVAILABLE",
+      };
+    }
 
     if (
       !this.paymentProvider.verifyWebhookSignature(

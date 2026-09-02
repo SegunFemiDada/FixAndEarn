@@ -6,7 +6,6 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import * as express from "express";
-import * as path from "path";
 import { join } from "path";
 import cookieParser = require("cookie-parser");
 
@@ -18,8 +17,6 @@ async function bootstrap(): Promise<void> {
   app.use(cookieParser());
   const uploadsPath = join(process.cwd(), 'apps/api/uploads');
 app.use('/uploads', express.static(uploadsPath));
-
-  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -44,13 +41,6 @@ app.enableCors({
   ],
   credentials: true,
 });
-app.use(
-  express.json({
-    verify: (req: any, res, buf) => {
-      req.rawBody = buf;
-    },
-  })
-);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>("API_PORT", 3000);
