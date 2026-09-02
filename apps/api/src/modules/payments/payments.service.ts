@@ -296,6 +296,35 @@ const reference =
     if (!reference) {
       throw new BadRequestException("MISSING_REFERENCE");
     }
+        const verifiedTransaction =
+      await this.paymentProvider.verifyTransaction(
+        reference,
+      );
+
+    if (
+      verifiedTransaction.paymentStatus !==
+      "PAID"
+    ) {
+      this.logger.warn(
+        `Monnify transaction ${reference} is not PAID. Status: ${verifiedTransaction.paymentStatus}`,
+      );
+
+      return {
+        ok: true,
+        paymentVerified: false,
+        paymentStatus:
+          verifiedTransaction.paymentStatus,
+      };
+    }
+
+    if (
+      verifiedTransaction.currency !==
+      "NGN"
+    ) {
+      throw new BadRequestException(
+        "INVALID_PAYMENT_CURRENCY",
+      );
+    }
 
     // Idempotency check
     const existing = await this.prisma.webhookEvent.findUnique({
@@ -332,6 +361,21 @@ const reference =
     });
 
     if (deposit) {
+            const expectedDepositAmount =
+        deposit.amountMilliFec / 1000;
+
+      if (
+        verifiedTransaction.amountPaid !==
+        expectedDepositAmount
+      ) {
+        this.logger.error(
+          `Monnify amount mismatch for deposit ${reference}. Expected ${expectedDepositAmount} NGN, received ${verifiedTransaction.amountPaid} NGN.`,
+        );
+
+        throw new BadRequestException(
+          "PAYMENT_AMOUNT_MISMATCH",
+        );
+      }
       if (deposit.status !== "SUCCEEDED") {
         await tx.deposit.update({
           where: {
@@ -384,6 +428,23 @@ const jobPayment = await tx.jobPayment.findUnique({
     job: true,
   },
 });
+    if (jobPayment) {
+      const expectedAmount =
+        jobPayment.amountMilliFec;
+
+      if (
+        verifiedTransaction.amountPaid !==
+        expectedAmount
+      ) {
+        this.logger.error(
+          `Monnify amount mismatch for job payment ${reference}. Expected ${expectedAmount} NGN, received ${verifiedTransaction.amountPaid} NGN.`,
+        );
+
+        throw new BadRequestException(
+          "PAYMENT_AMOUNT_MISMATCH",
+        );
+      }
+    }
 
     if (!jobPayment) {
       return {

@@ -10,6 +10,7 @@ import type {
   InitiateTransferRequest,
   InitiateTransferResponse,
   FetchTransferResponse,
+  VerifyTransactionResponse,
 } from "../payment.provider";
 
 @Injectable()
@@ -297,6 +298,55 @@ if (
         .transactionReference ?? null,
   };
 }
+  async verifyTransaction(
+    reference: string,
+  ): Promise<VerifyTransactionResponse> {
+    const params = new URLSearchParams({
+      paymentReference: reference,
+    });
+
+    const response = await fetch(
+      `${this.baseUrl}/api/v2/merchant/transactions/query?${params.toString()}`,
+      {
+        method: "GET",
+        headers: await this.headers(),
+      },
+    );
+
+    const payload = await response.json();
+
+    if (
+      !response.ok ||
+      !payload.requestSuccessful ||
+      !payload.responseBody
+    ) {
+      throw new Error(
+        payload?.responseMessage ??
+          "MONNIFY_TRANSACTION_VERIFICATION_FAILED",
+      );
+    }
+
+    const transaction =
+      payload.responseBody;
+
+    return {
+      paymentReference:
+        transaction.paymentReference,
+      transactionReference:
+        transaction.transactionReference,
+      paymentStatus:
+        transaction.paymentStatus,
+      amountPaid: Number(
+        transaction.amountPaid,
+      ),
+      currency:
+        transaction.currencyCode ??
+        transaction.currency ??
+        "NGN",
+      raw: payload,
+    };
+  }
+
 
   async fetchTransfer(
     reference: string,

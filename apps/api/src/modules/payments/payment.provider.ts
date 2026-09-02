@@ -36,12 +36,23 @@ export interface FetchTransferResponse {
   status: string;
   raw: unknown;
 }
+export interface VerifyTransactionResponse {
+  paymentReference: string;
+  transactionReference: string;
+  paymentStatus: string;
+  amountPaid: number;
+  currency: string;
+  raw: unknown;
+}
 
 export interface PaymentProvider {
   verifyWebhookSignature(
     payload: unknown,
     signature?: string,
   ): boolean;
+    verifyTransaction(
+    reference: string,
+  ): Promise<VerifyTransactionResponse>;
 
   initializeTransaction(
     request: InitializePaymentRequest,
