@@ -536,7 +536,7 @@ recommendation: {
 };
   }
 
-  async approveWithdrawal(args: {
+async approveWithdrawal(args: {
   withdrawalId: string;
   adminId: string;
   note?: string | null;
@@ -572,9 +572,10 @@ recommendation: {
       throw new Error("WITHDRAWAL_NOT_PENDING");
     }
 
-    await tx.withdrawalRequest.update({
+    const updated = await tx.withdrawalRequest.updateMany({
       where: {
         id: withdrawalId,
+        status: "PENDING",
       },
       data: {
         status: "APPROVED",
@@ -583,6 +584,10 @@ recommendation: {
         reviewedAt: new Date(),
       },
     });
+
+    if (updated.count !== 1) {
+      throw new Error("WITHDRAWAL_NOT_PENDING");
+    }
 
     return {
       ok: true,
@@ -627,44 +632,49 @@ recommendation: {
       throw new Error("WITHDRAWAL_NOT_PENDING");
     }
 
-    const allocations = await tx.withdrawalAllocation.findMany({
-  where: {
-    withdrawalId,
-  },
-  include: {
-    earning: true,
-  },
-});
-
-for (const allocation of allocations) {
-  await tx.fixerEarning.update({
-    where: {
-      id: allocation.earningId,
-    },
-    data: {
-      availableMilliFec: {
-        increment: allocation.amountMilliFec,
-      },
-      status: "AVAILABLE",
-    },
-  });
-}
-
-await tx.withdrawalAllocation.deleteMany({
-  where: {
-    withdrawalId,
-  },
-});
-
-    await tx.withdrawalRequest.update({
+    const updated = await tx.withdrawalRequest.updateMany({
       where: {
         id: withdrawalId,
+        status: "PENDING",
       },
       data: {
         status: "REJECTED",
         reviewedBy: adminId,
         reviewNote: note ?? null,
         reviewedAt: new Date(),
+      },
+    });
+
+    if (updated.count !== 1) {
+      throw new Error("WITHDRAWAL_NOT_PENDING");
+    }
+
+    const allocations = await tx.withdrawalAllocation.findMany({
+      where: {
+        withdrawalId,
+      },
+      include: {
+        earning: true,
+      },
+    });
+
+    for (const allocation of allocations) {
+      await tx.fixerEarning.update({
+        where: {
+          id: allocation.earningId,
+        },
+        data: {
+          availableMilliFec: {
+            increment: allocation.amountMilliFec,
+          },
+          status: "AVAILABLE",
+        },
+      });
+    }
+
+    await tx.withdrawalAllocation.deleteMany({
+      where: {
+        withdrawalId,
       },
     });
 
@@ -675,27 +685,56 @@ await tx.withdrawalAllocation.deleteMany({
   });
 }
 
-  async markpaid(args: { withdrawalId: string; adminId: string; note?: string | null }) {
-    const { withdrawalId, adminId, note } = args;
+  async markpaid(args: {
+  withdrawalId: string;
+  adminId: string;
+  note?: string | null;
+}) {
+  const { withdrawalId, adminId, note } = args;
 
-    return this.prisma.$transaction(async (tx) => {
-      const wr = await tx.withdrawalRequest.findUnique({ where: { id: withdrawalId } });
-      if (!wr) throw new Error("WITHDRAWAL_NOT_FOUND");
-
-      if (wr.status === "PAID") return { ok: true, status: "PAID" as const };
-      if (wr.status !== "APPROVED") throw new Error("WITHDRAWAL_NOT_APPROVED");
-
-      await tx.withdrawalRequest.update({
-        where: { id: withdrawalId },
-        data: {
-          status: "PAID",
-          reviewedBy: adminId,
-          reviewNote: note ?? wr.reviewNote ?? null,
-          paidAt: new Date(),
-        },
-      });
-
-      return { ok: true, status: "PAID" as const };
+  return this.prisma.$transaction(async (tx) => {
+    const wr = await tx.withdrawalRequest.findUnique({
+      where: {
+        id: withdrawalId,
+      },
     });
-  }
+
+    if (!wr) {
+      throw new Error("WITHDRAWAL_NOT_FOUND");
+    }
+
+    if (wr.status === "PAID") {
+      return {
+        ok: true,
+        status: "PAID" as const,
+      };
+    }
+
+    if (wr.status !== "APPROVED") {
+      throw new Error("WITHDRAWAL_NOT_APPROVED");
+    }
+
+    const updated = await tx.withdrawalRequest.updateMany({
+      where: {
+        id: withdrawalId,
+        status: "APPROVED",
+      },
+      data: {
+        status: "PAID",
+        reviewedBy: adminId,
+        reviewNote: note ?? wr.reviewNote ?? null,
+        paidAt: new Date(),
+      },
+    });
+
+    if (updated.count !== 1) {
+      throw new Error("WITHDRAWAL_NOT_APPROVED");
+    }
+
+    return {
+      ok: true,
+      status: "PAID" as const,
+    };
+  });
+}
 }
