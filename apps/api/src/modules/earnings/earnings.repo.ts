@@ -229,7 +229,7 @@ async reserveAmount(
   });
 }
 
-  async update(
+    async update(
     id: string,
     data: Prisma.FixerEarningUpdateInput,
     tx?: DbClient,
@@ -240,5 +240,46 @@ async reserveAmount(
       },
       data,
     });
+  }
+
+  async restoreAmount(
+    earningId: string,
+    amountMilliFec: number,
+    tx?: DbClient,
+  ) {
+    if (amountMilliFec <= 0) {
+      throw new Error("INVALID_RESTORE_AMOUNT");
+    }
+
+    const result = await this.db(tx).$queryRaw<
+      Array<{
+        id: string;
+        amountMilliFec: number;
+        availableMilliFec: number;
+        status: FixerEarningStatus;
+      }>
+    >`
+      UPDATE "fixer_earnings"
+      SET
+        "availableMilliFec" = "availableMilliFec" + ${amountMilliFec},
+        "status" = CASE
+          WHEN "availableMilliFec" + ${amountMilliFec} = "amountMilliFec"
+            THEN 'AVAILABLE'::"FixerEarningStatus"
+          ELSE 'PARTIALLY_WITHDRAWN'::"FixerEarningStatus"
+        END,
+        "updatedAt" = NOW()
+      WHERE "id" = ${earningId}
+      RETURNING
+        "id",
+        "amountMilliFec",
+        "availableMilliFec",
+        "status";
+    `;
+
+    if (result.length !== 1) {
+      throw new Error("EARNING_NOT_FOUND");
+    }
+
+    return result[0];
   }
 }

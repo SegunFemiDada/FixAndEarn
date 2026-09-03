@@ -157,29 +157,9 @@ remaining -= consume;
     );
 
   for (const allocation of allocations) {
-  const earning = await this.repo.getById(
+    await this.repo.restoreAmount(
     allocation.earningId,
-    tx,
-  );
-
-  if (!earning) {
-    throw new NotFoundException("EARNING_NOT_FOUND");
-  }
-
-  const restoredAvailableMilliFec =
-    earning.availableMilliFec + allocation.amountMilliFec;
-
-  const nextStatus =
-    restoredAvailableMilliFec === earning.amountMilliFec
-      ? FixerEarningStatus.AVAILABLE
-      : FixerEarningStatus.PARTIALLY_WITHDRAWN;
-
-  await this.repo.update(
-    allocation.earningId,
-    {
-      availableMilliFec: restoredAvailableMilliFec,
-      status: nextStatus,
-    },
+    allocation.amountMilliFec,
     tx,
   );
 

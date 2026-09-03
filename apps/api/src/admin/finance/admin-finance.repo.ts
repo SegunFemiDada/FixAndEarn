@@ -658,35 +658,38 @@ async approveWithdrawal(args: {
       },
     });
 
-    for (const allocation of allocations) {
-    const currentEarning = await tx.fixerEarning.findUnique({
-      where: {
-        id: allocation.earningId,
-      },
-    });
+        for (const allocation of allocations) {
+      const restored = await tx.$queryRaw<
+        Array<{
+          id: string;
+          amountMilliFec: number;
+          availableMilliFec: number;
+          status: string;
+        }>
+      >`
+        UPDATE "fixer_earnings"
+        SET
+          "availableMilliFec" =
+            "availableMilliFec" + ${allocation.amountMilliFec},
+          "status" = CASE
+            WHEN "availableMilliFec" + ${allocation.amountMilliFec}
+              = "amountMilliFec"
+              THEN 'AVAILABLE'::"FixerEarningStatus"
+            ELSE 'PARTIALLY_WITHDRAWN'::"FixerEarningStatus"
+          END,
+          "updatedAt" = NOW()
+        WHERE "id" = ${allocation.earningId}
+        RETURNING
+          "id",
+          "amountMilliFec",
+          "availableMilliFec",
+          "status";
+      `;
 
-    if (!currentEarning) {
-      throw new Error("EARNING_NOT_FOUND");
+      if (restored.length !== 1) {
+        throw new Error("EARNING_NOT_FOUND");
+      }
     }
-
-    const restoredAvailableMilliFec =
-      currentEarning.availableMilliFec + allocation.amountMilliFec;
-
-    const nextStatus =
-      restoredAvailableMilliFec === currentEarning.amountMilliFec
-        ? "AVAILABLE"
-        : "PARTIALLY_WITHDRAWN";
-
-    await tx.fixerEarning.update({
-      where: {
-        id: allocation.earningId,
-      },
-      data: {
-        availableMilliFec: restoredAvailableMilliFec,
-        status: nextStatus,
-      },
-    });
-  }
     await tx.withdrawalAllocation.deleteMany({
       where: {
         withdrawalId,
