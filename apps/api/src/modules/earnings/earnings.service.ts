@@ -108,13 +108,8 @@ export class EarningsService {
   earning.availableMilliFec,
 );
 
-const remainingOnThisJob =
-  earning.availableMilliFec - consume;
-
 const nextStatus =
-  remainingOnThisJob === 0
-    ? FixerEarningStatus.PAID
-    : FixerEarningStatus.PARTIALLY_WITHDRAWN;
+  FixerEarningStatus.PARTIALLY_WITHDRAWN;
 
 const reserved = await this.repo.reserveAmount(
   earning.id,
