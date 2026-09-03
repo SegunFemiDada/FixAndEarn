@@ -749,6 +749,51 @@ async approveWithdrawal(args: {
       throw new Error("WITHDRAWAL_NOT_APPROVED");
     }
 
+    const allocations = await tx.withdrawalAllocation.findMany({
+      where: {
+        withdrawalId,
+      },
+      select: {
+        earningId: true,
+        amountMilliFec: true,
+      },
+    });
+
+    for (const allocation of allocations) {
+      const finalized = await tx.$queryRaw<
+        Array<{
+          id: string;
+          amountMilliFec: number;
+          availableMilliFec: number;
+          status: string;
+        }>
+      >`
+        UPDATE "fixer_earnings"
+        SET
+          "status" = CASE
+            WHEN "availableMilliFec" = 0
+              THEN 'PAID'::"FixerEarningStatus"
+            ELSE 'PARTIALLY_WITHDRAWN'::"FixerEarningStatus"
+          END,
+          "paidAt" = CASE
+            WHEN "availableMilliFec" = 0
+              THEN COALESCE("paidAt", NOW())
+            ELSE "paidAt"
+          END,
+          "updatedAt" = NOW()
+        WHERE "id" = ${allocation.earningId}
+        RETURNING
+          "id",
+          "amountMilliFec",
+          "availableMilliFec",
+          "status";
+      `;
+
+      if (finalized.length !== 1) {
+        throw new Error("EARNING_NOT_FOUND");
+      }
+    }
+
     return {
       ok: true,
       status: "PAID" as const,
