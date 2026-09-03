@@ -157,22 +157,37 @@ remaining -= consume;
     );
 
   for (const allocation of allocations) {
-    await this.repo.update(
-      allocation.earningId,
-      {
-        availableMilliFec: {
-          increment: allocation.amountMilliFec,
-        },
-        status: FixerEarningStatus.AVAILABLE,
-      },
-      tx,
-    );
+  const earning = await this.repo.getById(
+    allocation.earningId,
+    tx,
+  );
 
-    await this.allocationRepo.delete(
-      allocation.id,
-      tx,
-    );
+  if (!earning) {
+    throw new NotFoundException("EARNING_NOT_FOUND");
   }
+
+  const restoredAvailableMilliFec =
+    earning.availableMilliFec + allocation.amountMilliFec;
+
+  const nextStatus =
+    restoredAvailableMilliFec === earning.amountMilliFec
+      ? FixerEarningStatus.AVAILABLE
+      : FixerEarningStatus.PARTIALLY_WITHDRAWN;
+
+  await this.repo.update(
+    allocation.earningId,
+    {
+      availableMilliFec: restoredAvailableMilliFec,
+      status: nextStatus,
+    },
+    tx,
+  );
+
+  await this.allocationRepo.delete(
+    allocation.id,
+    tx,
+  );
+}
 }
 
   async finalizeWithdrawal(

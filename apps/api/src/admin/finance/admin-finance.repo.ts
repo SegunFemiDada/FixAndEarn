@@ -659,19 +659,34 @@ async approveWithdrawal(args: {
     });
 
     for (const allocation of allocations) {
-      await tx.fixerEarning.update({
-        where: {
-          id: allocation.earningId,
-        },
-        data: {
-          availableMilliFec: {
-            increment: allocation.amountMilliFec,
-          },
-          status: "AVAILABLE",
-        },
-      });
+    const currentEarning = await tx.fixerEarning.findUnique({
+      where: {
+        id: allocation.earningId,
+      },
+    });
+
+    if (!currentEarning) {
+      throw new Error("EARNING_NOT_FOUND");
     }
 
+    const restoredAvailableMilliFec =
+      currentEarning.availableMilliFec + allocation.amountMilliFec;
+
+    const nextStatus =
+      restoredAvailableMilliFec === currentEarning.amountMilliFec
+        ? "AVAILABLE"
+        : "PARTIALLY_WITHDRAWN";
+
+    await tx.fixerEarning.update({
+      where: {
+        id: allocation.earningId,
+      },
+      data: {
+        availableMilliFec: restoredAvailableMilliFec,
+        status: nextStatus,
+      },
+    });
+  }
     await tx.withdrawalAllocation.deleteMany({
       where: {
         withdrawalId,
