@@ -104,22 +104,28 @@ export class EarningsService {
       }
 
       const consume = Math.min(
-        remaining,
-        earning.availableMilliFec,
-      );
+  remaining,
+  earning.availableMilliFec,
+);
 
-      const remainingOnThisJob =
-        earning.availableMilliFec - consume;
+const remainingOnThisJob =
+  earning.availableMilliFec - consume;
 
-      await this.repo.update(
+const nextStatus =
+  remainingOnThisJob === 0
+    ? FixerEarningStatus.PAID
+    : FixerEarningStatus.PARTIALLY_WITHDRAWN;
+
+const reserved = await this.repo.reserveAmount(
   earning.id,
-  {
-    availableMilliFec: {
-      decrement: consume,
-    },
-  },
+  consume,
+  nextStatus,
   tx,
 );
+
+if (reserved.count !== 1) {
+  continue;
+}
 
 await this.allocationRepo.create(
   {
@@ -130,15 +136,7 @@ await this.allocationRepo.create(
   tx,
 );
 
-await this.repo.setStatus(
-  earning.id,
-  remainingOnThisJob === 0
-    ? FixerEarningStatus.PAID
-    : FixerEarningStatus.PARTIALLY_WITHDRAWN,
-  tx,
-);
-
-      remaining -= consume;
+remaining -= consume;
     }
 
     if (remaining > 0) {

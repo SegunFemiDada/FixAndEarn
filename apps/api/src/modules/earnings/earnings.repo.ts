@@ -204,17 +204,28 @@ async setStatus(
 async reserveAmount(
   earningId: string,
   amount: number,
+  status: FixerEarningStatus,
   tx?: DbClient,
 ) {
-  return this.db(tx).fixerEarning.update({
+  return this.db(tx).fixerEarning.updateMany({
     where: {
       id: earningId,
+      status: {
+        in: [
+          FixerEarningStatus.AVAILABLE,
+          FixerEarningStatus.PARTIALLY_WITHDRAWN,
+        ],
+      },
+      availableMilliFec: {
+        gte: amount,
+      },
     },
     data: {
-  availableMilliFec: {
-    decrement: amount,
-  },
-},
+      availableMilliFec: {
+        decrement: amount,
+      },
+      status,
+    },
   });
 }
 
