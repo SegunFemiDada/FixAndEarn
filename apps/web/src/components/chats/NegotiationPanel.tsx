@@ -222,11 +222,11 @@ export default function NegotiationPanel({
 
         <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] p-3">
 
-          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            Proposed
+          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#516786] dark:text-[#AAB9D0]">
+            Proposed offer
           </div>
 
-          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+          <div className="mt-2 inline-flex rounded-lg border border-fuchsia-300 bg-linear-to-r from-fuchsia-600 to-violet-600 px-3 py-1.5 text-base font-extrabold tracking-tight text-white shadow-[0_5px_14px_rgba(192,38,211,0.35)] dark:border-fuchsia-400 dark:from-fuchsia-500 dark:to-violet-500">
             {fmtFecFromMilli(
               negotiation?.proposedPriceMilliFec
             )}
@@ -236,11 +236,11 @@ export default function NegotiationPanel({
 
         <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] p-3">
 
-          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            Locked
+          <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#516786] dark:text-[#AAB9D0]">
+            Locked price
           </div>
 
-          <div className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+          <div className="mt-2 inline-flex rounded-lg border border-emerald-300 bg-linear-to-r from-emerald-500 to-cyan-500 px-3 py-1.5 text-base font-extrabold tracking-tight text-white shadow-[0_5px_14px_rgba(16,185,129,0.35)] dark:border-emerald-400 dark:from-emerald-400 dark:to-cyan-400 dark:text-[#062E2B]">
             {fmtFecFromMilli(
               negotiation?.lockedPriceMilliFec
             )}
