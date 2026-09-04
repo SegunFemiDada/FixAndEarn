@@ -28,9 +28,6 @@ export default function PaymentReturnContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const jobId = searchParams.get("jobId")?.trim() ?? "";
-  const paymentType = searchParams.get("type")?.trim() ?? "";
-
   const paymentReference =
     searchParams.get("paymentReference")?.trim() ??
     searchParams.get("paymentreference")?.trim() ??
@@ -39,10 +36,18 @@ export default function PaymentReturnContent() {
   const [state, setState] =
     useState<ViewState>("VERIFYING");
 
+  const [resolvedJobId, setResolvedJobId] =
+    useState("");
+
+  const [resolvedPaymentType, setResolvedPaymentType] =
+    useState("");
+
+  const resolvedJobIdRef = useRef("");
+
   const didRedirectRef = useRef(false);
 
   useEffect(() => {
-    if (!jobId || !paymentReference) {
+    if (!paymentReference) {
       setState("FAILED");
       return;
     }
@@ -54,8 +59,8 @@ export default function PaymentReturnContent() {
 
     let timeoutId: number | null = null;
 
-    const redirectToJob = () => {
-      if (didRedirectRef.current) {
+    const redirectToJob = (jobId: string) => {
+      if (didRedirectRef.current || !jobId) {
         return;
       }
 
@@ -78,8 +83,7 @@ export default function PaymentReturnContent() {
          * Verify directly with Monnify through our backend
          * on the first attempt and then every 10 seconds.
          *
-         * This means the browser never decides whether
-         * payment succeeded.
+         * The browser never decides whether payment succeeded.
          */
         if (attempts === 1 || attempts % 5 === 0) {
           const { data } =
@@ -94,9 +98,22 @@ export default function PaymentReturnContent() {
             return;
           }
 
+          /*
+           * The backend resolves the job and payment type
+           * from the paymentReference.
+           */
+          if (data.jobId) {
+            resolvedJobIdRef.current = data.jobId;
+            setResolvedJobId(data.jobId);
+          }
+
+          if (data.type) {
+            setResolvedPaymentType(data.type);
+          }
+
           if (data.status === "SUCCESS") {
             setState("SUCCESS");
-            redirectToJob();
+            redirectToJob(data.jobId);
             return;
           }
 
@@ -111,30 +128,40 @@ export default function PaymentReturnContent() {
         } else {
           /*
            * Between direct Monnify verification attempts,
-           * check our own database. The webhook may have
-           * completed the payment in the meantime.
+           * check our own database.
+           *
+           * This is only possible after the first successful
+           * backend verification has resolved the jobId.
            */
-          const { data } =
-            await apiClient.get<PaymentStatusResponse>(
-              `/job-payments/status/${jobId}`,
-            );
+          const jobId = resolvedJobIdRef.current;
 
-          if (cancelled) {
-            return;
-          }
+          if (jobId) {
+            const { data } =
+              await apiClient.get<PaymentStatusResponse>(
+                `/job-payments/status/${jobId}`,
+              );
 
-          if (data.status === "SUCCESS") {
-            setState("SUCCESS");
-            redirectToJob();
-            return;
-          }
+            if (cancelled) {
+              return;
+            }
 
-          if (
-            data.status === "FAILED" ||
-            data.status === "EXPIRED"
-          ) {
-            setState("FAILED");
-            return;
+            if (data.type) {
+              setResolvedPaymentType(data.type);
+            }
+
+            if (data.status === "SUCCESS") {
+              setState("SUCCESS");
+              redirectToJob(data.jobId || jobId);
+              return;
+            }
+
+            if (
+              data.status === "FAILED" ||
+              data.status === "EXPIRED"
+            ) {
+              setState("FAILED");
+              return;
+            }
           }
         }
       } catch {
@@ -163,11 +190,7 @@ export default function PaymentReturnContent() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [
-    jobId,
-    paymentReference,
-    router,
-  ]);
+  }, [paymentReference, router]);
 
   return (
     <main className="min-h-screen bg-[#F4F8FF] px-4 py-10 dark:bg-[#0F172A]">
@@ -181,10 +204,10 @@ export default function PaymentReturnContent() {
 
               <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
                 Please wait while we confirm your{" "}
-                {paymentType
-                  ? paymentType.toLowerCase()
-                  : ""}{" "}
-                payment. Do not close this page.
+                {resolvedPaymentType
+                  ? resolvedPaymentType.toLowerCase()
+                  : "payment"}
+                . Do not close this page.
               </p>
             </div>
           )}
@@ -224,6 +247,18 @@ export default function PaymentReturnContent() {
                 Payment confirmation is taking longer than
                 expected. You can safely return later.
               </p>
+
+              {resolvedJobId && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.replace(`/app/jobs/${resolvedJobId}`)
+                  }
+                  className="mt-5 rounded-xl bg-[#1A2B4A] px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Return to job
+                </button>
+              )}
             </div>
           )}
         </div>

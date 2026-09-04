@@ -94,7 +94,7 @@ await this.prisma.jobPayment.upsert({
     metadata: {
     paymentType: "POSTING",
     jobId: args.jobId,
-    redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=POSTING`  },
+    redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`  },
   });
 }
 
@@ -211,7 +211,7 @@ await db.jobPayment.upsert({
       paymentType: "URGENT",
       jobId: args.jobId,
       fixerId: args.fixerId,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=URGENT`,
+      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
 
     },
   });
@@ -298,7 +298,7 @@ async continuePayment(args: {
       jobId: job.id,
       conversationId: payment.conversationId ?? undefined,
       fixerId: payment.fixerId ?? undefined,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${job.id}&type=${payment.type}`,
+      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
     },
   });
 }
@@ -441,7 +441,7 @@ await db.jobPayment.upsert({
       paymentType: "FINAL",
       jobId: args.jobId,
       conversationId: args.conversationId,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=FINAL`,
+      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
     },
   });
 }
