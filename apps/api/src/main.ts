@@ -13,6 +13,7 @@ import { join } from "path";
 import cookieParser = require("cookie-parser");
 import { randomUUID } from "crypto";
 import { AllExceptionsFilter } from "./common/http/all-exceptions.filter";
+import helmet from "helmet";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -20,6 +21,13 @@ async function bootstrap(): Promise<void> {
     rawBody: true,
   });
   app.use(cookieParser());
+  app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  }),
+);
       app.use(
     (
       req: express.Request,
