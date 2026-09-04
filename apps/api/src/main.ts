@@ -94,6 +94,7 @@ app.enableCors({
   const configService = app.get(ConfigService);
   const port = configService.get<number>("API_PORT", 3000);
 
+  if (configService.get<string>("NODE_ENV") !== "production") {
   const swaggerConfig = new DocumentBuilder()
     .setTitle("FixAndEarn API")
     .setDescription("FixAndEarn REST API (backend-first)")
@@ -102,6 +103,7 @@ app.enableCors({
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup("docs", app, document);
+}
 
   await app.listen(port);
 }
