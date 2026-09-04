@@ -20,7 +20,11 @@ async function bootstrap(): Promise<void> {
     cors: true,
     rawBody: true,
   });
+
+  app.enableShutdownHooks();
+
   app.use(cookieParser());
+  
   app.use(
   helmet({
     crossOriginResourcePolicy: {
