@@ -69,7 +69,7 @@ import { DashboardRepo } from "./dashboard/dashboard.repo";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (cfg: ConfigService) => ({
-        secret: cfg.get<string>("ADMIN_JWT_SECRET", "dev_admin_secret_change_me"),
+        secret: cfg.getOrThrow<string>("ADMIN_JWT_SECRET"),
         signOptions: { expiresIn: "12h" },
       }),
     }),
