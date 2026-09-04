@@ -60,6 +60,16 @@ async continuePayment(
     clientId: pickUserId(user),
   });
 }
+@Post("verify")
+async verifyPayment(
+  @Body("paymentReference") paymentReference: string,
+  @CurrentUser() user: CurrentUserPayload,
+) {
+  return this.jobPaymentsService.verifyPaymentFromReturn({
+    paymentReference,
+    clientId: pickUserId(user),
+  });
+}
 @Get("status/:jobId")
 async getPaymentStatus(
   @Param("jobId") jobId: string,

@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import apiClient from "@/lib/apiClient";
 
+type PaymentVerificationResponse = {
+  paid: boolean;
+  status: string | null;
+  type: string | null;
+  jobId: string;
+};
+
 type PaymentStatusResponse = {
   paid: boolean;
   status: string | null;
@@ -11,7 +18,11 @@ type PaymentStatusResponse = {
   jobId: string;
 };
 
-type ViewState = "VERIFYING" | "SUCCESS" | "FAILED" | "TIMEOUT";
+type ViewState =
+  | "VERIFYING"
+  | "SUCCESS"
+  | "FAILED"
+  | "TIMEOUT";
 
 export default function PaymentReturnContent() {
   const router = useRouter();
@@ -20,52 +31,119 @@ export default function PaymentReturnContent() {
   const jobId = searchParams.get("jobId")?.trim() ?? "";
   const paymentType = searchParams.get("type")?.trim() ?? "";
 
-  const [state, setState] = useState<ViewState>("VERIFYING");
+  const paymentReference =
+    searchParams.get("paymentReference")?.trim() ??
+    searchParams.get("paymentreference")?.trim() ??
+    "";
+
+  const [state, setState] =
+    useState<ViewState>("VERIFYING");
+
   const didRedirectRef = useRef(false);
 
   useEffect(() => {
-    if (!jobId) {
+    if (!jobId || !paymentReference) {
       setState("FAILED");
       return;
     }
 
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 30;
+
+    const maxAttempts = 60;
+
     let timeoutId: number | null = null;
 
+    const redirectToJob = () => {
+      if (didRedirectRef.current) {
+        return;
+      }
+
+      didRedirectRef.current = true;
+
+      window.setTimeout(() => {
+        router.replace(`/app/jobs/${jobId}`);
+      }, 1000);
+    };
+
     const poll = async () => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
 
       attempts += 1;
 
       try {
-        const { data } = await apiClient.get<PaymentStatusResponse>(
-          `/job-payments/status/${jobId}`,
-        );
+        /*
+         * Verify directly with Monnify through our backend
+         * on the first attempt and then every 10 seconds.
+         *
+         * This means the browser never decides whether
+         * payment succeeded.
+         */
+        if (attempts === 1 || attempts % 5 === 0) {
+          const { data } =
+            await apiClient.post<PaymentVerificationResponse>(
+              "/job-payments/verify",
+              {
+                paymentReference,
+              },
+            );
 
-        if (cancelled) return;
-
-        if (data.status === "SUCCESS") {
-          setState("SUCCESS");
-
-          if (!didRedirectRef.current) {
-            didRedirectRef.current = true;
-
-            window.setTimeout(() => {
-              router.replace(`/app/jobs/${jobId}`);
-            }, 1000);
+          if (cancelled) {
+            return;
           }
 
-          return;
-        }
+          if (data.status === "SUCCESS") {
+            setState("SUCCESS");
+            redirectToJob();
+            return;
+          }
 
-        if (data.status === "FAILED") {
-          setState("FAILED");
-          return;
+          if (
+            data.status === "FAILED" ||
+            data.status === "EXPIRED" ||
+            data.status === "REVERSED"
+          ) {
+            setState("FAILED");
+            return;
+          }
+        } else {
+          /*
+           * Between direct Monnify verification attempts,
+           * check our own database. The webhook may have
+           * completed the payment in the meantime.
+           */
+          const { data } =
+            await apiClient.get<PaymentStatusResponse>(
+              `/job-payments/status/${jobId}`,
+            );
+
+          if (cancelled) {
+            return;
+          }
+
+          if (data.status === "SUCCESS") {
+            setState("SUCCESS");
+            redirectToJob();
+            return;
+          }
+
+          if (
+            data.status === "FAILED" ||
+            data.status === "EXPIRED"
+          ) {
+            setState("FAILED");
+            return;
+          }
         }
       } catch {
-        // keep polling unless we hit timeout
+        /*
+         * A temporary API/provider failure should not
+         * immediately declare the payment failed.
+         *
+         * Continue polling until the timeout.
+         */
       }
 
       if (attempts >= maxAttempts) {
@@ -80,28 +158,35 @@ export default function PaymentReturnContent() {
 
     return () => {
       cancelled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
       }
     };
-  }, [jobId, router]);
+  }, [
+    jobId,
+    paymentReference,
+    router,
+  ]);
 
   return (
     <main className="min-h-screen bg-[#F4F8FF] px-4 py-10 dark:bg-[#0F172A]">
       <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
         <div className="w-full rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-sm dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
           {state === "VERIFYING" && (
-            <>
-              <div className="text-center">
-                <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                  Verifying payment...
-                </h1>
-                <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Please wait while we confirm your {paymentType ? paymentType.toLowerCase() : ""} payment.
-                  Do not close this page.
-                </p>
-              </div>
-            </>
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                Verifying payment...
+              </h1>
+
+              <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                Please wait while we confirm your{" "}
+                {paymentType
+                  ? paymentType.toLowerCase()
+                  : ""}{" "}
+                payment. Do not close this page.
+              </p>
+            </div>
           )}
 
           {state === "SUCCESS" && (
@@ -109,6 +194,7 @@ export default function PaymentReturnContent() {
               <h1 className="text-2xl font-semibold text-green-600 dark:text-green-400">
                 Payment confirmed
               </h1>
+
               <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
                 Your job is now active. Redirecting you back...
               </p>
@@ -120,8 +206,10 @@ export default function PaymentReturnContent() {
               <h1 className="text-2xl font-semibold text-red-600 dark:text-red-400">
                 Payment failed
               </h1>
+
               <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                We could not confirm this payment. Please return and try again.
+                We could not confirm this payment. Please return
+                and try again.
               </p>
             </div>
           )}
@@ -131,8 +219,10 @@ export default function PaymentReturnContent() {
               <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                 Still verifying...
               </h1>
+
               <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                Payment confirmation is taking longer than expected. You can safely return later.
+                Payment confirmation is taking longer than
+                expected. You can safely return later.
               </p>
             </div>
           )}

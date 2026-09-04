@@ -271,112 +271,160 @@ if (
   }
 
   async handleWebhook(rawBody: Buffer, signature?: string) {
-    const isValid =
-  this.paymentProvider.verifyWebhookSignature(
-    rawBody,
-    signature,
+  const isValid =
+    this.paymentProvider.verifyWebhookSignature(
+      rawBody,
+      signature,
+    );
+
+  if (!isValid) {
+    throw new BadRequestException(
+      "INVALID_SIGNATURE",
+    );
+  }
+
+  const event = JSON.parse(
+    rawBody.toString(),
   );
 
-if (!isValid) {
-  throw new BadRequestException(
-    "INVALID_SIGNATURE",
-  );
-}
-
-const event = JSON.parse(
-  rawBody.toString(),
-);
-
-const reference =
-  event?.eventData?.paymentReference ??
-  event?.eventData?.transactionReference ??
-  event?.data?.reference ??
-  event?.data?.transfer_reference ??
-  null;
-    if (!reference) {
-      throw new BadRequestException("MISSING_REFERENCE");
-    }
-        const verifiedTransaction =
-      await this.paymentProvider.verifyTransaction(
-        reference,
-      );
-
-    if (
-      verifiedTransaction.paymentStatus !==
-      "PAID"
-    ) {
-      this.logger.warn(
-        `Monnify transaction ${reference} is not PAID. Status: ${verifiedTransaction.paymentStatus}`,
-      );
-
-      return {
-        ok: true,
-        paymentVerified: false,
-        paymentStatus:
-          verifiedTransaction.paymentStatus,
-      };
-    }
-
-    if (
-      verifiedTransaction.currency !==
-      "NGN"
-    ) {
-      throw new BadRequestException(
-        "INVALID_PAYMENT_CURRENCY",
-      );
-    }
-
-    // Idempotency check
-    const existing = await this.prisma.webhookEvent.findUnique({
-      where: { reference },
-    });
-    if (existing) {
-      this.logger.warn(`Duplicate webhook event for reference ${reference}`);
-      return { ok: true, alreadyProcessed: true };
-    }
-
-    // Process within a transaction, creating the webhook record atomically
-  const result = await this.prisma.$transaction(async (tx) => {
-  
   const eventType =
     event?.eventType ??
     event?.event ??
     "UNKNOWN";
 
-  await tx.webhookEvent.create({
-    data: {
-      reference,
+  if (eventType !== "SUCCESSFUL_TRANSACTION") {
+    return {
+      ok: true,
+      ignored: true,
       eventType,
-    },
-  });
+    };
+  }
+
+  const eventData = event?.eventData;
+
+  const reference =
+    typeof eventData?.paymentReference === "string"
+      ? eventData.paymentReference.trim()
+      : "";
+
+  if (!reference) {
+    throw new BadRequestException(
+      "MISSING_PAYMENT_REFERENCE",
+    );
+  }
+
+  const paymentStatus =
+    typeof eventData?.paymentStatus === "string"
+      ? eventData.paymentStatus.trim().toUpperCase()
+      : "";
+
+  if (paymentStatus !== "PAID") {
+    this.logger.warn(
+      `Monnify webhook ${reference} is not PAID. Status: ${paymentStatus || "UNKNOWN"}`,
+    );
+
+    return {
+      ok: true,
+      paymentVerified: false,
+      paymentStatus: paymentStatus || null,
+    };
+  }
+
+  const currency =
+    typeof eventData?.currency === "string"
+      ? eventData.currency.trim().toUpperCase()
+      : "";
+
+  if (currency !== "NGN") {
+    throw new BadRequestException(
+      "INVALID_PAYMENT_CURRENCY",
+    );
+  }
+
+  const amountPaid = Number(
+    eventData?.amountPaid,
+  );
 
   if (
-    eventType === "charge.success" ||
-    eventType === "SUCCESSFUL_TRANSACTION"
+    !Number.isFinite(amountPaid) ||
+    amountPaid <= 0
   ) {
-    const deposit = await tx.deposit.findUnique({
+    throw new BadRequestException(
+      "INVALID_PAYMENT_AMOUNT",
+    );
+  }
+
+  /*
+   * First check whether this is a wallet deposit.
+   */
+  const deposit =
+    await this.prisma.deposit.findUnique({
       where: {
         reference,
       },
+      select: {
+        id: true,
+        userId: true,
+        amountMilliFec: true,
+        status: true,
+        reference: true,
+      },
     });
 
-    if (deposit) {
-            const expectedDepositAmount =
-        deposit.amountMilliFec / 1000;
+  if (deposit) {
+    const expectedDepositAmount =
+      deposit.amountMilliFec / 1000;
 
-      if (
-        verifiedTransaction.amountPaid !==
-        expectedDepositAmount
-      ) {
-        this.logger.error(
-          `Monnify amount mismatch for deposit ${reference}. Expected ${expectedDepositAmount} NGN, received ${verifiedTransaction.amountPaid} NGN.`,
-        );
+    if (
+      amountPaid !== expectedDepositAmount
+    ) {
+      this.logger.error(
+        `Monnify amount mismatch for deposit ${reference}. Expected ${expectedDepositAmount} NGN, received ${amountPaid} NGN.`,
+      );
 
-        throw new BadRequestException(
-          "PAYMENT_AMOUNT_MISMATCH",
-        );
-      }
-      if (deposit.status !== "SUCCEEDED") {
+      throw new BadRequestException(
+        "PAYMENT_AMOUNT_MISMATCH",
+      );
+    }
+
+    const existingWebhook =
+      await this.prisma.webhookEvent.findUnique({
+        where: {
+          reference,
+        },
+      });
+
+    if (existingWebhook) {
+      return {
+        ok: true,
+        alreadyProcessed: true,
+        paymentType: "DEPOSIT",
+      };
+    }
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.webhookEvent.create({
+          data: {
+            reference,
+            eventType,
+          },
+        });
+
+        const currentDeposit =
+          await tx.deposit.findUnique({
+            where: {
+              id: deposit.id,
+            },
+          });
+
+        if (
+          !currentDeposit ||
+          currentDeposit.status === "SUCCEEDED"
+        ) {
+          return;
+        }
+
         await tx.deposit.update({
           where: {
             id: deposit.id,
@@ -391,108 +439,132 @@ const reference =
           role: WalletRole.CLIENT,
           type: "DEPOSIT",
           direction: "CREDIT",
-          amountMilliFec: deposit.amountMilliFec,
-          idempotencyKey: `deposit:${reference}`,
+          amountMilliFec:
+            deposit.amountMilliFec,
+          idempotencyKey:
+            `deposit:${reference}`,
           reference,
           prisma: tx,
         });
+      },
+    );
 
-        try {
-          await this.notifications.create({
-            userId: deposit.userId,
-            type: NotificationType.DEPOSIT_SUCCEEDED,
-            title: "Deposit received",
-            body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
-            idempotencyKey: `notif:deposit:${deposit.reference}`,
-            data: {
-              reference: deposit.reference,
-              amountMilliFec: deposit.amountMilliFec,
-            },
-          });
-        } catch {}
-      }
-
-      return {
-        ok: true,
-        paymentType: "DEPOSIT",
-      };
-    }
-
-    const paymentReference = reference;
-
-const jobPayment = await tx.jobPayment.findUnique({
-  where: {
-    paymentReference,
-  },
-  include: {
-    job: true,
-  },
-});
-    if (jobPayment) {
-      const expectedAmount =
-        jobPayment.amountMilliFec;
-
-      if (
-        verifiedTransaction.amountPaid !==
-        expectedAmount
-      ) {
-        this.logger.error(
-          `Monnify amount mismatch for job payment ${reference}. Expected ${expectedAmount} NGN, received ${verifiedTransaction.amountPaid} NGN.`,
-        );
-
-        throw new BadRequestException(
-          "PAYMENT_AMOUNT_MISMATCH",
-        );
-      }
-    }
-
-    if (!jobPayment) {
-      return {
-        ok: true,
-      };
-    }
+    try {
+      await this.notifications.create({
+        userId: deposit.userId,
+        type: NotificationType.DEPOSIT_SUCCEEDED,
+        title: "Deposit received",
+        body: `Your wallet has been credited with ${(deposit.amountMilliFec / 1000).toFixed(2)} FEC.`,
+        idempotencyKey:
+          `notif:deposit:${deposit.reference}`,
+        data: {
+          reference: deposit.reference,
+          amountMilliFec:
+            deposit.amountMilliFec,
+        },
+      });
+    } catch {}
 
     return {
       ok: true,
-      paymentType: "JOB_PAYMENT",
-      jobPaymentId: jobPayment.id,
+      paymentType: "DEPOSIT",
+    };
+  }
+
+  /*
+   * Otherwise this must be a JobPayment.
+   */
+  const jobPayment =
+    await this.prisma.jobPayment.findUnique({
+      where: {
+        paymentReference: reference,
+      },
+      select: {
+        id: true,
+        jobId: true,
+        type: true,
+        status: true,
+        amountMilliFec: true,
+        paymentReference: true,
+        job: {
+          select: {
+            clientId: true,
+          },
+        },
+      },
+    });
+
+  if (!jobPayment) {
+    this.logger.warn(
+      `Received Monnify webhook for unknown payment reference ${reference}`,
+    );
+
+    return {
+      ok: true,
+      ignored: true,
+      reason: "PAYMENT_NOT_FOUND",
     };
   }
 
   if (
-    eventType === "transfer.success" ||
-    eventType === "transfer.failed" ||
-    eventType === "transfer.reversed"
+    amountPaid !==
+    jobPayment.amountMilliFec
   ) {
-    return {
-      ok: true,
-      transferEvent: true,
-    };
+    this.logger.error(
+      `Monnify amount mismatch for job payment ${reference}. Expected ${jobPayment.amountMilliFec} NGN, received ${amountPaid} NGN.`,
+    );
+
+    throw new BadRequestException(
+      "PAYMENT_AMOUNT_MISMATCH",
+    );
   }
 
+  const existingWebhook =
+  await this.prisma.webhookEvent.findUnique({
+    where: {
+      reference,
+    },
+  });
+
+if (existingWebhook) {
   return {
     ok: true,
+    alreadyProcessed: true,
+    paymentType: "JOB_PAYMENT",
   };
-});
+}
 
-if (
-  result &&
-  typeof result === "object" &&
-  typeof result.jobPaymentId === "string"
-) {
+const processorResult =
   await this.jobPaymentProcessor.handleSuccessfulPayment(
-    result.jobPaymentId,
+    jobPayment.id,
   );
-}
 
-if (
-  result &&
-  typeof result === "object" &&
-  "transferEvent" in result
-) {
-  await this.handleTransferWebhook(event);
-}
-
-return result;
+try {
+  await this.prisma.webhookEvent.create({
+    data: {
+      reference,
+      eventType,
+    },
+  });
+} catch (error: any) {
+  /*
+   * A concurrent webhook may have created the record
+   * after our initial duplicate check.
+   *
+   * The payment processor itself is already concurrency-safe,
+   * so a duplicate webhook record is not required for payment
+   * correctness.
+   */
+  if (error?.code !== "P2002") {
+    throw error;
   }
+}
+
+return {
+  ok: true,
+  paymentType: "JOB_PAYMENT",
+  jobPaymentId: jobPayment.id,
+  processorResult,
+};
+}
 }

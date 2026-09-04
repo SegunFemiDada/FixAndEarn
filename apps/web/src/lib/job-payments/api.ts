@@ -1,6 +1,19 @@
 //path: apps/web/src/lib/job-payments/api.ts
 import apiClient from "@/lib/apiClient";
 
+export async function verifyPayment(
+  paymentReference: string,
+) {
+  const { data } = await apiClient.post(
+    "/job-payments/verify",
+    {
+      paymentReference,
+    },
+  );
+
+  return data;
+}
+
 export async function getPaymentStatus(jobId: string) {
   const { data } = await apiClient.get(
     `/job-payments/status/${jobId}`,

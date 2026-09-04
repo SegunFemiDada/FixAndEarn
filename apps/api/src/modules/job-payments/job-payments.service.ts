@@ -1,8 +1,10 @@
 //path: apps/api/src/modules/job-payments/job-payments.service.ts
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
+  NotFoundException,
 } from "@nestjs/common";
 import { PrismaService, } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -442,6 +444,110 @@ await db.jobPayment.upsert({
       redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return?jobId=${args.jobId}&type=FINAL`,
     },
   });
+}
+
+async verifyPaymentFromReturn(args: {
+  paymentReference: string;
+  clientId: string;
+}) {
+  const paymentReference = args.paymentReference.trim();
+
+  if (!paymentReference) {
+    throw new BadRequestException("PAYMENT_REFERENCE_REQUIRED");
+  }
+
+  const jobPayment = await this.prisma.jobPayment.findUnique({
+    where: {
+      paymentReference,
+    },
+    select: {
+      id: true,
+      jobId: true,
+      type: true,
+      status: true,
+      amountMilliFec: true,
+      paymentReference: true,
+      job: {
+        select: {
+          clientId: true,
+        },
+      },
+    },
+  });
+
+  if (!jobPayment || jobPayment.job.clientId !== args.clientId) {
+    throw new NotFoundException("PAYMENT_NOT_FOUND");
+  }
+
+  if (jobPayment.status === "SUCCESS") {
+    return {
+      paid: true,
+      status: "SUCCESS",
+      type: jobPayment.type,
+      jobId: jobPayment.jobId,
+    };
+  }
+
+  const verifiedTransaction =
+    await this.paymentProvider.verifyTransaction(
+      paymentReference,
+    );
+
+  if (
+    verifiedTransaction.paymentReference !==
+    paymentReference
+  ) {
+    throw new BadRequestException(
+      "PAYMENT_REFERENCE_MISMATCH",
+    );
+  }
+
+  if (verifiedTransaction.currency !== "NGN") {
+    throw new BadRequestException(
+      "INVALID_PAYMENT_CURRENCY",
+    );
+  }
+
+  if (
+    verifiedTransaction.amountPaid !==
+    jobPayment.amountMilliFec
+  ) {
+    throw new BadRequestException(
+      "PAYMENT_AMOUNT_MISMATCH",
+    );
+  }
+
+  if (verifiedTransaction.paymentStatus !== "PAID") {
+    return {
+      paid: false,
+      status: verifiedTransaction.paymentStatus,
+      type: jobPayment.type,
+      jobId: jobPayment.jobId,
+    };
+  }
+
+  await this.processor.handleSuccessfulPayment(
+    jobPayment.id,
+  );
+
+  const updatedPayment =
+    await this.prisma.jobPayment.findUnique({
+      where: {
+        id: jobPayment.id,
+      },
+      select: {
+        status: true,
+        type: true,
+        jobId: true,
+      },
+    });
+
+  return {
+    paid: updatedPayment?.status === "SUCCESS",
+    status: updatedPayment?.status ?? null,
+    type: updatedPayment?.type ?? jobPayment.type,
+    jobId: updatedPayment?.jobId ?? jobPayment.jobId,
+  };
 }
 
   async handleSuccessfulPayment(jobPaymentId: string) {
