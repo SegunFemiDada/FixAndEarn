@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { NotificationType, WalletRole } from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
@@ -347,6 +348,7 @@ async withdrawalPinStatus(@CurrentUser() user: { userId: string }) {
 }
 
 @Post("verify-withdrawal-pin")
+@Throttle({ default: { limit: 5, ttl: 60_000 } })
 @Roles("FIXER")
 async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: VerifyWithdrawalPinDto) {
   const userRecord = await this.prisma.user.findUnique({
@@ -367,6 +369,7 @@ async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: 
   // ==========================
 
   @Post("withdrawals/request")
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Roles("FIXER")
   async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
 
