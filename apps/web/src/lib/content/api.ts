@@ -18,6 +18,8 @@ export type PublicFaqResponse = {
   items: PublicFaqItem[];
 };
 
+const PUBLIC_CONTENT_REVALIDATE_SECONDS = 300;
+
 export async function getPublicTextContent(
   kind: "terms" | "privacy" | "support"
 ): Promise<PublicTextContentResponse> {
@@ -35,7 +37,9 @@ export async function getPublicTextContent(
 
   const response = await fetch(`${API_BASE_URL}/content/${kind}`, {
     method: "GET",
-    cache: "no-store",
+    next: {
+      revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+    },
   });
 
   if (!response.ok) {
@@ -57,7 +61,9 @@ export async function getPublicFaq(): Promise<PublicFaqResponse> {
 
   const response = await fetch(`${API_BASE_URL}/content/faq`, {
     method: "GET",
-    cache: "no-store",
+    next: {
+      revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+    },
   });
 
   if (!response.ok) {
