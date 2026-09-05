@@ -6,8 +6,9 @@ import { getPublicFaq } from "@/lib/content/api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "FAQ",
-  description: "Frequently asked questions about FixAndEarn.",
+  title: "FixAndEarn FAQ: Jobs, Payments, Verification & Withdrawals",
+  description:
+    "Find answers to common questions about FixAndEarn, including user verification, job posting, hiring fixers, payments, negotiations, disputes, and fixer withdrawals.",
   path: "/faq",
 });
 

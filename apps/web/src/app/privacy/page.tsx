@@ -6,8 +6,9 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import SafeHtml from "@/components/ui/SafeHtml";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "Privacy Policy",
-  description: "Read the FixAndEarn privacy policy.",
+  title: "FixAndEarn Privacy Policy",
+  description:
+    "Learn how FixAndEarn collects, uses, protects, and manages personal data and information when you use the platform.",
   path: "/privacy",
 });
 

@@ -6,8 +6,9 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import SafeHtml from "@/components/ui/SafeHtml";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "Terms of Service",
-  description: "Read the FixAndEarn terms of service.",
+  title: "FixAndEarn Terms of Service",
+  description:
+    "Read the FixAndEarn Terms of Service governing accounts, jobs, payments, platform use, disputes, and other services.",
   path: "/terms",
 });
 

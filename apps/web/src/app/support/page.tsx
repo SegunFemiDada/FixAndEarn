@@ -8,8 +8,9 @@ import SafeHtml from "@/components/ui/SafeHtml";
 import Link from "next/link";
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: "Support",
-  description: "Get help using FixAndEarn.",
+  title: "FixAndEarn Support Center",
+  description:
+    "Get help with FixAndEarn accounts, jobs, payments, verification, withdrawals, disputes, and other platform-related questions.",
   path: "/support",
 });
 
