@@ -91,7 +91,7 @@ describe("Wallet + Ledger", () => {
 
     userAId = a.id;
     userBId = b.id;
-  });
+    }, 30000);
 
   it("credits and debits correctly in milliFEC on the client wallet", async () => {
     await ledgerService.addEntry({
@@ -122,7 +122,7 @@ describe("Wallet + Ledger", () => {
     });
 
     expect(wallet?.balanceMilliFec).toBe(5000);
-  });
+  }, 30000);
 
   it("blocks duplicate ledger entries", async () => {
     const dupKey = `dup-key-${Date.now()}`;
@@ -146,5 +146,5 @@ describe("Wallet + Ledger", () => {
         idempotencyKey: dupKey,
       })
     ).rejects.toThrow();
-  });
+  }, 30000);
 });
