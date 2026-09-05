@@ -11,6 +11,7 @@ import {
 } from "@/lib/verification/types";
 import { useMyVerification, useSubmitVerification } from "@/lib/verification/queries";
 import { getToken, getActiveRole, getStoredRoles, type Role } from "@/lib/auth/session";
+import SelfieCamera from "@/components/verification/SelfieCamera";
 
 type ReuploadField =
   | "ninImage"
@@ -75,6 +76,40 @@ function errorText(value: unknown): string | null {
     return typeof msg === "string" ? msg : String(msg);
   }
   return String(value);
+}
+const MAX_VERIFICATION_FILE_SIZE = 2 * 1024 * 1024;
+
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+const ALLOWED_UTILITY_TYPES = new Set([
+  ...ALLOWED_IMAGE_TYPES,
+  "application/pdf",
+]);
+
+function validateVerificationFile(
+  file: File,
+  field: "ninImage" | "utilityBill",
+): string | null {
+  if (file.size > MAX_VERIFICATION_FILE_SIZE) {
+    return "File must be 2 MB or smaller.";
+  }
+
+  const allowedTypes =
+    field === "utilityBill"
+      ? ALLOWED_UTILITY_TYPES
+      : ALLOWED_IMAGE_TYPES;
+
+  if (!allowedTypes.has(file.type)) {
+    return field === "utilityBill"
+      ? "Please select a JPG, PNG, WebP image, or PDF."
+      : "Please select a JPG, PNG, or WebP image.";
+  }
+
+  return null;
 }
 
 function VerifiedBadge({ role }: { role: Role | null }) {
@@ -141,6 +176,7 @@ export default function VerificationPage() {
 
   const [skillInput, setSkillInput] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [selfieCameraOpen, setSelfieCameraOpen] = useState(false);
 
   const token = useMemo(() => getToken(), []);
   const isAuthed = !!token;
@@ -532,12 +568,33 @@ export default function VerificationPage() {
                   <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">NIN image</label>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     className="block w-full text-sm text-[#6B7C99] dark:text-[#8FA0BC] file:mr-3 file:rounded-xl file:border-0 file:bg-[#EAF0FB] dark:file:bg-[#16202E] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#1A2B4A] dark:file:text-[#E8F0FA] hover:file:bg-[#D4E3F7] dark:hover:file:bg-[#1E2A3A]"
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) form.setValue("ninImage", f, { shouldValidate: false });
-                    }}
+                    const f = e.target.files?.[0];
+
+                    if (!f) return;
+
+                    const validationError = validateVerificationFile(
+                      f,
+                      "ninImage",
+                    );
+
+                    if (validationError) {
+                      form.setError("ninImage", {
+                        type: "manual",
+                        message: validationError,
+                      });
+                      e.target.value = "";
+                      return;
+                    }
+
+                    form.clearErrors("ninImage");
+                    form.setValue("ninImage", f, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                  }}
                   />
                   {errorText(form.formState.errors.ninImage?.message) && (
                     <p className="text-sm text-[#D9534F] dark:text-red-300">{errorText(form.formState.errors.ninImage?.message)}</p>
@@ -546,20 +603,42 @@ export default function VerificationPage() {
               )}
 
               {needsFile("selfie") && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Selfie image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="user"
-                    className="block w-full text-sm text-[#6B7C99] dark:text-[#8FA0BC] file:mr-3 file:rounded-xl file:border-0 file:bg-[#EAF0FB] dark:file:bg-[#16202E] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#1A2B4A] dark:file:text-[#E8F0FA] hover:file:bg-[#D4E3F7] dark:hover:file:bg-[#1E2A3A]"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) form.setValue("selfieImage", f, { shouldValidate: false });
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                      Live selfie
+                    </label>
+
+                    <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                      Your selfie must be taken live with your front camera. Photos
+                      selected from your gallery are not accepted.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLocalError(null);
+                      form.clearErrors("selfieImage");
+                      setSelfieCameraOpen(true);
                     }}
-                  />
+                    className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-4 py-4 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA] transition hover:bg-[#D4E3F7] dark:hover:bg-[#1E2A3A]"
+                  >
+                    {form.watch("selfieImage")
+                      ? "Retake live selfie"
+                      : "Open camera"}
+                  </button>
+
+                  {form.watch("selfieImage") && (
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Live selfie captured successfully.
+                    </p>
+                  )}
+
                   {errorText(form.formState.errors.selfieImage?.message) && (
-                    <p className="text-sm text-[#D9534F] dark:text-red-300">{errorText(form.formState.errors.selfieImage?.message)}</p>
+                    <p className="text-sm text-[#D9534F] dark:text-red-300">
+                      {errorText(form.formState.errors.selfieImage?.message)}
+                    </p>
                   )}
                 </div>
               )}
@@ -569,12 +648,33 @@ export default function VerificationPage() {
                   <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Utility bill</label>
                   <input
                     type="file"
-                    accept="image/*,application/pdf"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
                     className="block w-full text-sm text-[#6B7C99] dark:text-[#8FA0BC] file:mr-3 file:rounded-xl file:border-0 file:bg-[#EAF0FB] dark:file:bg-[#16202E] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[#1A2B4A] dark:file:text-[#E8F0FA] hover:file:bg-[#D4E3F7] dark:hover:file:bg-[#1E2A3A]"
                     onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) form.setValue("utilityBill", f, { shouldValidate: false });
-                    }}
+                    const f = e.target.files?.[0];
+
+                    if (!f) return;
+
+                    const validationError = validateVerificationFile(
+                      f,
+                      "utilityBill",
+                    );
+
+                    if (validationError) {
+                      form.setError("utilityBill", {
+                        type: "manual",
+                        message: validationError,
+                      });
+                      e.target.value = "";
+                      return;
+                    }
+
+                    form.clearErrors("utilityBill");
+                    form.setValue("utilityBill", f, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                  }}
                   />
                   {errorText(form.formState.errors.utilityBill?.message) && (
                     <p className="text-sm text-[#D9534F] dark:text-red-300">{errorText(form.formState.errors.utilityBill?.message)}</p>
@@ -746,6 +846,18 @@ export default function VerificationPage() {
                 </div>
               )}
             </form>
+            <SelfieCamera
+            open={selfieCameraOpen}
+            onClose={() => setSelfieCameraOpen(false)}
+            onCapture={(file) => {
+              form.setValue("selfieImage", file, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+
+              form.clearErrors("selfieImage");
+            }}
+          />
           </div>
         )}
       </div>
