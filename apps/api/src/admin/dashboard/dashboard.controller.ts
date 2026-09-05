@@ -1,5 +1,6 @@
 //path: apps/api/src/admin/dashboard/dashboard.controller.ts
 import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Public } from "../../common/auth/public.decorator";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
 
@@ -9,6 +10,7 @@ import { AdminRolesGuard } from "../auth/admin-roles.guard";
 import { AdminPermissionsGuard } from "../auth/admin-permissions.guard";
 import { AdminRoles } from "../auth/admin-roles.decorator";
 
+@Public()
 @ApiTags("admin-dashboard")
 @ApiBearerAuth()
 @Controller("admin/dashboard")

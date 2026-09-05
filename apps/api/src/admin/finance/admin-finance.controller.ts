@@ -2,6 +2,7 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
+import { Public } from "../../common/auth/public.decorator";
 import { Request } from "express";
 import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../auth/admin-roles.guard";
@@ -16,6 +17,7 @@ type AdminJwtRequest = Request & {
   };
 };
 
+@Public()
 @ApiTags("admin-finance")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)

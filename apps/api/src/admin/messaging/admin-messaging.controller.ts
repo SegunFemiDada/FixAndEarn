@@ -16,12 +16,14 @@ import { AdminRole } from "@prisma/client";
 import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../auth/admin-roles.guard";
 import { AdminRoles } from "../auth/admin-roles.decorator";
+import { Public } from "../../common/auth/public.decorator";
 import { AdminMessagingService } from "./admin-messaging.service";
 import { ListAdminConversationsDto } from "./dto/list-admin-conversations.dto";
 import { AdminDisputeChatMessageDto } from "../../modules/disputes/dto/admin-dispute-chat-message.dto";
 import { AdminMessagingConversationActionDto } from "./dto/admin-messaging-conversation-action.dto";
 import { AdminMessagingUserActionDto } from "./dto/admin-messaging-user-action.dto";
 
+@Public()
 @ApiTags("admin-messaging")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)

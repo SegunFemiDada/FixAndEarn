@@ -1,12 +1,14 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
+import { Public } from "../../common/auth/public.decorator";
 import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../auth/admin-roles.guard";
 import { AdminRoles } from "../auth/admin-roles.decorator";
 import { AdminSettingsService } from "./admin-settings.service";
 import { UpdateAdminSettingsDto } from "./dto/update-admin-settings.dto";
 
+@Public()
 @ApiTags("admin-settings")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)

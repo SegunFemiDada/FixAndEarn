@@ -3,12 +3,14 @@ import { Controller, Get, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
 import { AdminRole } from "@prisma/client";
+import { Public } from "../../common/auth/public.decorator";
 import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../auth/admin-roles.guard";
 import { AdminRoles } from "../auth/admin-roles.decorator";
 import { AdminExportsService } from "./admin-exports.service";
 import { ExportAuditLogsDto } from "./dto/export-audit-logs.dto";
 
+@Public()
 @ApiTags("admin-exports")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)

@@ -5,10 +5,12 @@ import { AdminJwtAuthGuard } from "../auth/admin-jwt-auth.guard";
 import { AdminRolesGuard } from "../auth/admin-roles.guard";
 import { AdminRoles } from "../auth/admin-roles.decorator";
 import { AdminRole } from "@prisma/client";
+import { Public } from "../../common/auth/public.decorator";
 import { AdminVerificationService } from "./admin-verification.service";
 import { ListPendingVerificationsDto } from "./dto/list-pending.dto";
 import { VerificationDecisionDto } from "./dto/verification-decision.dto";
 
+@Public()
 @ApiTags("admin-verification")
 @ApiBearerAuth()
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
