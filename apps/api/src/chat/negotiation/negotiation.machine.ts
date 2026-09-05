@@ -96,7 +96,7 @@ export function respondToLockedPrice(
 if (!accept) {
   return {
     ...state,
-    status: "OPEN",
+    status: "REJECTED",
 
     lockedPriceMilliFec: null,
     lockedByUserId: null,

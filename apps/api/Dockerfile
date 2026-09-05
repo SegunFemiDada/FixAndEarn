@@ -9,7 +9,7 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN npx prisma generate --schema=apps/api/schema.prisma
+RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
 
 EXPOSE 3000
 
