@@ -126,9 +126,12 @@ export function useWithdrawalHistory(
     retry: 1,
   });
 }
-export function useWithdrawalPinStatus() {
+export function useWithdrawalPinStatus(enabled: boolean) {
   return useQuery({
     queryKey: ["wallet", "pin-status"],
     queryFn: getWithdrawalPinStatus,
+    enabled,
+    staleTime: 10_000,
+    retry: 1,
   });
 }

@@ -131,7 +131,9 @@ export default function ProfilePage() {
   const [setPinModalOpen, setSetPinModalOpen] = useState(false);
   const [changePinModalOpen, setChangePinModalOpen] = useState(false);
   const [currentPin, setCurrentPin] = useState("");
-  const { data: pinStatus, refetch: refetchPinStatus } = useWithdrawalPinStatus();
+  const { data: pinStatus, refetch: refetchPinStatus } = useWithdrawalPinStatus(
+  mounted && activeRole === "FIXER"
+);
 
   // Phone verification
   const [phoneInput, setPhoneInput] = useState("");
