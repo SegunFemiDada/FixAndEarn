@@ -1,8 +1,10 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { PublicContentService } from "./public-content.service";
+import { Public } from "../../common/auth/public.decorator";
 
 @ApiTags("content")
+@Public()
 @Controller("content")
 export class PublicContentController {
   constructor(private readonly svc: PublicContentService) {}
