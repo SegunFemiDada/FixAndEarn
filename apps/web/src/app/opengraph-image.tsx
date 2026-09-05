@@ -46,7 +46,7 @@ export default function OpenGraphImage() {
               fontSize: 34,
             }}
           >
-            F
+            🔧
           </div>
 
           FixAndEarn
