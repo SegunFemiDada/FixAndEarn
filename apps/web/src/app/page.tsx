@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "FixAndEarn – Hire Trusted Fixers in Nigeria",
+  title: "Hire Trusted Fixers in Nigeria",
   description:
-  "FixAndEarn connects clients with verified skilled workers across Nigeria. Secure online payments, verified identities, in-app chat, and transparent payouts for every completed job.",
+    "FixAndEarn connects clients in Nigeria with verified skilled workers for repairs, maintenance, home services, and on-demand jobs.",
 };
 
 export default function HomePage() {
