@@ -1,0 +1,48 @@
+name: FixAndEarn API CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  api-ci:
+    name: API Build, Test and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pnpm
+        run: corepack prepare pnpm@9.15.4 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @fixandearn/api prisma:generate
+
+      - name: Validate Prisma schema
+        run: pnpm exec prisma validate --schema=apps/api/schema.prisma
+
+      - name: Lint API
+        run: pnpm --filter @fixandearn/api lint
+
+      - name: Run API tests
+        run: pnpm --filter @fixandearn/api test
+
+      - name: Build API
+        run: pnpm --filter @fixandearn/api build
