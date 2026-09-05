@@ -1,15 +1,13 @@
--- Rename legacy Paystack withdrawal transfer fields
--- to provider-neutral names used by the current Prisma schema.
--- Existing production values are preserved.
+/*
+  This migration is intentionally a no-op.
 
-ALTER TABLE "withdrawal_requests"
-RENAME COLUMN "paystackTransferReference" TO "transferReference";
+  The provider-neutral withdrawal transfer fields were already renamed
+  by the preceding migration:
 
-ALTER TABLE "withdrawal_requests"
-RENAME COLUMN "paystackTransferCode" TO "transferCode";
+  20260816194834_cleanup_paystack_naming
 
-ALTER TABLE "withdrawal_requests"
-RENAME COLUMN "paystackTransferStatus" TO "transferStatus";
+  Keeping this migration as a no-op preserves the existing migration
+  history without attempting to rename columns that no longer exist.
+*/
 
-ALTER INDEX "withdrawal_requests_paystackTransferReference_key"
-RENAME TO "withdrawal_requests_transferReference_key";
+SELECT 1;
