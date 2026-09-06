@@ -78,12 +78,35 @@ export class FinalPaymentExpirationService {
           return false;
         }
 
+                /*
+         * Re-read the job inside the same transaction that successfully
+         * claimed the payment expiration.
+         *
+         * Do not use payment.job.status here because that value came from
+         * the findMany() snapshot taken before this transaction started.
+         *
+         * The transaction must make its decision from the current database
+         * state.
+         */
+        const job = await tx.job.findUnique({
+          where: {
+            id: payment.jobId,
+          },
+          select: {
+            status: true,
+            postingType: true,
+          },
+        });
+
+        if (!job) {
+          throw new Error("JOB_NOT_FOUND");
+        }
+
         /*
          * FINAL payment expiration only applies before the job starts.
-         * A successful final-payment webhook changes the job to
-         * IN_PROGRESS, so an IN_PROGRESS job must never be reset here.
+         * A job that is already in progress must never be reset.
          */
-        if (payment.job.status !== "OPEN") {
+        if (job.status !== "OPEN") {
           return true;
         }
 
@@ -112,7 +135,7 @@ export class FinalPaymentExpirationService {
          *
          * The urgent job therefore becomes owner-only again.
          */
-        if (payment.job.postingType === "URGENT") {
+        if (job.postingType === "URGENT") {
           await tx.job.update({
             where: {
               id: payment.jobId,
