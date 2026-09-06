@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Breadcrumbs from "@/components/seo/breadcrumbs";
 import { getPublicSkills } from "@/lib/content/api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
@@ -66,6 +67,7 @@ export default async function ServicesPage() {
 
       <section className="px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-5xl">
+          <Breadcrumbs current="Services" currentPath="/services" />
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
               FixAndEarn Services
