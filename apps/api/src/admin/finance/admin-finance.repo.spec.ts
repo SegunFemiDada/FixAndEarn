@@ -4,14 +4,18 @@ import { PrismaModule } from "../../infra/prisma/prisma.module";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { AdminFinanceRepo } from "./admin-finance.repo";
 
-describe("AdminFinanceRepo withdrawal concurrency", () => {
+describe("AdminFinanceRepo withdrawal concurrency and allocation integrity", () => {
   let prisma: PrismaService;
   let repo: AdminFinanceRepo;
 
   let fixerId: string;
-  let jobId: string;
-  let earningId: string;
+  let jobIdA: string;
+  let jobIdB: string;
+  let earningIdA: string;
+  let earningIdB: string;
   let withdrawalId: string;
+
+  const testEmail = "admin_finance_concurrency_test@example.com";
 
   beforeAll(async () => {
     process.env.PRISMA_AUTO_CONNECT = "true";
@@ -37,13 +41,11 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
   }, 30000);
 
   beforeEach(async () => {
-    const email = "admin_finance_concurrency_test@example.com";
-
     await prisma.withdrawalAllocation.deleteMany({
       where: {
         withdrawal: {
           user: {
-            email,
+            email: testEmail,
           },
         },
       },
@@ -52,7 +54,7 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
     await prisma.withdrawalRequest.deleteMany({
       where: {
         user: {
-          email,
+          email: testEmail,
         },
       },
     });
@@ -60,7 +62,7 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
     await prisma.fixerEarning.deleteMany({
       where: {
         fixer: {
-          email,
+          email: testEmail,
         },
       },
     });
@@ -68,7 +70,7 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
     await prisma.job.deleteMany({
       where: {
         client: {
-          email,
+          email: testEmail,
         },
       },
     });
@@ -76,20 +78,20 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
     await prisma.wallet.deleteMany({
       where: {
         user: {
-          email,
+          email: testEmail,
         },
       },
     });
 
     await prisma.user.deleteMany({
       where: {
-        email,
+        email: testEmail,
       },
     });
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: testEmail,
         fullName: "Admin Finance Concurrency Test",
         passwordHash: "x",
       },
@@ -97,46 +99,95 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
 
     fixerId = user.id;
 
-    const job = await prisma.job.create({
+    const jobA = await prisma.job.create({
       data: {
         clientId: fixerId,
-        skillCategory: "Concurrency Test",
+        skillCategory: "Concurrency Test A",
         state: "Lagos",
         city: "Ikeja",
-        priceMilliFec: 1000,
+        priceMilliFec: 600,
       },
     });
 
-    jobId = job.id;
+    const jobB = await prisma.job.create({
+      data: {
+        clientId: fixerId,
+        skillCategory: "Concurrency Test B",
+        state: "Lagos",
+        city: "Ikeja",
+        priceMilliFec: 900,
+      },
+    });
 
-    const earning = await prisma.fixerEarning.create({
+    jobIdA = jobA.id;
+    jobIdB = jobB.id;
+
+    const earningA = await prisma.fixerEarning.create({
       data: {
         fixerId,
-        jobId,
-        amountMilliFec: 1000,
-        availableMilliFec: 0,
-        status: "PARTIALLY_WITHDRAWN",
+        jobId: jobIdA,
+        amountMilliFec: 600,
+        availableMilliFec: 600,
+        status: "AVAILABLE",
       },
     });
 
-    earningId = earning.id;
+    const earningB = await prisma.fixerEarning.create({
+      data: {
+        fixerId,
+        jobId: jobIdB,
+        amountMilliFec: 900,
+        availableMilliFec: 900,
+        status: "AVAILABLE",
+      },
+    });
+
+    earningIdA = earningA.id;
+    earningIdB = earningB.id;
 
     const withdrawal = await prisma.withdrawalRequest.create({
       data: {
         userId: fixerId,
-        amountMilliFec: 1000,
+        amountMilliFec: 1200,
         status: "PENDING",
       },
     });
 
     withdrawalId = withdrawal.id;
 
-    await prisma.withdrawalAllocation.create({
-      data: {
-        withdrawalId,
-        earningId,
-        amountMilliFec: 1000,
+    await prisma.fixerEarning.update({
+      where: {
+        id: earningIdA,
       },
+      data: {
+        availableMilliFec: 0,
+        status: "PARTIALLY_WITHDRAWN",
+      },
+    });
+
+    await prisma.fixerEarning.update({
+      where: {
+        id: earningIdB,
+      },
+      data: {
+        availableMilliFec: 300,
+        status: "PARTIALLY_WITHDRAWN",
+      },
+    });
+
+    await prisma.withdrawalAllocation.createMany({
+      data: [
+        {
+          withdrawalId,
+          earningId: earningIdA,
+          amountMilliFec: 600,
+        },
+        {
+          withdrawalId,
+          earningId: earningIdB,
+          amountMilliFec: 600,
+        },
+      ],
     });
   }, 30000);
 
@@ -182,14 +233,23 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
 
       expect(finalWithdrawal?.status).toBe("REJECTED");
 
-      const finalEarning = await prisma.fixerEarning.findUnique({
+      const finalEarningA = await prisma.fixerEarning.findUnique({
         where: {
-          id: earningId,
+          id: earningIdA,
         },
       });
 
-      expect(finalEarning?.availableMilliFec).toBe(1000);
-      expect(finalEarning?.status).toBe("AVAILABLE");
+      const finalEarningB = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdB,
+        },
+      });
+
+      expect(finalEarningA?.availableMilliFec).toBe(600);
+      expect(finalEarningA?.status).toBe("AVAILABLE");
+
+      expect(finalEarningB?.availableMilliFec).toBe(900);
+      expect(finalEarningB?.status).toBe("AVAILABLE");
 
       const allocations = await prisma.withdrawalAllocation.findMany({
         where: {
@@ -238,10 +298,17 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
       expect(["APPROVED", "REJECTED"]).toContain(finalWithdrawal?.status);
 
       expect(rejected[0].reason).toBeInstanceOf(Error);
+      expect(rejected[0].reason.message).toBe("WITHDRAWAL_NOT_PENDING");
 
-      const finalEarning = await prisma.fixerEarning.findUnique({
+      const finalEarningA = await prisma.fixerEarning.findUnique({
         where: {
-          id: earningId,
+          id: earningIdA,
+        },
+      });
+
+      const finalEarningB = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdB,
         },
       });
 
@@ -249,23 +316,38 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
         where: {
           withdrawalId,
         },
+        orderBy: {
+          earningId: "asc",
+        },
       });
 
       if (finalWithdrawal?.status === "REJECTED") {
-        expect(rejected[0].reason.message).toBe("WITHDRAWAL_NOT_PENDING");
+        expect(finalEarningA?.availableMilliFec).toBe(600);
+        expect(finalEarningA?.status).toBe("AVAILABLE");
 
-        expect(finalEarning?.availableMilliFec).toBe(1000);
-        expect(finalEarning?.status).toBe("AVAILABLE");
+        expect(finalEarningB?.availableMilliFec).toBe(900);
+        expect(finalEarningB?.status).toBe("AVAILABLE");
 
         expect(allocations).toHaveLength(0);
       } else {
-        expect(rejected[0].reason.message).toBe("WITHDRAWAL_NOT_PENDING");
+        expect(finalEarningA?.availableMilliFec).toBe(0);
+        expect(finalEarningA?.status).toBe("PARTIALLY_WITHDRAWN");
 
-        expect(finalEarning?.availableMilliFec).toBe(0);
-        expect(finalEarning?.status).toBe("PARTIALLY_WITHDRAWN");
+        expect(finalEarningB?.availableMilliFec).toBe(300);
+        expect(finalEarningB?.status).toBe("PARTIALLY_WITHDRAWN");
 
-        expect(allocations).toHaveLength(1);
-        expect(allocations[0]?.amountMilliFec).toBe(1000);
+        expect(allocations).toHaveLength(2);
+
+        const allocationA = allocations.find(
+          (allocation) => allocation.earningId === earningIdA,
+        );
+
+        const allocationB = allocations.find(
+          (allocation) => allocation.earningId === earningIdB,
+        );
+
+        expect(allocationA?.amountMilliFec).toBe(600);
+        expect(allocationB?.amountMilliFec).toBe(600);
       }
     },
     30000,
@@ -321,14 +403,88 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
 
       expect(finalWithdrawal?.status).toBe("PAID");
 
-      const finalEarning = await prisma.fixerEarning.findUnique({
+      const finalEarningA = await prisma.fixerEarning.findUnique({
         where: {
-          id: earningId,
+          id: earningIdA,
         },
       });
 
-      expect(finalEarning?.availableMilliFec).toBe(0);
-      expect(finalEarning?.status).toBe("PAID");
+      const finalEarningB = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdB,
+        },
+      });
+
+      expect(finalEarningA?.availableMilliFec).toBe(0);
+      expect(finalEarningA?.status).toBe("PAID");
+
+      expect(finalEarningB?.availableMilliFec).toBe(300);
+      expect(finalEarningB?.status).toBe("PARTIALLY_WITHDRAWN");
+
+      const allocations = await prisma.withdrawalAllocation.findMany({
+        where: {
+          withdrawalId,
+        },
+        orderBy: {
+          earningId: "asc",
+        },
+      });
+
+      expect(allocations).toHaveLength(2);
+
+      const allocationA = allocations.find(
+        (allocation) => allocation.earningId === earningIdA,
+      );
+
+      const allocationB = allocations.find(
+        (allocation) => allocation.earningId === earningIdB,
+      );
+
+      expect(allocationA?.amountMilliFec).toBe(600);
+      expect(allocationB?.amountMilliFec).toBe(600);
+    },
+    30000,
+  );
+
+  it(
+    "restores every earning correctly when a multi-earning withdrawal is rejected",
+    async () => {
+      const result = await repo.rejectWithdrawal({
+        withdrawalId,
+        adminId: "admin-1",
+        note: "Multi-earning rejection test",
+      });
+
+      expect(result).toEqual({
+  ok: true,
+  status: "REJECTED",
+});
+
+      const finalWithdrawal = await prisma.withdrawalRequest.findUnique({
+        where: {
+          id: withdrawalId,
+        },
+      });
+
+      expect(finalWithdrawal?.status).toBe("REJECTED");
+
+      const finalEarningA = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdA,
+        },
+      });
+
+      const finalEarningB = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdB,
+        },
+      });
+
+      expect(finalEarningA?.availableMilliFec).toBe(600);
+      expect(finalEarningA?.status).toBe("AVAILABLE");
+
+      expect(finalEarningB?.availableMilliFec).toBe(900);
+      expect(finalEarningB?.status).toBe("AVAILABLE");
 
       const allocations = await prisma.withdrawalAllocation.findMany({
         where: {
@@ -336,8 +492,87 @@ describe("AdminFinanceRepo withdrawal concurrency", () => {
         },
       });
 
-      expect(allocations).toHaveLength(1);
-      expect(allocations[0]?.amountMilliFec).toBe(1000);
+      expect(allocations).toHaveLength(0);
+    },
+    30000,
+  );
+
+  it(
+    "finalizes multiple earnings independently when a multi-earning withdrawal is marked paid",
+    async () => {
+      await prisma.withdrawalRequest.update({
+        where: {
+          id: withdrawalId,
+        },
+        data: {
+          status: "APPROVED",
+          reviewedBy: "approval-admin",
+          reviewNote: "Approved for payment",
+          reviewedAt: new Date(),
+        },
+      });
+
+      const result = await repo.markpaid({
+        withdrawalId,
+        adminId: "admin-1",
+        note: "Multi-earning paid test",
+      });
+
+      expect(result).toEqual({
+  ok: true,
+  status: "PAID",
+});
+
+      const finalWithdrawal = await prisma.withdrawalRequest.findUnique({
+        where: {
+          id: withdrawalId,
+        },
+      });
+
+      expect(finalWithdrawal?.status).toBe("PAID");
+      expect(finalWithdrawal?.paidAt).not.toBeNull();
+
+      const finalEarningA = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdA,
+        },
+      });
+
+      const finalEarningB = await prisma.fixerEarning.findUnique({
+        where: {
+          id: earningIdB,
+        },
+      });
+
+      expect(finalEarningA?.availableMilliFec).toBe(0);
+      expect(finalEarningA?.status).toBe("PAID");
+      expect(finalEarningA?.paidAt).not.toBeNull();
+
+      expect(finalEarningB?.availableMilliFec).toBe(300);
+      expect(finalEarningB?.status).toBe("PARTIALLY_WITHDRAWN");
+      expect(finalEarningB?.paidAt).toBeNull();
+
+      const allocations = await prisma.withdrawalAllocation.findMany({
+        where: {
+          withdrawalId,
+        },
+        orderBy: {
+          earningId: "asc",
+        },
+      });
+
+      expect(allocations).toHaveLength(2);
+
+      const allocationA = allocations.find(
+        (allocation) => allocation.earningId === earningIdA,
+      );
+
+      const allocationB = allocations.find(
+        (allocation) => allocation.earningId === earningIdB,
+      );
+
+      expect(allocationA?.amountMilliFec).toBe(600);
+      expect(allocationB?.amountMilliFec).toBe(600);
     },
     30000,
   );
