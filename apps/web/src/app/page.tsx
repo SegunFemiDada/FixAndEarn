@@ -234,12 +234,7 @@ export default function HomePage() {
             Create your free account today and connect with verified clients and skilled professionals across Nigeria.
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/services"
-              className="inline-flex items-center justify-center rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-6 py-3 text-sm font-semibold text-[#1A2B4A] dark:text-[#C5D8F0] shadow-sm hover:bg-[#F4F8FF] dark:hover:bg-[#243040] transition-all duration-200"
-            >
-              Explore services
-            </Link>
+            
             <Link
               href="/register"
               className="rounded-2xl bg-[#5B8FCC] hover:bg-[#4A7DBB] px-6 py-3 text-sm font-semibold text-white shadow-[0_2px_12px_rgba(91,143,204,0.35)] hover:shadow-[0_4px_16px_rgba(91,143,204,0.45)] transition-all duration-200"
@@ -251,6 +246,12 @@ export default function HomePage() {
               className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-6 py-3 text-sm font-semibold text-[#1A2B4A] dark:text-[#C5D8F0] shadow-sm hover:bg-[#F4F8FF] dark:hover:bg-[#243040] transition-all duration-200"
             >
               Log in
+            </Link>
+            <Link
+              href="/services"
+              className="inline-flex items-center justify-center rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-6 py-3 text-sm font-semibold text-[#1A2B4A] dark:text-[#C5D8F0] shadow-sm hover:bg-[#F4F8FF] dark:hover:bg-[#243040] transition-all duration-200"
+            >
+              Explore services
             </Link>
           </div>
         </div>

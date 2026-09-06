@@ -18,6 +18,10 @@ export type PublicFaqResponse = {
   items: PublicFaqItem[];
 };
 
+export type PublicSkillsResponse = {
+  skills: string[];
+};
+
 const PUBLIC_CONTENT_REVALIDATE_SECONDS = 300;
 
 export async function getPublicTextContent(
@@ -68,6 +72,27 @@ export async function getPublicFaq(): Promise<PublicFaqResponse> {
 
   if (!response.ok) {
     throw new Error("Failed to load FAQ content");
+  }
+
+  return response.json();
+}
+
+export async function getPublicSkills(): Promise<PublicSkillsResponse> {
+  if (!API_BASE_URL) {
+    return {
+      skills: [],
+    };
+  }
+
+  const response = await fetch(`${API_BASE_URL}/content/skills`, {
+    method: "GET",
+    next: {
+      revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to load public skills");
   }
 
   return response.json();

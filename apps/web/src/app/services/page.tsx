@@ -1,26 +1,71 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getPublicSkills } from "@/lib/content/api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildPublicMetadata({
   title: "Find Skilled Workers in Nigeria",
   description:
-    "Find verified skilled workers in Nigeria for repairs, maintenance, home services, and other on-demand jobs through FixAndEarn.",
+    "Find verified skilled workers in Nigeria for repairs, maintenance, home services, technical work, and other on-demand jobs through FixAndEarn.",
   path: "/services",
 });
 
-const serviceExamples = [
+const fallbackServices = [
   "Repairs and maintenance",
   "Home and property services",
   "Technical and installation work",
   "General skilled-worker jobs",
 ];
 
-export default function ServicesPage() {
+function normalizeSkills(skills: string[]) {
+  return Array.from(
+    new Set(
+      skills
+        .map((skill) => skill.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+export default async function ServicesPage() {
+  let skills: string[] = [];
+
+  try {
+    const response = await getPublicSkills();
+    skills = normalizeSkills(response.skills);
+  } catch {
+    skills = [];
+  }
+
+  const displayedServices = skills.length > 0 ? skills : fallbackServices;
+
+  const itemListJsonLd =
+    skills.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "FixAndEarn Skilled Services",
+          itemListElement: skills.map((skill, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            name: skill,
+          })),
+        }
+      : null;
+
   return (
     <main className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827]">
+      {itemListJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(itemListJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+      ) : null}
+
       <section className="px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
               FixAndEarn Services
@@ -32,8 +77,8 @@ export default function ServicesPage() {
 
             <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-[#6B7C99] dark:text-[#8FA0BC]">
               FixAndEarn connects clients with verified skilled workers for
-              repairs, maintenance, home services, and other on-demand jobs
-              across Nigeria.
+              repairs, maintenance, home services, technical work, and other
+              on-demand jobs across Nigeria.
             </p>
 
             <div className="mt-8 flex flex-wrap justify-center gap-4">
@@ -54,19 +99,20 @@ export default function ServicesPage() {
           </div>
 
           <section className="mt-16">
-            <h2 className="text-2xl font-bold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              What can you use FixAndEarn for?
-            </h2>
+            <div className="max-w-3xl">
+              <h2 className="text-2xl font-bold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                Skilled services available on FixAndEarn
+              </h2>
 
-            <p className="mt-3 text-base leading-7 text-[#6B7C99] dark:text-[#8FA0BC]">
-              Clients can create jobs with a skill category, location, budget,
-              and optional images. Verified fixers can discover suitable open
-              jobs, communicate through the platform, and work through the
-              platform&apos;s job workflow.
-            </p>
+              <p className="mt-3 text-base leading-7 text-[#6B7C99] dark:text-[#8FA0BC]">
+                Browse the skill categories currently supported by FixAndEarn.
+                Clients can post jobs based on their needs, while verified
+                fixers can discover suitable opportunities.
+              </p>
+            </div>
 
-            <div className="mt-8 grid gap-5 sm:grid-cols-2">
-              {serviceExamples.map((service) => (
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {displayedServices.map((service) => (
                 <div
                   key={service}
                   className="rounded-2xl border border-[#C5D5EE] bg-white p-5 shadow-[0_2px_12px_rgba(91,143,204,0.08)] dark:border-[#2D3F55] dark:bg-[#1E2A3A]"
@@ -76,8 +122,7 @@ export default function ServicesPage() {
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
-                    Post the job you need completed and connect with verified
-                    professionals through FixAndEarn.
+                    Find or offer this type of skilled work through FixAndEarn.
                   </p>
                 </div>
               ))}
@@ -94,9 +139,11 @@ export default function ServicesPage() {
                 <div className="text-sm font-bold text-[#5B8FCC] dark:text-[#7AAEE0]">
                   01
                 </div>
+
                 <h3 className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                   Describe the job
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
                   Add the skill category, location, budget, and useful job
                   details.
@@ -107,9 +154,11 @@ export default function ServicesPage() {
                 <div className="text-sm font-bold text-[#5B8FCC] dark:text-[#7AAEE0]">
                   02
                 </div>
+
                 <h3 className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                   Connect with a fixer
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
                   Verified fixers can apply for jobs or be hired directly.
                 </p>
@@ -119,9 +168,11 @@ export default function ServicesPage() {
                 <div className="text-sm font-bold text-[#5B8FCC] dark:text-[#7AAEE0]">
                   03
                 </div>
+
                 <h3 className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                   Complete the job
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
                   Manage communication, completion, payment confirmation, and
                   ratings through the platform.
