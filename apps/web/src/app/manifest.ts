@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "FixAndEarn",
     short_name: "FixAndEarn",
-    description: "Fix. Earn. Grow.",
+    description: "Hire Trusted Fixers in Nigeria",
     start_url: "/",
     scope: "/",
     display: "standalone",

@@ -1,12 +1,13 @@
 // apps/web/src/app/page.tsx
-import type { Metadata } from "next";
 import Link from "next/link";
+import { buildPublicMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
+export const metadata = buildPublicMetadata({
   title: "Hire Trusted Fixers in Nigeria",
   description:
-    "FixAndEarn connects clients in Nigeria with verified skilled workers for repairs, maintenance, home services, and on-demand jobs.",
-};
+    "FixAndEarn connects clients in Nigeria with verified skilled workers for repairs, maintenance, home services, technical work, and other on-demand jobs.",
+  path: "/",
+});
 
 export default function HomePage() {
   return (
