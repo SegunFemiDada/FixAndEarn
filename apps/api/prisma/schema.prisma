@@ -167,24 +167,20 @@ model BankDetails {
 }
 
 model WithdrawalRequest {
-  id                String                 @id @default(uuid())
-  userId            String
-  amountMilliFec    Int
-  status            WithdrawalStatus       @default(PENDING)
-  transferReference String?                @unique
-  transferCode      String?
-  transferStatus    String?
-  payoutMode        String?
-  earnings          FixerEarning[]
-  allocations       WithdrawalAllocation[]
-  failureReason     String?
-  reviewedBy        String?
-  reviewNote        String?
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  reviewedAt        DateTime?
-  paidAt            DateTime?
-  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String                 @id @default(uuid())
+  userId         String
+  amountMilliFec Int
+  status         WithdrawalStatus       @default(PENDING)
+  earnings       FixerEarning[]
+  allocations    WithdrawalAllocation[]
+  failureReason  String?
+  reviewedBy     String?
+  reviewNote     String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  reviewedAt     DateTime?
+  paidAt         DateTime?
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("withdrawal_requests")
@@ -668,7 +664,6 @@ enum LedgerEntryType {
   COMMISSION
   ADJUSTMENT
   FEE
-  WITHDRAWAL_REVERSAL
 }
 
 enum LedgerEntryDirection {
@@ -687,8 +682,6 @@ enum WithdrawalStatus {
   APPROVED
   REJECTED
   PAID
-  PROCESSING
-  FAILED
 }
 
 enum JobStatus {

@@ -148,8 +148,7 @@ const pendingWithdrawalsMilliFec =
   previousWithdrawals
     .filter((w) =>
       w.status === "PENDING" ||
-      w.status === "APPROVED" ||
-      w.status === "PROCESSING"
+      w.status === "APPROVED" 
     )
     .reduce(
       (sum, w) =>
@@ -159,6 +158,7 @@ const pendingWithdrawalsMilliFec =
 
 const expectedWithdrawableBalanceMilliFec =
   lifetimeEarnedMilliFec -
+  paidWithdrawalsMilliFec -
   pendingWithdrawalsMilliFec;
 
 const actualWithdrawableBalanceMilliFec =
@@ -316,6 +316,11 @@ const reasons: string[] = [];
 const warnings: string[] = [];
 const critical: string[] = [];
 
+if (expectedWithdrawableBalanceMilliFec < 0) {
+  critical.push(
+    "Calculated expected withdrawable balance is negative.",
+  );
+}
 if (entries.length === 0) {
   reasons.push(
     "No earnings were allocated to this withdrawal."

@@ -156,10 +156,8 @@ export class DashboardRepo {
   async getWithdrawalStats() {
     const [
       pending,
-      processing,
       paid,
       rejected,
-      failed,
     ] = await Promise.all([
       this.prisma.withdrawalRequest.count({
         where: {
@@ -167,11 +165,6 @@ export class DashboardRepo {
         },
       }),
 
-      this.prisma.withdrawalRequest.count({
-        where: {
-          status: "PROCESSING",
-        },
-      }),
 
       this.prisma.withdrawalRequest.count({
         where: {
@@ -184,20 +177,12 @@ export class DashboardRepo {
           status: "REJECTED",
         },
       }),
-
-      this.prisma.withdrawalRequest.count({
-        where: {
-          status: "FAILED",
-        },
-      }),
     ]);
 
     return {
       pending,
-      processing,
       paid,
       rejected,
-      failed,
     };
   }
 

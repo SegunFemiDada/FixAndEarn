@@ -15,27 +15,6 @@ export interface ResolveAccountResponse {
   accountNumber: string;
 }
 
-
-export interface InitiateTransferRequest {
-  amountKobo: number;
-  accountNumber: string;
-  bankCode: string;
-  accountName: string;
-  reference: string;
-  reason?: string;
-}
-
-export interface InitiateTransferResponse {
-  transferCode: string;
-  transferId: string | null;
-}
-
-export interface FetchTransferResponse {
-  reference: string;
-  transferCode: string | null;
-  status: string;
-  raw: unknown;
-}
 export interface VerifyTransactionResponse {
   paymentReference: string;
   transactionReference: string;
@@ -57,18 +36,4 @@ export interface PaymentProvider {
   initializeTransaction(
     request: InitializePaymentRequest,
   ): Promise<InitializePaymentResponse>;
-
-  resolveAccountNumber(
-    accountNumber: string,
-    bankCode: string,
-  ): Promise<ResolveAccountResponse>;
-
-
-  initiateTransfer(
-    request: InitiateTransferRequest,
-  ): Promise<InitiateTransferResponse>;
-
-  fetchTransfer(
-    reference: string,
-  ): Promise<FetchTransferResponse>;
 }

@@ -1,7 +1,6 @@
 // Path: apps/api/src/modules/payments/payments.module.ts
 import { Module, forwardRef } from "@nestjs/common";
 import { PrismaModule } from "../../infra/prisma/prisma.module";
-import { AdminModule } from "../../admin/admin.module";
 import { WalletModule } from "../wallet/wallet.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PaymentsController } from "./payments.controller";
@@ -15,7 +14,6 @@ import { JobPaymentsModule } from "../job-payments/job-payments.module";
   imports: [
     PrismaModule,
     NotificationsModule,
-    forwardRef(() => AdminModule),
     forwardRef(() => WalletModule),
     JobPaymentsModule,
   ],

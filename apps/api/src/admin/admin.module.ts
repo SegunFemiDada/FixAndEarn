@@ -1,5 +1,5 @@
 //path: apps/api/src/admin/admin.module.ts
-import { Module, forwardRef } from "@nestjs/common";
+import { Module, } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PassportModule } from "@nestjs/passport";
@@ -47,7 +47,6 @@ import { PublicContentRepo } from "./content/public-content.repo";
 import { AdminSettingsController } from "./settings/admin-settings.controller";
 import { AdminSettingsService } from "./settings/admin-settings.service";
 import { AdminSettingsRepo } from "./settings/admin-settings.repo";
-import { PaymentsModule } from "../modules/payments/payments.module";
 import { AdminReportsController } from "./reports/admin-reports.controller";
 import { ReportsModule } from "../modules/reports/reports.module";
 import { AdminPermissionsGuard } from "./auth/admin-permissions.guard";
@@ -62,7 +61,6 @@ import { DashboardRepo } from "./dashboard/dashboard.repo";
     DisputesModule,
     NotificationsModule,
     ReportsModule,
-    forwardRef(() => PaymentsModule), // ✅ FIX
     ChatModule,
     PassportModule,
     JwtModule.registerAsync({

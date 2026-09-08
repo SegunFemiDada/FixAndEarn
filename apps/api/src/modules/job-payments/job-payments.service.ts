@@ -55,7 +55,15 @@ export class JobPaymentsService {
 });
 
 if (existingPayment?.status === "SUCCESS") {
-  throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+  throw new ConflictException(
+    "PAYMENT_ALREADY_COMPLETED",
+  );
+}
+
+if (existingPayment?.status === "PENDING") {
+  throw new ConflictException(
+    "PAYMENT_ALREADY_PENDING",
+  );
 }
 
 const paymentReference = crypto.randomUUID();
@@ -151,7 +159,15 @@ async createUrgentHirePayment(
 });
 
 if (existingPayment?.status === "SUCCESS") {
-  throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+  throw new ConflictException(
+    "PAYMENT_ALREADY_COMPLETED",
+  );
+}
+
+if (existingPayment?.status === "PENDING") {
+  throw new ConflictException(
+    "PAYMENT_ALREADY_PENDING",
+  );
 }
 
 const paymentReference = crypto.randomUUID();
@@ -278,9 +294,13 @@ async continuePayment(args: {
 
   const newReference = crypto.randomUUID();
 
-  await this.prisma.jobPayment.update({
+const updatedPayment =
+  await this.prisma.jobPayment.updateMany({
     where: {
       id: payment.id,
+      status: "PENDING",
+      paymentReference:
+        payment.paymentReference,
     },
     data: {
       paymentReference: newReference,
@@ -288,6 +308,12 @@ async continuePayment(args: {
       paidAt: null,
     },
   });
+
+if (updatedPayment.count !== 1) {
+  throw new ConflictException(
+    "PAYMENT_RETRY_ALREADY_IN_PROGRESS",
+  );
+}
 
   return this.initializeGatewayPayment({
     email: user.email,
@@ -345,25 +371,44 @@ async continuePayment(args: {
   if (job.clientId !== args.clientId) {
     throw new Error("NOT_JOB_OWNER");
   }
+  if (job.status !== "OPEN") {
+  throw new ConflictException(
+    "FINAL_PAYMENT_NOT_AVAILABLE_FOR_JOB_STATUS",
+  );
+}
 
   const negotiation = await db.negotiation.findUnique({
-    where: {
-      conversationId: args.conversationId,
-    },
-    select: {
-      status: true,
-      lockedPriceMilliFec: true,
-      conversation: {
-        select: {
-          fixerId: true,
-        },
+  where: {
+    conversationId: args.conversationId,
+  },
+  select: {
+    status: true,
+    lockedPriceMilliFec: true,
+    conversation: {
+      select: {
+        id: true,
+        jobId: true,
+        fixerId: true,
+        status: true,
       },
     },
-  });
+  },
+});
 
   if (!negotiation) {
     throw new Error("NEGOTIATION_NOT_FOUND");
   }
+  if (negotiation.conversation.jobId !== args.jobId) {
+  throw new ConflictException(
+    "CONVERSATION_DOES_NOT_BELONG_TO_JOB",
+  );
+}
+
+if (negotiation.conversation.status !== "OPEN") {
+  throw new ConflictException(
+    "FINAL_PAYMENT_NOT_AVAILABLE_FOR_CLOSED_CONVERSATION",
+  );
+}
 
   if (negotiation.status !== "AGREED") {
     throw new Error("PRICE_NOT_AGREED");
@@ -373,20 +418,35 @@ async continuePayment(args: {
     throw new Error("LOCKED_PRICE_MISSING");
   }
 
-  const existingPayment = await db.jobPayment.findUnique({
-  where: {
-    jobId_type: {
-      jobId: args.jobId,
-      type: "FINAL",
+  const existingPayment =
+  await db.jobPayment.findUnique({
+    where: {
+      jobId_type: {
+        jobId: args.jobId,
+        type: "FINAL",
+      },
     },
-  },
-  select: {
-    status: true,
-  },
-});
+    select: {
+      status: true,
+      expiresAt: true,
+      paymentReference: true,
+    },
+  });
 
 if (existingPayment?.status === "SUCCESS") {
-  throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+  throw new ConflictException(
+    "PAYMENT_ALREADY_COMPLETED",
+  );
+}
+
+if (
+  existingPayment?.status === "PENDING" &&
+  existingPayment.expiresAt &&
+  existingPayment.expiresAt.getTime() > Date.now()
+) {
+  throw new ConflictException(
+    "FINAL_PAYMENT_ALREADY_PENDING",
+  );
 }
 
 const paymentReference = crypto.randomUUID();

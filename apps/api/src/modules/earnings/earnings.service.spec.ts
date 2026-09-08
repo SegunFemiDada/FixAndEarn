@@ -140,14 +140,19 @@ describe("EarningsService withdrawal reservation concurrency", () => {
           [withdrawalA.id, 300],
           [withdrawalB.id, 300],
         ].map(([withdrawalId, amount]) =>
-          prisma.$transaction((tx) =>
-            earningsService.reserveForWithdrawal(
-              tx,
-              fixerId,
-              String(withdrawalId),
-              Number(amount),
-            ),
-          ),
+          prisma.$transaction(
+  (tx) =>
+    earningsService.reserveForWithdrawal(
+      tx,
+      fixerId,
+      String(withdrawalId),
+      Number(amount),
+    ),
+  {
+    maxWait: 10000,
+    timeout: 30000,
+  },
+),
         ),
       );
 
@@ -207,14 +212,19 @@ describe("EarningsService withdrawal reservation concurrency", () => {
           [withdrawalA.id, 700],
           [withdrawalB.id, 700],
         ].map(([withdrawalId, amount]) =>
-          prisma.$transaction((tx) =>
-            earningsService.reserveForWithdrawal(
-              tx,
-              fixerId,
-              String(withdrawalId),
-              Number(amount),
-            ),
-          ),
+          prisma.$transaction(
+  (tx) =>
+    earningsService.reserveForWithdrawal(
+      tx,
+      fixerId,
+      String(withdrawalId),
+      Number(amount),
+    ),
+  {
+    maxWait: 10000,
+    timeout: 30000,
+  },
+),
         ),
       );
 

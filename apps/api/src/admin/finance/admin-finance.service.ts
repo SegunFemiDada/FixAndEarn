@@ -6,11 +6,9 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { NotificationType, WithdrawalStatus } from "@prisma/client";
-import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../../modules/notifications/notifications.service";
 import { AdminAuditService } from "../audit/admin-audit.service";
 import { AdminFinanceRepo } from "./admin-finance.repo";
-import { PaymentsService } from "../../modules/payments/payments.service";
 
 @Injectable()
 export class AdminFinanceService {
@@ -18,8 +16,6 @@ export class AdminFinanceService {
     private readonly repo: AdminFinanceRepo,
     private readonly audit: AdminAuditService,
     private readonly notifications: NotificationsService,
-    private readonly prisma: PrismaService,
-    private readonly paymentsService: PaymentsService
   ) {}
 
   async list(q: { status?: string; skip?: number; take?: number }) {
@@ -194,69 +190,5 @@ export class AdminFinanceService {
 
       throw e;
     }
-  }
-
-  /**
-   * Webhook SUCCESS → PROCESSING → PAID
-   */
-  async handleTransferSuccess(reference: string) {
-    const wr = await this.prisma.withdrawalRequest.findFirst({
-      where: { transferReference: reference },
-    });
-
-    if (!wr) return;
-    if (wr.status === WithdrawalStatus.PAID) return;
-    if (wr.status !== WithdrawalStatus.PROCESSING) return;
-
-    await this.prisma.withdrawalRequest.update({
-      where: { id: wr.id },
-      data: {
-        status: WithdrawalStatus.PAID,
-        paidAt: new Date(),
-      },
-    });
-
-    await this.audit.log({
-      actorAdminId: "SYSTEM",
-      action: "WITHDRAWAL_PAID",
-      description: "Webhook confirmed payout",
-      metadata: { withdrawalId: wr.id, reference },
-    });
-
-    try {
-      await this.notifications.create({
-        userId: wr.userId,
-        type: NotificationType.WITHDRAWAL_PAID,
-        title: "Withdrawal paid",
-        body: `Amount: ${(wr.amountMilliFec / 1000).toFixed(2)} FEC`,
-        idempotencyKey: `notif:withdrawal_paid:${wr.id}`,
-      });
-    } catch {}
-  }
-
-  /**
-   * Webhook FAILURE → revert PROCESSING → APPROVED
-   */
-  async handleTransferFailure(reference: string) {
-    const wr = await this.prisma.withdrawalRequest.findFirst({
-      where: { transferReference: reference },
-    });
-
-    if (!wr) return;
-    if (wr.status !== WithdrawalStatus.PROCESSING) return;
-
-    await this.prisma.withdrawalRequest.update({
-      where: { id: wr.id },
-      data: {
-        status: WithdrawalStatus.APPROVED,
-      },
-    });
-
-    await this.audit.log({
-      actorAdminId: "SYSTEM",
-      action: "WITHDRAWAL_REVERSED",
-      description: "Transfer failed or reversed",
-      metadata: { withdrawalId: wr.id, reference },
-    });
   }
 }

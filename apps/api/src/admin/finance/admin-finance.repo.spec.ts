@@ -18,7 +18,9 @@ describe("AdminFinanceRepo withdrawal concurrency and allocation integrity", () 
   const testEmail = "admin_finance_concurrency_test@example.com";
 
   beforeAll(async () => {
-    process.env.PRISMA_AUTO_CONNECT = "true";
+  process.env.PRISMA_AUTO_CONNECT = "true";
+  process.env.PRISMA_TRANSACTION_MAX_WAIT_MS = "10000";
+  process.env.PRISMA_TRANSACTION_TIMEOUT_MS = "30000";
 
     const moduleRef = await Test.createTestingModule({
       imports: [

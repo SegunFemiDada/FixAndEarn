@@ -6,14 +6,13 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { NotificationType, WalletRole, WithdrawalStatus } from "@prisma/client";
+import { NotificationType, WalletRole, } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { LedgerService } from "../wallet/ledger.service";
 import { PAYMENT_PROVIDER } from "./payments.constants";
 import { PaymentProvider } from "./payment.provider";
-import { ModuleRef } from "@nestjs/core";
 import { JobPaymentProcessorService } from "../job-payments/job-payment-processor.service";
 
 @Injectable()
@@ -26,7 +25,6 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly ledgerService: LedgerService,
     private readonly notifications: NotificationsService,
-    private readonly moduleRef: ModuleRef,
     private readonly jobPaymentProcessor: JobPaymentProcessorService,
   ) {}
 
@@ -64,211 +62,6 @@ export class PaymentsService {
     });
   }
 
-  async initiateWithdrawalPayout(args: { withdrawalId: string }) {
-    const { withdrawalId } = args;
-
-    const withdrawal = await this.prisma.withdrawalRequest.findUnique({
-      where: { id: withdrawalId },
-      include: {
-        user: {
-          include: {
-            bankDetails: true,
-          },
-        },
-      },
-    });
-
-    if (!withdrawal) {
-      throw new Error("WITHDRAWAL_NOT_FOUND");
-    }
-
-    const bank = withdrawal.user.bankDetails;
-
-if (
-  !bank ||
-  !bank.accountNumber ||
-  !bank.bankCode ||
-  !bank.accountName
-) {
-  throw new Error(
-    "BANK_DETAILS_INCOMPLETE",
-  );
-}
-
-    const amountKobo = Math.round((withdrawal.amountMilliFec / 1000) * 100);
-    if (amountKobo <= 0) {
-      throw new Error("INVALID_AMOUNT");
-    }
-
-    const reference = `WDR_${withdrawal.id}`;
-    await this.paymentProvider.initiateTransfer({
-  amountKobo,
-  accountNumber: bank.accountNumber,
-  bankCode: bank.bankCode,
-  accountName: bank.accountName,
-  reference,
-  reason: "Withdrawal payout",
-});
-
-    return { ok: true, reference };
-  }
-
-  async handleTransferSuccess(reference: string) {
-  const adminFinance = this.moduleRef.get("AdminFinanceService", {
-    strict: false,
-  });
-
-  if (!adminFinance) {
-    throw new Error("ADMIN_FINANCE_SERVICE_NOT_AVAILABLE");
-  }
-
-  await adminFinance.handleTransferSuccess(reference);
-}
-
-  async handleTransferWebhook(event: any) {
-    const data = event?.data;
-    const reference =
-      typeof data?.reference === "string" ? data.reference.trim() : "";
-    const transferCode =
-  typeof data?.transfer_code === "string"
-    ? data.transfer_code.trim()
-    : typeof data?.transferCode === "string"
-      ? data.transferCode.trim()
-      : null;
-      
-    if (!reference || !reference.startsWith("WDR_")) {
-      return { ok: true };
-    }
-
-    const withdrawalId = reference.slice(4);
-    if (!withdrawalId) {
-      return { ok: true };
-    }
-
-    const withdrawal = await this.prisma.withdrawalRequest.findUnique({
-      where: { id: withdrawalId },
-    });
-
-    if (!withdrawal) {
-      return { ok: true };
-    }
-
-    if (event?.event === "transfer.success") {
-      if (withdrawal.status === WithdrawalStatus.PAID) {
-        return { ok: true };
-      }
-
-      await this.prisma.withdrawalRequest.update({
-        where: { id: withdrawalId },
-        data: {
-          status: WithdrawalStatus.PAID,
-          paidAt: new Date(),
-          transferReference: reference,
-          transferCode: transferCode,
-          payoutMode: "BANK_TRANSFER",
-        },
-      });
-
-      try {
-        await this.notifications.create({
-          userId: withdrawal.userId,
-          type: NotificationType.WITHDRAWAL_PAID,
-          title: "Withdrawal paid",
-          body: `Your withdrawal of ${(withdrawal.amountMilliFec / 1000).toFixed(2)} FEC has been paid.`,
-          idempotencyKey: `notif:withdrawal_paid:${withdrawal.id}`,
-          data: {
-            withdrawalId: withdrawal.id,
-            amountMilliFec: withdrawal.amountMilliFec,
-            reference,
-            transferCode,
-            mode: "BANK_TRANSFER",
-          },
-        });
-      } catch {}
-
-      return { ok: true };
-    }
-
-    if (event?.event === "transfer.failed" || event?.event === "transfer.reversed") {
-      await this.prisma.$transaction(async (tx) => {
-        const wallet = await tx.wallet.findUnique({
-          where: {
-            userId_role: {
-              userId: withdrawal.userId,
-              role: WalletRole.FIXER,
-            },
-          },
-        });
-
-        if (!wallet) {
-          await tx.withdrawalRequest.update({
-            where: { id: withdrawalId },
-            data: {
-              status: WithdrawalStatus.APPROVED,
-              paidAt: null,
-              transferReference: reference,
-              transferCode: transferCode,
-              payoutMode: "BANK_TRANSFER",
-            },
-          });
-          return;
-        }
-
-        const existingReversal = await tx.ledgerEntry.findFirst({
-          where: {
-            walletId: wallet.id,
-            reference: withdrawalId,
-            type: "WITHDRAWAL_REVERSAL",
-            direction: "CREDIT",
-          },
-          select: { id: true },
-        });
-
-        if (!existingReversal) {
-          await tx.ledgerEntry.create({
-            data: {
-              walletId: wallet.id,
-              type: "WITHDRAWAL_REVERSAL",
-              direction: "CREDIT",
-              amountMilliFec: withdrawal.amountMilliFec,
-              idempotencyKey: `withdrawal_reversal:${withdrawalId}`,
-              reference: withdrawalId,
-              metadata: {
-                source: "PAYMENT_TRANSFER_WEBHOOK",
-                event: event.event,
-                paymentReference: reference,
-                transferCode,
-              },
-            },
-          });
-
-          await tx.wallet.update({
-            where: { id: wallet.id },
-            data: {
-              balanceMilliFec: {
-                increment: withdrawal.amountMilliFec,
-              },
-            },
-          });
-        }
-
-        await tx.withdrawalRequest.update({
-          where: { id: withdrawalId },
-          data: {
-            status: WithdrawalStatus.APPROVED,
-            paidAt: null,
-            transferReference: reference,
-            transferCode: transferCode,
-            payoutMode: "BANK_TRANSFER",
-          },
-        });
-      });
-
-      return { ok: true };
-    }
-
-    return { ok: true };
-  }
 
   async handleWebhook(rawBody: Buffer, signature?: string) {
   const isValid =

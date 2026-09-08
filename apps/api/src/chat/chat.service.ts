@@ -665,203 +665,283 @@ if (!convo.active) {
     };
   }
 
-  async respondToLockedPrice(
-  jobId: string,
-  fixerId: string,
-  userId: string,
-  accept: boolean
-) {
-  const job = await this.repo.getJobWithApplicant(
-    jobId,
-    fixerId
-  );
-
-  if (!job) {
-    throw new NotFoundException("JOB_NOT_FOUND");
-  }
-
-  const role = this.assertMembership(
-    job,
-    userId,
-    fixerId
-  );
-
-  const user = await this.prisma.user.findUnique({
-    where: {
-      id: userId
-    },
-    select: {
-      isActive: true
-    }
-  });
-
-  this.assertUserActive(user);
-
-  if (role === "FIXER") {
-    this.assertFixerAuthorized(job, fixerId);
-  }
-
-  const convo = await this.repo.upsertConversation(
-    jobId,
-    fixerId
-  );
-
-  const neg = await this.repo.ensureNegotiation(
-    convo.id
-  );
-
-  if (neg.status !== "LOCKED") {
-    throw new BadRequestException(
-      "PRICE_NOT_LOCKED"
-    );
-  }
-
-  if (neg.lockedByUserId === userId) {
-    throw new ForbiddenException(
-      "LOCKER_ALREADY_AUTO_ACCEPTED"
-    );
-  }
-
-  const next = respondToLockedPrice(
-    {
-      status: neg.status,
-      proposedPriceMilliFec:
-        neg.proposedPriceMilliFec,
-      lockedPriceMilliFec:
-        neg.lockedPriceMilliFec,
-      lockedByUserId: neg.lockedByUserId,
-      clientAcceptedAt:
-        neg.clientAcceptedAt,
-      fixerAcceptedAt:
-        neg.fixerAcceptedAt,
-      agreedAt: neg.agreedAt,
-      rejectedAt: neg.rejectedAt,
-      rejectedByUserId:
-        neg.rejectedByUserId
-    },
-    role,
-    userId,
-    accept
-  );
-
-  await this.repo.updateNegotiation(convo.id, {
-    status: next.status,
-    clientAcceptedAt:
-      next.clientAcceptedAt,
-    fixerAcceptedAt:
-      next.fixerAcceptedAt,
-    agreedAt: next.agreedAt,
-    rejectedAt: next.rejectedAt,
-    rejectedByUserId:
-      next.rejectedByUserId
-  });
-
-  const room = this.realtime.roomFor(
-    jobId,
-    fixerId
-  );
-
-  this.realtime.emitToRoom(
-    room,
-    "negotiation:response",
-    {
+    async respondToLockedPrice(
+    jobId: string,
+    fixerId: string,
+    userId: string,
+    accept: boolean
+  ) {
+    const job = await this.repo.getJobWithApplicant(
       jobId,
-      fixerId,
-      conversationId: convo.id,
-      userId,
-      accept,
-      status: next.status
+      fixerId
+    );
+
+    if (!job) {
+      throw new NotFoundException("JOB_NOT_FOUND");
     }
-  );
 
-  let payment: any = null;
+    const role = this.assertMembership(
+      job,
+      userId,
+      fixerId
+    );
 
-  if (next.status === "AGREED") {
-    const price = next.lockedPriceMilliFec;
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        isActive: true
+      }
+    });
 
-    if (!price) {
+    this.assertUserActive(user);
+
+    if (role === "FIXER") {
+      this.assertFixerAuthorized(job, fixerId);
+    }
+
+    const convo = await this.repo.upsertConversation(
+      jobId,
+      fixerId
+    );
+
+    const neg = await this.repo.ensureNegotiation(
+      convo.id
+    );
+
+    if (neg.status !== "LOCKED") {
       throw new BadRequestException(
-        "MISSING_LOCKED_PRICE"
+        "PRICE_NOT_LOCKED"
       );
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      payment = await this.finalizeNegotiationAgreement({
-        tx,
-        job,
-        fixerId,
-        conversationId: convo.id,
-        price
-      });
-      if (payment?.authorizationUrl) {
+    if (neg.lockedByUserId === userId) {
+      throw new ForbiddenException(
+        "LOCKER_ALREADY_AUTO_ACCEPTED"
+      );
+    }
 
-  this.realtime.emitToRoom(
-    room,
-    "payment:created",
-    {
+    const room = this.realtime.roomFor(
       jobId,
-      conversationId: convo.id,
-      payerId: job.clientId,
-      authorizationUrl:
-        payment.authorizationUrl,
-      reference:
-        payment.reference,
-    },
-  );
-}
-      if (next.status === "AGREED") {
-  try {
-    await this.notifications.create({
-      userId: job.clientId,
-      type: "SYSTEM_ANNOUNCEMENT",
-      title: "Payment required",
-      body:
-        "The fixer accepted your agreed price. Complete payment to officially start the job.",
-      idempotencyKey: `job-payment-required:${job.id}`,
-      data: {
-        jobId: job.id,
-        conversationId: convo.id,
-      },
-    });
-  } catch {}
-}
-    });
+      fixerId
+    );
 
+    const { next, payment } =
+      await this.prisma.$transaction(async (tx) => {
+        /*
+         * Re-read the negotiation inside the transaction.
+         *
+         * This prevents a stale pre-transaction read from
+         * overwriting a newer negotiation state.
+         */
+        const currentNeg =
+          await tx.negotiation.findUnique({
+            where: {
+              conversationId: convo.id
+            }
+          });
+
+        if (
+          !currentNeg ||
+          currentNeg.status !== "LOCKED"
+        ) {
+          throw new BadRequestException(
+            "PRICE_NOT_LOCKED"
+          );
+        }
+
+        if (
+          currentNeg.lockedByUserId === userId
+        ) {
+          throw new ForbiddenException(
+            "LOCKER_ALREADY_AUTO_ACCEPTED"
+          );
+        }
+
+        const next =
+          respondToLockedPrice(
+            {
+              status: currentNeg.status,
+              proposedPriceMilliFec:
+                currentNeg.proposedPriceMilliFec,
+              lockedPriceMilliFec:
+                currentNeg.lockedPriceMilliFec,
+              lockedByUserId:
+                currentNeg.lockedByUserId,
+              clientAcceptedAt:
+                currentNeg.clientAcceptedAt,
+              fixerAcceptedAt:
+                currentNeg.fixerAcceptedAt,
+              agreedAt:
+                currentNeg.agreedAt,
+              rejectedAt:
+                currentNeg.rejectedAt,
+              rejectedByUserId:
+                currentNeg.rejectedByUserId
+            },
+            role,
+            userId,
+            accept
+          );
+
+        /*
+         * Persist only while the negotiation is still LOCKED.
+         *
+         * If another request changes the negotiation first,
+         * this update affects zero rows and the transaction fails.
+         */
+        const updated =
+          await tx.negotiation.updateMany({
+            where: {
+              conversationId: convo.id,
+              status: "LOCKED"
+            },
+            data: {
+              status: next.status,
+              clientAcceptedAt:
+                next.clientAcceptedAt,
+              fixerAcceptedAt:
+                next.fixerAcceptedAt,
+              agreedAt:
+                next.agreedAt,
+              rejectedAt:
+                next.rejectedAt,
+              rejectedByUserId:
+                next.rejectedByUserId
+            }
+          });
+
+        if (updated.count !== 1) {
+          throw new BadRequestException(
+            "PRICE_NOT_LOCKED"
+          );
+        }
+
+        let payment: any = null;
+
+        /*
+         * AGREED and FINAL-payment creation now happen
+         * inside the same transaction.
+         */
+        if (next.status === "AGREED") {
+          const price =
+            next.lockedPriceMilliFec;
+
+          if (!price) {
+            throw new BadRequestException(
+              "MISSING_LOCKED_PRICE"
+            );
+          }
+
+          payment =
+            await this.finalizeNegotiationAgreement({
+              tx,
+              job,
+              fixerId,
+              conversationId: convo.id,
+              price
+            });
+        }
+
+        return {
+          next,
+          payment
+        };
+      });
+
+    /*
+     * Realtime events are emitted only after the
+     * transaction has committed successfully.
+     */
     this.realtime.emitToRoom(
       room,
-      "negotiation:agreed",
+      "negotiation:response",
       {
         jobId,
         fixerId,
         conversationId: convo.id,
-        amountMilliFec: price
+        userId,
+        accept,
+        status: next.status
       }
     );
 
-    // The job will become IN_PROGRESS only after the
-    // FINAL payment webhook succeeds.
-    this.realtime.emitToRoom(
-      room,
-      "job:awaiting-payment",
-      {
-        jobId,
-        conversationId: convo.id,
+    if (next.status === "AGREED") {
+      const price =
+        next.lockedPriceMilliFec;
+
+      if (!price) {
+        throw new BadRequestException(
+          "MISSING_LOCKED_PRICE"
+        );
       }
-    );
+
+      if (payment?.authorizationUrl) {
+        this.realtime.emitToRoom(
+          room,
+          "payment:created",
+          {
+            jobId,
+            conversationId: convo.id,
+            payerId: job.clientId,
+            authorizationUrl:
+              payment.authorizationUrl,
+            reference:
+              payment.reference
+          }
+        );
+      }
+
+      try {
+        await this.notifications.create({
+          userId: job.clientId,
+          type: "SYSTEM_ANNOUNCEMENT",
+          title: "Payment required",
+          body:
+            "The fixer accepted your agreed price. Complete payment to officially start the job.",
+          idempotencyKey:
+            `job-payment-required:${job.id}`,
+          data: {
+            jobId: job.id,
+            conversationId: convo.id
+          }
+        });
+      } catch {}
+
+      this.realtime.emitToRoom(
+        room,
+        "negotiation:agreed",
+        {
+          jobId,
+          fixerId,
+          conversationId: convo.id,
+          amountMilliFec: price
+        }
+      );
+
+      /*
+       * The job becomes IN_PROGRESS only after
+       * the successful FINAL-payment webhook.
+       */
+      this.realtime.emitToRoom(
+        room,
+        "job:awaiting-payment",
+        {
+          jobId,
+          conversationId: convo.id
+        }
+      );
+    }
+
+    return {
+      ok: true,
+      status: next.status,
+      payment,
+      paymentPendingForClient:
+        next.status === "AGREED"
+    };
   }
-
-return {
-  ok: true,
-  status: next.status,
-
-  // Always include payment after agreement.
-  // Only the client will actually use it.
-  payment,
-
-  paymentPendingForClient:
-    next.status === "AGREED",
-};
-}
 
 async getConversationDetail(
   jobId: string,

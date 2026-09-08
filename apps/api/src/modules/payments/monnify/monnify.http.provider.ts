@@ -6,10 +6,6 @@ import type {
   PaymentProvider,
   InitializePaymentRequest,
   InitializePaymentResponse,
-  ResolveAccountResponse,
-  InitiateTransferRequest,
-  InitiateTransferResponse,
-  FetchTransferResponse,
   VerifyTransactionResponse,
 } from "../payment.provider";
 
@@ -19,7 +15,6 @@ export class MonnifyHttpProvider implements PaymentProvider  {
   private readonly secretKey: string;
   private readonly contractCode: string;
   private readonly baseUrl: string;
-  private readonly webhookSecret: string;
 
   private accessToken: string | null = null;
   private tokenExpiresAt = 0;
@@ -46,10 +41,6 @@ export class MonnifyHttpProvider implements PaymentProvider  {
       )
       .trim()
       .replace(/\/+$/, "");
-
-    this.webhookSecret = this.config
-      .get<string>("MONNIFY_WEBHOOK_SECRET", "")
-      .trim();
 
     if (!this.apiKey) {
       throw new Error("MONNIFY_API_KEY is required");
@@ -222,82 +213,7 @@ if (
     };
   }
 
-  async resolveAccountNumber(
-    accountNumber: string,
-    bankCode: string,
-  ): Promise<ResolveAccountResponse> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v1/disbursements/account/validate?accountNumber=${accountNumber}&bankCode=${bankCode}`,
-      {
-        method: "GET",
-        headers: await this.headers(),
-      },
-    );
 
-    const payload = await response.json();
-
-    if (
-      !response.ok ||
-      !payload.requestSuccessful
-    ) {
-      throw new Error(
-        payload.responseMessage ??
-          "ACCOUNT_VALIDATION_FAILED",
-      );
-    }
-
-    return {
-      accountName:
-        payload.responseBody.accountName,
-      accountNumber,
-    };
-  }
-
-  async initiateTransfer(
-  req: InitiateTransferRequest,
-): Promise<InitiateTransferResponse> {
-  const response = await fetch(
-    `${this.baseUrl}/api/v2/disbursements/single`,
-    {
-      method: "POST",
-      headers: await this.headers(),
-      body: JSON.stringify({
-        amount: req.amountKobo / 100,
-        reference: req.reference,
-        narration:
-          req.reason ??
-          "FixAndEarn Withdrawal",
-        destinationBankCode:
-          req.bankCode,
-        destinationAccountNumber:
-          req.accountNumber,
-        destinationAccountName:
-          req.accountName,
-        currency: "NGN",
-      }),
-    },
-  );
-
-  const payload = await response.json();
-
-  if (
-    !response.ok ||
-    !payload.requestSuccessful
-  ) {
-    throw new Error(
-      payload.responseMessage ??
-        "MONNIFY_TRANSFER_FAILED",
-    );
-  }
-
-  return {
-    transferCode:
-      payload.responseBody.reference,
-    transferId:
-      payload.responseBody
-        .transactionReference ?? null,
-  };
-}
   async verifyTransaction(
     reference: string,
   ): Promise<VerifyTransactionResponse> {
@@ -343,39 +259,6 @@ if (
         transaction.currencyCode ??
         transaction.currency ??
         "NGN",
-      raw: payload,
-    };
-  }
-
-
-  async fetchTransfer(
-    reference: string,
-  ): Promise<FetchTransferResponse> {
-    const response = await fetch(
-      `${this.baseUrl}/api/v2/disbursements/${reference}`,
-      {
-        method: "GET",
-        headers: await this.headers(),
-      },
-    );
-
-    const payload = await response.json();
-
-    if (
-      !response.ok ||
-      !payload.requestSuccessful
-    ) {
-      throw new Error(
-        payload.responseMessage ??
-          "MONNIFY_TRANSFER_LOOKUP_FAILED",
-      );
-    }
-
-    return {
-      reference,
-      transferCode: reference,
-      status:
-        payload.responseBody.status,
       raw: payload,
     };
   }
