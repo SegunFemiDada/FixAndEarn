@@ -33,10 +33,9 @@ export type AdminDashboardResponse = {
 
   withdrawals: {
     pending: number;
-    processing: number;
+    approved: number;
     paid: number;
     rejected: number;
-    failed: number;
   };
 
   reports: {
