@@ -1,10 +1,14 @@
 /*
-  Rename the legacy Paystack-named JobPayment unique index.
+  Ensure the JobPayment unique index uses the current name.
 
-  The underlying unique constraint already applies to paymentReference.
-  This migration changes only the index name; no data or constraint
-  semantics are changed.
+  Earlier migration 20260816194834_cleanup_paystack_naming may already
+  have removed the legacy Paystack-named index and created the current
+  paymentReference index.
+
+  This migration is therefore intentionally idempotent.
 */
 
-ALTER INDEX "JobPayment_paystackReference_key"
-  RENAME TO "JobPayment_paymentReference_key";
+DROP INDEX IF EXISTS "JobPayment_paystackReference_key";
+
+CREATE UNIQUE INDEX IF NOT EXISTS "JobPayment_paymentReference_key"
+ON "JobPayment" ("paymentReference");
