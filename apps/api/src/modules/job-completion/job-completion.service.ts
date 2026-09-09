@@ -167,7 +167,7 @@ export class JobCompletionService {
         userId: job.fixerId,
         type: NotificationType.JOB_COMPLETION_APPROVED,
         title: "Job completion approved",
-        body: `Client approved your completion request. You earned ${(result.payoutMilliFec / 1000).toFixed(2)} FEC (₦${result.payoutMilliFec.toLocaleString()}) after a ${(result.commissionMilliFec / 1000).toFixed(2)} FEC (₦${result.commissionMilliFec.toLocaleString()}) service fee. Your earnings are now available in your wallet.`,
+        body: `Client approved your completion request. You earned ${(result.payoutMilliFec / 1000).toFixed(2)} FEC (₦${result.payoutMilliFec.toLocaleString()}) after a ${(result.commissionMilliFec / 1000).toFixed(2)} FEC (₦${result.commissionMilliFec.toLocaleString()}) service fee. Your funds are now available in your Earnings.`,
         idempotencyKey: `notif:job_completion_approved:${job.id}`,
         data: {
           jobId: job.id,

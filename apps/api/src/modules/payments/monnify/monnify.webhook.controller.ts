@@ -9,6 +9,7 @@ import {
   Post,
   Req,
 } from "@nestjs/common";
+import { Public } from "../../../common/auth/public.decorator";
 import type { Request } from "express";
 import { PaymentsService } from "../payments.service";
 import { PAYMENT_PROVIDER } from "../payments.constants";
@@ -27,6 +28,7 @@ export class MonnifyWebhookController {
     private readonly paymentProvider: PaymentProvider,
   ) {}
 
+  @Public()
   @Post("webhook")
   @HttpCode(200)
   async webhook(

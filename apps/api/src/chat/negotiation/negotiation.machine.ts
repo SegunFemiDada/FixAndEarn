@@ -28,21 +28,28 @@ export function proposePrice(
   proposedPriceMilliFec: number
 ): NegotiationState {
   if (state.status === "AGREED") {
-    throw new Error("NEGOTIATION_ALREADY_AGREED");
+    throw new Error(
+      "NEGOTIATION_ALREADY_AGREED"
+    );
   }
 
   if (state.status === "LOCKED") {
-    throw new Error("PRICE_ALREADY_LOCKED");
-  }
-
-  if (state.status === "REJECTED") {
-    throw new Error("NEGOTIATION_REJECTED");
+    throw new Error(
+      "PRICE_ALREADY_LOCKED"
+    );
   }
 
   return {
     ...state,
     status: "OPEN",
     proposedPriceMilliFec,
+    lockedPriceMilliFec: null,
+    lockedByUserId: null,
+    clientAcceptedAt: null,
+    fixerAcceptedAt: null,
+    agreedAt: null,
+    rejectedAt: null,
+    rejectedByUserId: null,
   };
 }
 
@@ -54,11 +61,9 @@ export function lockPrice(
   now = new Date()
 ): NegotiationState {
   if (state.status === "AGREED") {
-    throw new Error("NEGOTIATION_ALREADY_AGREED");
-  }
-
-  if (state.status === "REJECTED") {
-    throw new Error("NEGOTIATION_REJECTED");
+    throw new Error(
+      "NEGOTIATION_ALREADY_AGREED"
+    );
   }
 
   const next: NegotiationState = {
@@ -68,9 +73,12 @@ export function lockPrice(
     lockedByUserId,
     clientAcceptedAt: null,
     fixerAcceptedAt: null,
+    agreedAt: null,
+    rejectedAt: null,
+    rejectedByUserId: null,
   };
 
-  // Whoever locks price auto-accepts
+  // Whoever locks price auto-accepts.
   if (lockedByRole === "CLIENT") {
     next.clientAcceptedAt = now;
   }

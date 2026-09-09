@@ -65,4 +65,70 @@ describe("Negotiation machine", () => {
     expect(s2.lockedPriceMilliFec).toBeNull();
     expect(s2.lockedByUserId).toBeNull();
   });
+    test("reject -> new proposal -> lock -> accept both -> agreed", () => {
+    const locked = lockPrice(
+      { status: "OPEN" },
+      7000,
+      "userA",
+      "CLIENT",
+      new Date("2026-01-01T00:00:00Z"),
+    );
+
+    const rejected = respondToLockedPrice(
+      locked,
+      "FIXER",
+      "fixer1",
+      false,
+      new Date("2026-01-01T00:01:00Z"),
+    );
+
+    expect(rejected.status).toBe("REJECTED");
+
+    const reproposed = proposePrice(
+      rejected,
+      8000,
+    );
+
+    expect(reproposed.status).toBe("OPEN");
+    expect(
+      reproposed.proposedPriceMilliFec,
+    ).toBe(8000);
+    expect(
+      reproposed.rejectedAt,
+    ).toBeNull();
+    expect(
+      reproposed.rejectedByUserId,
+    ).toBeNull();
+
+    const relocked = lockPrice(
+      reproposed,
+      8000,
+      "userB",
+      "FIXER",
+      new Date("2026-01-01T00:02:00Z"),
+    );
+
+    expect(relocked.status).toBe("LOCKED");
+    expect(
+      relocked.lockedPriceMilliFec,
+    ).toBe(8000);
+
+    const clientAccepted =
+      respondToLockedPrice(
+        relocked,
+        "CLIENT",
+        "userA",
+        true,
+        new Date("2026-01-01T00:03:00Z"),
+      );
+
+    expect(clientAccepted.status).toBe(
+      "AGREED",
+    );
+    expect(
+      clientAccepted.agreedAt,
+    ).toEqual(
+      new Date("2026-01-01T00:03:00Z"),
+    );
+  });
 });
