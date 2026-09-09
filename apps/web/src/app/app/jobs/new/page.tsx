@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { z } from "zod";
 
-import { useCreateJob, useInitializePostingPayment } from "@/lib/jobs/queries";
+import { useCreateJob, } from "@/lib/jobs/queries";
 import { useMyVerification } from "@/lib/verification/queries";
 import { getToken, getStoredRoles } from "@/lib/auth/session";
 
@@ -37,7 +37,6 @@ export default function NewJobPage() {
   const router = useRouter();
   const { data: ver, isLoading: verLoading } = useMyVerification();
   const createMutation = useCreateJob();
-  const postingPayment = useInitializePostingPayment();
 
   const [mounted, setMounted] = useState(false);
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
@@ -99,7 +98,7 @@ export default function NewJobPage() {
   async function onSubmit(values: CreateJobUiValues) {
   const priceMilliFec = Math.round(Number(values.priceFec) * 1000);
 
-  const job = await createMutation.mutateAsync({
+  const result = await createMutation.mutateAsync({
     skillCategory: values.skillCategory,
     state: values.state,
     city: values.city,
@@ -109,18 +108,16 @@ export default function NewJobPage() {
     images: previews.map((p) => p.file),
   });
 
-  const jobId = job?.id ?? job?.jobId;
+  const jobId = result?.jobId ?? result?.id;
 
   if (!jobId) {
     throw new Error("Unable to determine Job ID.");
   }
 
-  const payment = await postingPayment.mutateAsync(jobId);
-
   const checkoutUrl =
-    payment?.checkoutUrl ??
-    payment?.paymentUrl ??
-    payment?.authorizationUrl;
+    result?.payment?.authorizationUrl ??
+    result?.payment?.checkoutUrl ??
+    result?.payment?.paymentUrl;
 
   if (!checkoutUrl) {
     throw new Error("Payment URL was not returned.");
@@ -305,8 +302,7 @@ export default function NewJobPage() {
             <button
   type="submit"
   disabled={
-  createMutation.isPending ||
-  postingPayment.isPending
+  createMutation.isPending 
 }
   className={`inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-200
     ${createMutation.isPending
@@ -315,10 +311,8 @@ export default function NewJobPage() {
   `}
 >
   {createMutation.isPending
-  ? "Creating job..."
-  : postingPayment.isPending
-    ? "Preparing secure payment..."
-    : "Continue to Payment"}
+  ? "Preparing secure payment..."
+  : "Continue to Payment"}
 </button>
 
 
