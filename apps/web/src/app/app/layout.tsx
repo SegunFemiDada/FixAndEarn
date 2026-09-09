@@ -2,8 +2,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import {
+  playNotificationSound,
+  unlockNotificationSound,
+} from "@/lib/notifications/sound";import { useRouter } from "next/navigation";
 import {
   Home,
   Briefcase,
@@ -14,6 +17,7 @@ import {
 import { clearSession, getActiveRole, type Role } from "@/lib/auth/session";
 import { useNotificationsUnreadCount } from "@/lib/notifications/queries";
 import { useMyVerification } from "@/lib/verification/queries";
+
 
 function UnreadBadge({ count }: { count: number }) {
   if (!count || count <= 0) return null;
@@ -41,6 +45,68 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { data } = useNotificationsUnreadCount(mounted ? activeRole : null);
   const unread = data ?? 0;
+  const previousUnreadRef = useRef<number | null>(null);
+const soundInitializedRef = useRef(false);
+useEffect(() => {
+  if (!mounted) {
+    return;
+  }
+
+  if (previousUnreadRef.current === null) {
+    previousUnreadRef.current = unread;
+    soundInitializedRef.current = true;
+    return;
+  }
+
+  const previousUnread = previousUnreadRef.current;
+
+  previousUnreadRef.current = unread;
+
+  if (!soundInitializedRef.current) {
+    return;
+  }
+
+  const increase = unread - previousUnread;
+
+  if (increase <= 0) {
+    return;
+  }
+
+  for (let i = 0; i < increase; i += 1) {
+    window.setTimeout(() => {
+      void playNotificationSound();
+    }, i * 250);
+  }
+}, [mounted, unread]);
+useEffect(() => {
+  if (!mounted) {
+    return;
+  }
+
+  const handleUserGesture = () => {
+    unlockNotificationSound();
+
+    window.removeEventListener("pointerdown", handleUserGesture);
+    window.removeEventListener("keydown", handleUserGesture);
+    window.removeEventListener("touchstart", handleUserGesture);
+  };
+
+  window.addEventListener("pointerdown", handleUserGesture, {
+    passive: true,
+  });
+
+  window.addEventListener("keydown", handleUserGesture);
+
+  window.addEventListener("touchstart", handleUserGesture, {
+    passive: true,
+  });
+
+  return () => {
+    window.removeEventListener("pointerdown", handleUserGesture);
+    window.removeEventListener("keydown", handleUserGesture);
+    window.removeEventListener("touchstart", handleUserGesture);
+  };
+}, [mounted]);
 
   const { data: verification } = useMyVerification();
   const isVerified = verification?.status === "APPROVED";

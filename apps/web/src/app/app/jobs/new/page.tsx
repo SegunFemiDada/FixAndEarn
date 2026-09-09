@@ -228,7 +228,7 @@ export default function NewJobPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                Price (FEC)
+                Workmanship price (FEC)
               </label>
               <input
                 className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
@@ -242,8 +242,25 @@ export default function NewJobPage() {
                 </p>
               )}
               <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                1 FEC = 1000 Naira
+              1 FEC = 1000 Naira
+            </p>
+
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-200">
+              <p className="font-semibold">
+                Important: Workmanship price only
               </p>
+
+              <p className="mt-1 leading-6">
+                The price you enter is for workmanship/service only. Materials,
+                spare parts, equipment, and other physical items needed for the job
+                are not included in this amount.
+              </p>
+
+              <p className="mt-2 leading-6">
+                Please do not add estimated material costs to the workmanship price.
+                Kindly Exclude material costs from the workmanship price. Either purchase materials yourself or supervise the procurement.
+              </p>
+            </div>
             </div>
 
             <div className="space-y-2">
@@ -292,12 +309,14 @@ export default function NewJobPage() {
             </div>
 <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-sm text-blue-900 dark:text-blue-200">
   <p className="font-medium">
-    Platform Service Fee
-  </p>
+  Platform Service Fee
+</p>
 
-  <p className="mt-1">
-    After creating your job, you&apos;ll be redirected to Monnify to securely pay the platform service fee <i>1 FEC (₦1000).</i> Your job will only become visible to fixers after your payment is successfully confirmed.
-  </p>
+<p className="mt-1">
+  After creating your job, you&apos;ll be redirected to Monnify to securely
+  pay the platform service fee <i>1 FEC (₦1000).</i> Your job will only
+  become visible to fixers after your payment is successfully confirmed.
+</p>
 </div>
             <button
   type="submit"
