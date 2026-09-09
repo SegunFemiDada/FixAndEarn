@@ -16,8 +16,9 @@ function getAudio(): HTMLAudioElement {
 }
 
 /**
- * Browsers may block audio until the user has interacted with the page.
- * This attempts to unlock the notification audio during a real user gesture.
+ * Registers the browser interaction as permission to use audio.
+ *
+ * This does not intentionally play the notification sound.
  */
 export function unlockNotificationSound(): void {
   if (typeof window === "undefined") {
@@ -26,17 +27,8 @@ export function unlockNotificationSound(): void {
 
   const player = getAudio();
 
-  player
-    .play()
-    .then(() => {
-      player.pause();
-      player.currentTime = 0;
-      soundEnabled = true;
-    })
-    .catch(() => {
-      // Browser autoplay policy may block this.
-      // A later user gesture can try again.
-    });
+  player.load();
+  soundEnabled = true;
 }
 
 /**
@@ -52,14 +44,9 @@ export async function playNotificationSound(): Promise<boolean> {
   const player = getAudio();
 
   try {
-    if (!soundEnabled) {
-      await player.play();
-      soundEnabled = true;
-      return true;
-    }
-
     player.currentTime = 0;
     await player.play();
+    soundEnabled = true;
     return true;
   } catch {
     return false;

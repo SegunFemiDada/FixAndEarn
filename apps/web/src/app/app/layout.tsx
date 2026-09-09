@@ -43,41 +43,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setActiveRole(getActiveRole());
   }, []);
 
-  const { data } = useNotificationsUnreadCount(mounted ? activeRole : null);
+    const { data } = useNotificationsUnreadCount(mounted ? activeRole : null);
   const unread = data ?? 0;
+
   const previousUnreadRef = useRef<number | null>(null);
-const soundInitializedRef = useRef(false);
-useEffect(() => {
-  if (!mounted) {
-    return;
-  }
 
-  if (previousUnreadRef.current === null) {
-    previousUnreadRef.current = unread;
-    soundInitializedRef.current = true;
-    return;
-  }
+  useEffect(() => {
+    if (!mounted || data === undefined) {
+      return;
+    }
 
-  const previousUnread = previousUnreadRef.current;
+    // The first confirmed server value is the baseline.
+    // Never play a sound for notifications that already existed
+    // when the page was loaded/refreshed.
+    if (previousUnreadRef.current === null) {
+      previousUnreadRef.current = data;
+      return;
+    }
 
-  previousUnreadRef.current = unread;
+    const previousUnread = previousUnreadRef.current;
+    previousUnreadRef.current = data;
 
-  if (!soundInitializedRef.current) {
-    return;
-  }
+    const increase = data - previousUnread;
 
-  const increase = unread - previousUnread;
+    if (increase <= 0) {
+      return;
+    }
 
-  if (increase <= 0) {
-    return;
-  }
-
-  for (let i = 0; i < increase; i += 1) {
-    window.setTimeout(() => {
-      void playNotificationSound();
-    }, i * 250);
-  }
-}, [mounted, unread]);
+    for (let i = 0; i < increase; i += 1) {
+      window.setTimeout(() => {
+        void playNotificationSound();
+      }, i * 250);
+    }
+  }, [mounted, data]);
 useEffect(() => {
   if (!mounted) {
     return;
