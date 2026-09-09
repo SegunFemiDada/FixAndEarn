@@ -44,7 +44,6 @@ export async function saveBankDetails(payload: {
   bankCode: string;
   accountNumber: string;
   accountName: string;
-  bvn: string;
 }): Promise<any> {
   const res = await apiClient.post("/wallet/bank-details", payload);
   return res.data;

@@ -46,11 +46,6 @@ class AddressDto {
 }
 
 export class SubmitVerificationDto {
-  @ApiProperty({ description: "BVN (will be hashed, not stored raw)", required: false })
-  @IsOptional()
-  @IsString()
-  bvn?: string;
-
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

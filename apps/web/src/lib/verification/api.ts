@@ -23,10 +23,8 @@ export async function getMyVerification(): Promise<VerificationMeResponse> {
 export async function submitVerification(values: VerificationSubmitFormValues): Promise<void> {
   const fd = new FormData();
 
-  const bvn = values.bvn?.trim();
   const bio = values.bio?.trim();
 
-  if (bvn) fd.append("bvn", bvn);
   if (bio) fd.append("bio", bio);
 
   if (Array.isArray(values.skills) && values.skills.length > 0) {

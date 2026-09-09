@@ -17,7 +17,6 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { Roles } from "../../common/auth/roles.decorator";
-import { CryptoService } from "../../common/crypto/crypto.service";
 import { LedgerService } from "./ledger.service";
 import { WalletService } from "./wallet.service";
 import { SaveBankDetailsDto } from "./dto/save-bank-details.dto";
@@ -40,7 +39,6 @@ export class WalletController {
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
     private readonly ledgerService: LedgerService,
-    private readonly crypto: CryptoService,
     private readonly notifications: NotificationsService,
     private readonly earningsService: EarningsService,
   ) {}
@@ -212,11 +210,10 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
 
 @Post("bank-details")
 @Roles("FIXER")
-async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: SaveBankDetailsDto) {
-  const encrypted = this.crypto.encryptAes256Gcm(dto.bvn);
-
-
-  // Use dummy bank code if not provided (required by DB)
+async saveBankDetails(
+  @CurrentUser() user: { userId: string },
+  @Body() dto: SaveBankDetailsDto,
+) {
   const finalBankCode = dto.bankCode ?? "000000";
 
   const record = await this.prisma.bankDetails.upsert({
@@ -226,8 +223,6 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
       accountName: dto.accountName,
       accountNumber: dto.accountNumber,
       bankCode: finalBankCode,
-      bvnEncrypted: encrypted.ciphertextB64,
-      bvnIv: encrypted.ivB64,
     },
     create: {
       userId: user.userId,
@@ -235,8 +230,6 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
       accountName: dto.accountName,
       accountNumber: dto.accountNumber,
       bankCode: finalBankCode,
-      bvnEncrypted: encrypted.ciphertextB64,
-      bvnIv: encrypted.ivB64,
     },
   });
 
@@ -244,9 +237,9 @@ async saveBankDetails(@CurrentUser() user: { userId: string }, @Body() dto: Save
     ok: true,
     bankName: record.bankName,
     accountName: record.accountName,
-    accountNumber: record.accountNumber, 
+    accountNumber: record.accountNumber,
     hasBankDetails: true,
- };
+  };
 }
 
   // ==========================

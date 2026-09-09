@@ -43,7 +43,6 @@ describe("Fixers - Availability (e2e)", () => {
       create: {
         userId,
         ninHash: `nin-${uniq}`,
-        bvnHash: `bvn-${uniq}`,
         faceHash: `face-${uniq}`,
         ninImagePath: "test/nin.png",
         selfieImagePath: "test/selfie.png",

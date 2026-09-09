@@ -51,7 +51,6 @@ const bankSchema = z.object({
   bankName: z.string().min(2, "Bank name is required"),
   accountName: z.string().min(2, "Account name is required"),
   accountNumber: z.string().length(10, "Account number must be 10 digits").regex(/^\d+$/, "Digits only"),
-  bvn: z.string().length(11, "BVN must be 11 digits").regex(/^\d+$/, "Digits only"),
 });
 
 type BankForm = z.input<typeof bankSchema>;
@@ -117,7 +116,6 @@ export default function WalletWithdrawPage() {
       bankName: "",
       accountName: "",
       accountNumber: "",
-      bvn: "",
     },
     mode: "onTouched",
   });
@@ -146,7 +144,6 @@ export default function WalletWithdrawPage() {
       bankName: "",
       accountName: "",
       accountNumber: "",
-      bvn: "",
     });
 
     setBankSuccess("Bank details saved.");
@@ -336,23 +333,7 @@ export default function WalletWithdrawPage() {
                     </p>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                    BVN
-                  </label>
-                  <input
-                    className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-                    placeholder="11-digit BVN"
-                    inputMode="numeric"
-                    {...bankForm.register("bvn")}
-                    disabled={!gateOk || saveBank.isPending}
-                  />
-                  {bankForm.formState.errors.bvn && (
-                    <p className="mt-1 text-sm text-[#D9534F] dark:text-red-300">
-                      {String(bankForm.formState.errors.bvn.message)}
-                    </p>
-                  )}
-                </div>
+                
               </div>
 
               {saveBank.isError && (

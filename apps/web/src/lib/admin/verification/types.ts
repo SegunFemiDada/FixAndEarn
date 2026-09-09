@@ -10,7 +10,6 @@ export type VerificationReuploadField =
   | "address"
   | "instagram"
   | "tiktok"
-  | "bvn";
 
 export type PendingVerificationRow = {
   id: string;
@@ -49,7 +48,6 @@ export type AdminVerificationDetail = {
   reuploadFields?: VerificationReuploadField[];
 
   ninHash: string;
-  bvnHash: string;
   faceHash: string;
 
   ninImagePath: string | null;

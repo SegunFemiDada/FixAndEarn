@@ -92,7 +92,6 @@ model IdentityVerification {
   id                String             @id @default(uuid())
   userId            String             @unique
   ninHash           String             @unique
-  bvnHash           String             @unique
   faceHash          String             @unique
   ninImagePath      String
   selfieImagePath   String
@@ -156,8 +155,6 @@ model BankDetails {
   bankName      String
   accountName   String
   accountNumber String
-  bvnEncrypted  String
-  bvnIv         String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   bankCode      String

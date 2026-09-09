@@ -8,7 +8,6 @@ import { OcrProvider } from "./providers/ocr.provider";
 import { FaceMatchProvider } from "./providers/face-match.provider";
 
 type SubmitVerificationInput = {
-  bvn?: string;
   bio?: string;
   skills?: string[];
   address?: {
@@ -113,7 +112,6 @@ export class VerificationService {
   private async ensureUniqueIdentity(args: {
     currentUserId: string;
     ninHash: string;
-    bvnHash: string;
     faceHash: string;
   }) {
     const dupNin = await this.prisma.identityVerification.findFirst({
@@ -121,12 +119,6 @@ export class VerificationService {
       select: { id: true },
     });
     if (dupNin) throw new ConflictException("Duplicate identity detected (NIN already used).");
-
-    const dupBvn = await this.prisma.identityVerification.findFirst({
-      where: { bvnHash: args.bvnHash, NOT: { userId: args.currentUserId } },
-      select: { id: true },
-    });
-    if (dupBvn) throw new ConflictException("Duplicate identity detected (BVN already used).");
 
     const dupFace = await this.prisma.identityVerification.findFirst({
       where: { faceHash: args.faceHash, NOT: { userId: args.currentUserId } },
@@ -141,7 +133,6 @@ export class VerificationService {
     });
 
     if (!existing) {
-      const bvn = this.ensureRequiredString(input.bvn, "BVN_REQUIRED");
       const bio = this.ensureRequiredString(input.bio, "BIO_REQUIRED");
       const skills = this.ensureRequiredStringArray(input.skills, "SKILLS_REQUIRED");
       const address = this.ensureRequiredAddress(input.address);
@@ -152,13 +143,11 @@ export class VerificationService {
 
       const nin = await this.ocr.extractNinNumber(input.ninImagePath);
       const ninHash = this.hash(nin);
-      const bvnHash = this.hash(bvn);
       const faceHash = await this.face.generateFaceHash(input.selfiePath);
 
       await this.ensureUniqueIdentity({
         currentUserId: userId,
         ninHash,
-        bvnHash,
         faceHash,
       });
 
@@ -166,7 +155,6 @@ export class VerificationService {
         data: {
           userId,
           ninHash,
-          bvnHash,
           faceHash,
           ninImagePath: input.ninImagePath,
           selfieImagePath: input.selfiePath,
@@ -241,15 +229,6 @@ export class VerificationService {
     if (mustReplaceFile("utilityBill") && !input.utilityBillPath) {
       throw new BadRequestException("UTILITY_BILL_REQUIRED");
     }
-    if (mustReplaceText("bvn") && !String(input.bvn ?? "").trim()) {
-      throw new BadRequestException("BVN_REQUIRED");
-    }
-
-    const bvnHash =
-      String(input.bvn ?? "").trim()
-        ? this.hash(String(input.bvn).trim())
-        : existing.bvnHash;
-
     const ninHash =
       input.ninImagePath
         ? this.hash(await this.ocr.extractNinNumber(input.ninImagePath))
@@ -263,7 +242,6 @@ export class VerificationService {
     await this.ensureUniqueIdentity({
       currentUserId: userId,
       ninHash,
-      bvnHash,
       faceHash,
     });
 
@@ -275,7 +253,6 @@ export class VerificationService {
         reviewedByAdminId: null,
         reviewedAt: null,
         ninHash,
-        bvnHash,
         faceHash,
         ninImagePath,
         selfieImagePath: selfiePath,

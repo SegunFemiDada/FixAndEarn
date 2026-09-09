@@ -92,7 +92,6 @@ export class AdminUsersService {
     // Hashes: never expose (NDPR minimization)
     if (out.verification) {
       delete out.verification.ninHash;
-      delete out.verification.bvnHash;
       delete out.verification.faceHash;
     }
 

@@ -33,7 +33,6 @@ export const VerificationMeResponseSchema = z
 export type VerificationMeResponse = z.infer<typeof VerificationMeResponseSchema>;
 
 export const VerificationSubmitFormSchema = z.object({
-  bvn: z.string().optional().default(""),
   bio: z.string().optional().default(""),
   skills: z.array(z.string()).optional().default([]),
 

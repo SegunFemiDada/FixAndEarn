@@ -12,7 +12,6 @@ export type AdminSettingsOverviewResponse = {
   };
   verification: {
     requireNin: boolean;
-    requireBvnForFixerBankDetails: boolean;
     requireUtilityBill: boolean;
     requireLiveSelfie: boolean;
     forceVerificationBeforePosting: boolean;
@@ -37,7 +36,6 @@ export type UpdateAdminSettingsPayload = {
   withdrawalMinMilliFec?: number;
   withdrawalMaxMilliFec?: number;
   requireNin?: boolean;
-  requireBvnForFixerBankDetails?: boolean;
   requireUtilityBill?: boolean;
   requireLiveSelfie?: boolean;
   forceVerificationBeforePosting?: boolean;

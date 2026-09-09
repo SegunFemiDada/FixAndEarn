@@ -22,7 +22,6 @@ type ReuploadField =
   | "address"
   | "instagram"
   | "tiktok"
-  | "bvn";
 
 const REUPLOAD_LABELS: Record<ReuploadField, string> = {
   ninImage: "NIN image",
@@ -33,7 +32,6 @@ const REUPLOAD_LABELS: Record<ReuploadField, string> = {
   address: "Address",
   instagram: "Instagram",
   tiktok: "TikTok",
-  bvn: "BVN",
 };
 const SKILLS_LIST = [
   "Bricklayer", "Block Layer", "Concreter", "Woodworker", "Carpenter", "Cook", "Messenger",
@@ -207,7 +205,7 @@ export default function VerificationPage() {
   const needsFile = (field: "ninImage" | "selfie" | "utilityBill") =>
     !hasTargetedReupload || reuploadFields.includes(field);
 
-  const needsText = (field: "bio" | "skills" | "address" | "instagram" | "tiktok" | "bvn") =>
+  const needsText = (field: "bio" | "skills" | "address" | "instagram" | "tiktok") =>
     !hasTargetedReupload || reuploadFields.includes(field);
 
   const showOnlyTargetedFields = hasTargetedReupload;
@@ -215,7 +213,6 @@ export default function VerificationPage() {
   const form = useForm<VerificationSubmitFormValues>({
     resolver: zodResolver(VerificationSubmitFormSchema),
     defaultValues: {
-      bvn: "",
       bio: "",
       skills: [],
       addressHouse: "",
@@ -240,7 +237,6 @@ export default function VerificationPage() {
     if (!submitted) return;
 
     form.reset({
-      bvn: "",
       bio: submitted.bio ?? "",
       skills:
         Array.isArray(submitted.skills) && submitted.skills.length > 0
@@ -301,15 +297,6 @@ export default function VerificationPage() {
   function validateVisibleFields(values: VerificationSubmitFormValues): boolean {
     let ok = true;
 
-    if (needsText("bvn")) {
-      if (!values.bvn?.trim()) {
-        setFieldError("bvn", "BVN is required");
-        ok = false;
-      } else if (values.bvn.trim().length < 6) {
-        setFieldError("bvn", "BVN must be at least 6 characters");
-        ok = false;
-      }
-    }
 
     if (needsText("bio")) {
       if (!values.bio?.trim()) {
@@ -455,12 +442,6 @@ export default function VerificationPage() {
                 Your previous submission details have been retained. Only the requested field(s) below need correction and resubmission.
               </div>
 
-              {reuploadFields.includes("bvn") && (
-                <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                  For security reasons, BVN is never returned to the browser and cannot be prefilled. Enter it again only if BVN correction was requested.
-                </div>
-              )}
-
               {(reuploadFields.includes("ninImage") ||
                 reuploadFields.includes("selfie") ||
                 reuploadFields.includes("utilityBill")) && (
@@ -550,18 +531,6 @@ export default function VerificationPage() {
             )}
 
             <form className="mt-4 space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-              {needsText("bvn") && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">BVN</label>
-                  <input
-                    className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-                    {...form.register("bvn")}
-                  />
-                  {errorText(form.formState.errors.bvn?.message) && (
-                    <p className="text-sm text-[#D9534F] dark:text-red-300">{errorText(form.formState.errors.bvn?.message)}</p>
-                  )}
-                </div>
-              )}
 
               {needsFile("ninImage") && (
                 <div className="space-y-2">

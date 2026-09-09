@@ -21,10 +21,4 @@ export class SaveBankDetailsDto {
   @MinLength(10)
   @MaxLength(10)
   accountNumber!: string;
-
-  @ApiProperty()
-  @IsString()
-  @MinLength(11)
-  @MaxLength(11)
-  bvn!: string;
 }

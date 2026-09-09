@@ -18,7 +18,6 @@ const REUPLOAD_FIELD_OPTIONS: Array<{ value: VerificationReuploadField; label: s
   { value: "ninImage", label: "NIN image" },
   { value: "selfie", label: "Selfie" },
   { value: "utilityBill", label: "Utility bill" },
-  { value: "bvn", label: "BVN" },
   { value: "bio", label: "Bio" },
   { value: "skills", label: "Skills" },
   { value: "address", label: "Address" },
@@ -337,7 +336,6 @@ export default function AdminVerificationDetailPage() {
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <DetailField label="NIN hash" value={detail.ninHash} breakAll />
-                <DetailField label="BVN hash" value={detail.bvnHash} breakAll />
                 <DetailField label="Face hash" value={detail.faceHash} breakAll />
                 <DetailField label="Bio" value={detail.bio} />
                 <DetailField label="Instagram" value={detail.instagram} />

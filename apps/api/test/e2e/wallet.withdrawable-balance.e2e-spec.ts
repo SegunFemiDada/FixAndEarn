@@ -59,8 +59,7 @@ describe("Wallet Withdrawable Balance E2E", () => {
       .send({
         bankName: "GTBank",
         accountName: fullName,
-        accountNumber: "0123456789",
-        bvn: randDigits(11)
+        accountNumber: "0123456789"
       })
       .expect(201);
 

@@ -92,7 +92,6 @@ describe("App E2E", () => {
     const token = regRes.body.accessToken as string;
 
     const nin = randDigits(11);
-    const bvn = randDigits(11);
 
     const dto = {
       bio: "I am a skilled worker.",
@@ -118,7 +117,6 @@ describe("App E2E", () => {
       .post("/verification/submit")
       .set("Authorization", `Bearer ${token}`)
       .field("nin", nin)
-      .field("bvn", bvn)
       .field("bio", dto.bio)
       .field("skills[]", dto.skills[0])
       .field("skills[]", dto.skills[1])
@@ -142,7 +140,6 @@ describe("App E2E", () => {
       .post("/verification/submit")
       .set("Authorization", `Bearer ${token}`)
       .field("nin", nin)
-      .field("bvn", bvn)
       .field("bio", dto.bio)
       .field("skills[]", dto.skills[0])
       .field("skills[]", dto.skills[1])
@@ -227,8 +224,7 @@ describe("App E2E", () => {
       .send({
         bankName: "GTBank",
         accountName: "Wallet User",
-        accountNumber: "0123456789",
-        bvn: randDigits(11)
+        accountNumber: "0123456789"
       })
       .expect(201);
 

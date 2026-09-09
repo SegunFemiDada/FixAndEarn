@@ -30,7 +30,6 @@ async function registerAndGetToken(app: INestApplication, prefix: string) {
 
 async function submitVerification(app: INestApplication, token: string) {
   const nin = randDigits(11);
-  const bvn = randDigits(11);
 
   const ninBuf = Buffer.from("nin-image");
   const selfieBuf = uniqueBuffer(Buffer.from("selfie-image"));
@@ -40,7 +39,6 @@ async function submitVerification(app: INestApplication, token: string) {
     .post("/verification/submit")
     .set("Authorization", `Bearer ${token}`)
     .field("nin", nin)
-    .field("bvn", bvn)
     .field("bio", "Verified user")
     .field("skills[]", "Plumbing")
     .field("address[house]", "12")

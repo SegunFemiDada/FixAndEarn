@@ -49,7 +49,6 @@ export default function AdminSettingsPage() {
   const [allowedWithdrawalRolesText, setAllowedWithdrawalRolesText] = React.useState("FIXER");
 
   const [requireNin, setRequireNin] = React.useState(true);
-  const [requireBvnForFixerBankDetails, setRequireBvnForFixerBankDetails] = React.useState(true);
   const [requireUtilityBill, setRequireUtilityBill] = React.useState(true);
   const [requireLiveSelfie, setRequireLiveSelfie] = React.useState(true);
   const [forceVerificationBeforePosting, setForceVerificationBeforePosting] = React.useState(true);
@@ -77,7 +76,6 @@ export default function AdminSettingsPage() {
     setAllowedWithdrawalRolesText(joinLines(query.data.finance.allowedWithdrawalRoles ?? ["FIXER"]));
 
     setRequireNin(query.data.verification.requireNin);
-    setRequireBvnForFixerBankDetails(query.data.verification.requireBvnForFixerBankDetails);
     setRequireUtilityBill(query.data.verification.requireUtilityBill);
     setRequireLiveSelfie(query.data.verification.requireLiveSelfie);
     setForceVerificationBeforePosting(query.data.verification.forceVerificationBeforePosting);
@@ -106,7 +104,6 @@ export default function AdminSettingsPage() {
         allowedWithdrawalRoles: parseLines(allowedWithdrawalRolesText),
 
         requireNin,
-        requireBvnForFixerBankDetails,
         requireUtilityBill,
         requireLiveSelfie,
         forceVerificationBeforePosting,
@@ -282,16 +279,6 @@ export default function AdminSettingsPage() {
                       className="rounded border-[#C5D5EE] text-[#5B8FCC] focus:ring-[#5B8FCC]"
                     />
                     Require NIN
-                  </label>
-
-                  <label className="flex items-center gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                    <input
-                      type="checkbox"
-                      checked={requireBvnForFixerBankDetails}
-                      onChange={(e) => setRequireBvnForFixerBankDetails(e.target.checked)}
-                      className="rounded border-[#C5D5EE] text-[#5B8FCC] focus:ring-[#5B8FCC]"
-                    />
-                    Require BVN for fixer bank details
                   </label>
 
                   <label className="flex items-center gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">

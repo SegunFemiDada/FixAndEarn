@@ -63,9 +63,7 @@ export class UpdateAdminSettingsDto {
   @IsBoolean()
   requireNin?: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  requireBvnForFixerBankDetails?: boolean;
+
 
   @IsOptional()
   @IsBoolean()

@@ -13,7 +13,6 @@ const META_KEYS = {
   withdrawalMinMilliFec: "SETTINGS_WITHDRAWAL_MIN_MILLI_FEC",
   withdrawalMaxMilliFec: "SETTINGS_WITHDRAWAL_MAX_MILLI_FEC",
   requireNin: "SETTINGS_REQUIRE_NIN",
-  requireBvnForFixerBankDetails: "SETTINGS_REQUIRE_BVN_FOR_FIXER_BANK_DETAILS",
   requireUtilityBill: "SETTINGS_REQUIRE_UTILITY_BILL",
   requireLiveSelfie: "SETTINGS_REQUIRE_LIVE_SELFIE",
   forceVerificationBeforePosting: "SETTINGS_FORCE_VERIFICATION_BEFORE_POSTING",
@@ -85,10 +84,7 @@ export class AdminSettingsService {
       },
       verification: {
         requireNin: this.parseBoolean(meta.get(META_KEYS.requireNin), true),
-        requireBvnForFixerBankDetails: this.parseBoolean(
-          meta.get(META_KEYS.requireBvnForFixerBankDetails),
-          true
-        ),
+
         requireUtilityBill: this.parseBoolean(meta.get(META_KEYS.requireUtilityBill), true),
         requireLiveSelfie: this.parseBoolean(meta.get(META_KEYS.requireLiveSelfie), true),
         forceVerificationBeforePosting: this.parseBoolean(
@@ -155,11 +151,7 @@ export class AdminSettingsService {
     pushNumber("withdrawalMaxMilliFec", META_KEYS.withdrawalMaxMilliFec, payload.withdrawalMaxMilliFec);
 
     pushBoolean("requireNin", META_KEYS.requireNin, payload.requireNin);
-    pushBoolean(
-      "requireBvnForFixerBankDetails",
-      META_KEYS.requireBvnForFixerBankDetails,
-      payload.requireBvnForFixerBankDetails
-    );
+  
     pushBoolean("requireUtilityBill", META_KEYS.requireUtilityBill, payload.requireUtilityBill);
     pushBoolean("requireLiveSelfie", META_KEYS.requireLiveSelfie, payload.requireLiveSelfie);
     pushBoolean(

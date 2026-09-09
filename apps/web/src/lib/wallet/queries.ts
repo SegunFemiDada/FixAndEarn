@@ -73,7 +73,6 @@ export function useSaveBankDetails() {
       bankCode: string;
       accountNumber: string;
       accountName: string;
-      bvn: string;
     }) => saveBankDetails(payload),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: keys.bankDetails });
