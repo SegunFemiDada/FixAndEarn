@@ -1403,4 +1403,90 @@ negotiation: convo.negotiation
       }
     };
   }
+    async closeConversation(
+    jobId: string,
+    fixerId: string,
+    userId: string
+  ) {
+    const conversation =
+      await this.repo.getConversationByJobFixer(
+        jobId,
+        fixerId
+      );
+
+    if (!conversation) {
+      throw new NotFoundException(
+        "CONVERSATION_NOT_FOUND"
+      );
+    }
+
+    const isClient =
+      conversation.job?.client?.id === userId;
+
+    const isFixer =
+      conversation.fixer?.id === userId;
+
+    if (!isClient && !isFixer) {
+      throw new ForbiddenException(
+        "NOT_A_PARTICIPANT"
+      );
+    }
+
+    // Closing is intentionally idempotent.
+    // If another request already closed it, return the
+    // authoritative CLOSED state instead of reopening/changing it.
+    if (conversation.status === "CLOSED") {
+      return {
+        ok: true,
+        conversationId: conversation.id,
+        status: "CLOSED",
+      };
+    }
+
+    // Atomic OPEN -> CLOSED transition.
+    // This prevents two simultaneous close requests from
+    // producing conflicting state.
+    const result =
+      await this.prisma.conversation.updateMany({
+        where: {
+          id: conversation.id,
+          status: "OPEN",
+        },
+        data: {
+          status: "CLOSED",
+        },
+      });
+
+    // Another request may have closed it between the read
+    // above and this atomic update.
+    if (result.count === 0) {
+      return {
+        ok: true,
+        conversationId: conversation.id,
+        status: "CLOSED",
+      };
+    }
+
+    const room = this.realtime.roomFor(
+      jobId,
+      fixerId
+    );
+
+    this.realtime.emitToRoom(
+      room,
+      "conversation:closed",
+      {
+        jobId,
+        fixerId,
+        conversationId: conversation.id,
+        status: "CLOSED",
+      }
+    );
+
+    return {
+      ok: true,
+      conversationId: conversation.id,
+      status: "CLOSED",
+    };
+  }
 }

@@ -97,3 +97,16 @@ export async function respondLockedPrice(
   );
   return res.data;
 }
+/**
+ * POST /jobs/:jobId/chats/:fixerId/close
+ */
+export async function closeConversation(
+  jobId: string,
+  fixerId: string
+) {
+  const res = await apiClient.post(
+    `/jobs/${jobId}/chats/${fixerId}/close`
+  );
+
+  return res.data;
+}

@@ -78,4 +78,18 @@ async respondToLockedPrice(
     dto.accept
   );
 }
+  @Post("close")
+  async closeConversation(
+    @Param("jobId") jobId: string,
+    @Param("fixerId") fixerId: string,
+    @CurrentUser() user: CurrentUserPayload
+  ) {
+    const userId = pickUserId(user);
+
+    return this.chat.closeConversation(
+      jobId,
+      fixerId,
+      userId
+    );
+  }
 }

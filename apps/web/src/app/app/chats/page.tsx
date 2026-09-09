@@ -54,6 +54,12 @@ export default function MyChatsPage() {
     socket.on("message:new", () => {
       qc.invalidateQueries({ queryKey: ["chats", "mine"] });
     });
+    socket.on("conversation:closed", () => {
+      qc.invalidateQueries({
+        queryKey: ["chats", "mine"],
+      });
+    });
+    socket.off("conversation:closed");
 
     return () => {
       socket.disconnect();
@@ -111,40 +117,40 @@ export default function MyChatsPage() {
             <div className="grid gap-3">
               {conversations.map((c: unknown) => {
                 const cc = c as {
-  conversationId?: string | null;
-  lastMessageAt?: string | null;
-  status?: string | null;
+                conversationId?: string | null;
+                lastMessageAt?: string | null;
+                status?: string | null;
 
-  negotiation?: {
-    status?: string | null;
-  } | null;
+                negotiation?: {
+                  status?: string | null;
+                } | null;
 
-  job?: {
-    id?: string;
-    skillCategory?: string | null;
-    title?: string | null;
-    status?: string | null;
-    client?: {
-      id?: string | null;
-      fullName?: string | null;
-      isActive?: boolean | null;
-    } | null;
-  } | null;
+                job?: {
+                  id?: string;
+                  skillCategory?: string | null;
+                  title?: string | null;
+                  status?: string | null;
+                  client?: {
+                    id?: string | null;
+                    fullName?: string | null;
+                    isActive?: boolean | null;
+                  } | null;
+                } | null;
 
-  fixer?: {
-    id?: string | null;
-    fullName?: string | null;
-    isActive?: boolean | null;
-  } | null;
+                fixer?: {
+                  id?: string | null;
+                  fullName?: string | null;
+                  isActive?: boolean | null;
+                } | null;
 
-  jobId?: string | null;
-  fixerId?: string | null;
+                jobId?: string | null;
+                fixerId?: string | null;
 
-  conversation?: {
-    jobId?: string | null;
-    fixerId?: string | null;
-  } | null;
-};
+                conversation?: {
+                  jobId?: string | null;
+                  fixerId?: string | null;
+                } | null;
+              };
 
                 const job = cc.job ?? null;
                 const fixer = cc.fixer ?? null;

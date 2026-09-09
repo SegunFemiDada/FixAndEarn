@@ -8,6 +8,7 @@ import type {
 } from "@/lib/chat/types";
 
 import {
+  closeConversation,
   lockPrice,
   proposePrice,
   respondLockedPrice,
@@ -107,6 +108,10 @@ export function useChatActions({
   setContinuingToPayment,
 ] = React.useState(false);
 
+  const [
+    closingChat,
+    setClosingChat,
+  ] = React.useState(false);
 
   const sendChatMessage =
     React.useCallback(
@@ -369,6 +374,37 @@ if (
         role,
       ]
     );
+      const closeChat = React.useCallback(
+    async () => {
+      if (closingChat) {
+        return;
+      }
+
+      try {
+        setClosingChat(true);
+        setActionErr(null);
+
+        await closeConversation(
+          jobId,
+          fixerId
+        );
+
+        await refetch();
+      } catch (e) {
+        setActionErr(
+          renderAxiosError(e)
+        );
+      } finally {
+        setClosingChat(false);
+      }
+    },
+    [
+      closingChat,
+      fixerId,
+      jobId,
+      refetch,
+    ]
+  );
 
   return {
   actionErr,
@@ -385,5 +421,7 @@ if (
   submitLockPrice,
   submitLockedPriceResponse,
   continueToPayment,
+  closingChat,
+  closeChat,
 };
 }

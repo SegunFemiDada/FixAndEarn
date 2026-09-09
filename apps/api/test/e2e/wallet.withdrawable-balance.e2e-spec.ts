@@ -5,12 +5,6 @@ import * as request from "supertest";
 import { AppModule } from "../../src/app.module";
 import { PrismaService } from "../../src/infra/prisma/prisma.service";
 
-function randDigits(len: number): string {
-  let s = "";
-  for (let i = 0; i < len; i++) s += Math.floor(Math.random() * 10).toString();
-  return s;
-}
-
 describe("Wallet Withdrawable Balance E2E", () => {
   let app: INestApplication;
   let prisma: PrismaService;

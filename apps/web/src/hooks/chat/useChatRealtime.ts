@@ -61,6 +61,18 @@ export function useChatRealtime({
       playSound("/sounds/chat-activated.mp3");
       safeRefetch();
     });
+        socket.on("conversation:closed", (payload) => {
+      if (unmounted) return;
+
+      if (
+        payload?.jobId !== jobId ||
+        payload?.fixerId !== fixerId
+      ) {
+        return;
+      }
+
+      safeRefetch();
+    });
 
     socket.on("message:new", (payload) => {
       if (unmounted) return;
@@ -155,6 +167,7 @@ export function useChatRealtime({
       socket.off("message:new");
       socket.off("payment:created");
       socket.off("job:started");
+      socket.off("conversation:closed");
       notificationEvents.forEach((event) => socket.off(event));
 
       socketRef.current = null;

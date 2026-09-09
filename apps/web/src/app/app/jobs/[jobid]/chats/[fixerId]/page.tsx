@@ -66,9 +66,12 @@ const participantRole =
   return (
     <ChatPageShell>
       <ChatHeader
-  participantName={participantName}
-  participantRole={participantRole}
-/>
+        participantName={participantName}
+        participantRole={participantRole}
+        chatOpen={chat.canChat}
+        closingChat={chat.closingChat}
+        onCloseChat={chat.closeChat}
+      />
 
       {status.showStates && (
         <ChatPageStates
