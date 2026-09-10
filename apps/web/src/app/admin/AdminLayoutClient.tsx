@@ -40,10 +40,15 @@ const navItems: AdminNavItem[] = [
     description: "Manage user status and notes",
   },
   {
-  href: "/admin/jobs",
-  label: "Job Management",
-  description: "Investigate jobs, applications, payments, and disputes",
-},
+    href: "/admin/jobs",
+    label: "Job Management",
+    description: "Investigate jobs, applications, payments, and disputes",
+  },
+  {
+    href: "/admin/payments",
+    label: "Payment Operations",
+    description: "Investigate job payments and Monnify references",
+  },
   {
     href: "/admin/disputes",
     label: "Dispute Management",

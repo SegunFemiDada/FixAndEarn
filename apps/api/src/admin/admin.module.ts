@@ -57,6 +57,9 @@ import { DashboardRepo } from "./dashboard/dashboard.repo";
 import { AdminJobsController } from "./jobs/admin-jobs.controller";
 import { AdminJobsService } from "./jobs/admin-jobs.service";
 import { AdminJobsRepo } from "./jobs/admin-jobs.repo";
+import { AdminPaymentsController } from "./payments/admin-payments.controller";
+import { AdminPaymentsService } from "./payments/admin-payments.service";
+import { AdminPaymentsRepo } from "./payments/admin-payments.repo";
 @Module({
   imports: [
     ConfigModule,
@@ -92,6 +95,7 @@ import { AdminJobsRepo } from "./jobs/admin-jobs.repo";
     AdminReportsController,
     DashboardController,
     AdminJobsController,
+    AdminPaymentsController,
   ],
   providers: [
     CryptoService,
@@ -127,6 +131,8 @@ import { AdminJobsRepo } from "./jobs/admin-jobs.repo";
     DashboardService,
     AdminJobsRepo,
     AdminJobsService,
+    AdminPaymentsRepo,
+    AdminPaymentsService,
   ],
   exports: [AdminService, AdminAuditService, AdminFinanceService], 
 })
