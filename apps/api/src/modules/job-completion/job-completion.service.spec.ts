@@ -107,4 +107,44 @@ describe("JobCompletionService", () => {
 
     expect(notifications.create).toHaveBeenCalled();
   });
+  it("passes fixer identity when requesting completion", async () => {
+  repo.getJob.mockResolvedValue({
+    id: "j1",
+    clientId: "c1",
+    status: "IN_PROGRESS",
+    fixerId: "f1",
+  });
+
+  await svc.requestCompletion("j1", "f1");
+
+  expect(repo.requestCompletion).toHaveBeenCalledWith(
+    "j1",
+    "f1",
+  );
+});
+it("passes rejection reason to the repository", async () => {
+  repo.getJob.mockResolvedValue({
+    id: "j1",
+    clientId: "c1",
+    status: "IN_PROGRESS",
+    fixerId: "f1",
+  });
+
+  repo.getCompletionRequest.mockResolvedValue({
+    fixerId: "f1",
+    status: "PENDING",
+  });
+
+  await svc.rejectCompletion(
+    "j1",
+    "c1",
+    "The work is not finished yet.",
+  );
+
+  expect(repo.rejectCompletion).toHaveBeenCalledWith(
+    "j1",
+    "c1",
+    "The work is not finished yet.",
+  );
+});
 });

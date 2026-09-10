@@ -33,9 +33,13 @@ async request(
 async reject(
   @CurrentUser() u: { userId: string },
   @Param("id") jobId: string,
-  @Body() _dto: RejectCompletionDto,
+  @Body() dto: RejectCompletionDto,
 ) {
-  return this.svc.rejectCompletion(jobId, u.userId);
+  return this.svc.rejectCompletion(
+    jobId,
+    u.userId,
+    dto.reason,
+  );
 }
 
   // Client approves completion -> payment + payout + commission + rating

@@ -39,7 +39,7 @@ export class JobCompletionService {
       throw new ForbiddenException("NOT_ASSIGNED_FIXER");
     }
 
-    const result = await this.repo.requestCompletion(jobId);
+    const result = await this.repo.requestCompletion(jobId, fixerId);
 
     try {
       await this.notifications.create({
@@ -94,7 +94,11 @@ export class JobCompletionService {
       throw new BadRequestException("INVALID_COMPLETION_STATUS");
     }
 
-    const result = await this.repo.rejectCompletion(jobId);
+    const result = await this.repo.rejectCompletion(
+  jobId,
+  clientId,
+  reason,
+);
 
     try {
       if (completion.fixerId) {

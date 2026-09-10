@@ -20,19 +20,85 @@ export class JobCompletionRepo {
     });
   }
 
-  async requestCompletion(jobId: string) {
-    return this.prisma.job.update({
-      where: { id: jobId },
-      data: { completedRequestedAt: new Date() },
-    });
-  }
+  async requestCompletion(jobId: string, fixerId: string) {
+  const requestedAt = new Date();
 
-  async rejectCompletion(jobId: string) {
-    return this.prisma.job.update({
-      where: { id: jobId },
-      data: { completedRequestedAt: null },
+  return this.prisma.$transaction(async (tx) => {
+    const completion = await tx.jobCompletionRequest.upsert({
+      where: {
+        jobId,
+      },
+      update: {
+        fixerId,
+        status: "PENDING",
+        requestedAt,
+        reviewedByClientId: null,
+        reviewedAt: null,
+        reviewNote: null,
+      },
+      create: {
+        jobId,
+        fixerId,
+        status: "PENDING",
+        requestedAt,
+      },
     });
-  }
+
+    await tx.job.update({
+      where: {
+        id: jobId,
+      },
+      data: {
+        completedRequestedAt: requestedAt,
+      },
+    });
+
+    return completion;
+  });
+}
+
+async rejectCompletion(
+  jobId: string,
+  clientId: string,
+  reason?: string | null,
+) {
+  const reviewedAt = new Date();
+
+  return this.prisma.$transaction(async (tx) => {
+    const completion = await tx.jobCompletionRequest.findUnique({
+      where: {
+        jobId,
+      },
+    });
+
+    if (!completion) {
+      throw new Error("NO_COMPLETION_REQUEST");
+    }
+
+    const updated = await tx.jobCompletionRequest.update({
+      where: {
+        jobId,
+      },
+      data: {
+        status: "REJECTED",
+        reviewedByClientId: clientId,
+        reviewedAt,
+        reviewNote: reason?.trim() || null,
+      },
+    });
+
+    await tx.job.update({
+      where: {
+        id: jobId,
+      },
+      data: {
+        completedRequestedAt: null,
+      },
+    });
+
+    return updated;
+  });
+}
 
   private async getOrCreatePlatformWallet(tx: Prisma.TransactionClient) {
     let pw = await tx.platformWallet.findFirst();
