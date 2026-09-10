@@ -90,7 +90,17 @@ export default function ReportJobModal({
             </div>
 
             <div className="flex gap-2">
-              <button
+              
+
+<button
+  onClick={onClose}
+  className="flex-1 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
+    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
+    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+>
+  Cancel
+</button>
+<button
   onClick={() => mutation.mutate()}
   disabled={!reason || mutation.isPending}
   className={`flex-1 rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors
@@ -100,15 +110,6 @@ export default function ReportJobModal({
   `}
 >
   {mutation.isPending ? "Submitting..." : "Submit report"}
-</button>
-
-<button
-  onClick={onClose}
-  className="flex-1 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors
-    border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
-    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
->
-  Cancel
 </button>
 
             </div>

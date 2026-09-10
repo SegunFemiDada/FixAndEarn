@@ -3,7 +3,6 @@
 const NOTIFICATION_SOUND_PATH = "/sounds/notification.mp3";
 
 let audio: HTMLAudioElement | null = null;
-let soundEnabled = false;
 
 function getAudio(): HTMLAudioElement {
   if (!audio) {
@@ -16,19 +15,15 @@ function getAudio(): HTMLAudioElement {
 }
 
 /**
- * Registers the browser interaction as permission to use audio.
- *
- * This does not intentionally play the notification sound.
+ * Preloads the notification audio after a real user interaction.
+ * This does not play the notification sound.
  */
 export function unlockNotificationSound(): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  const player = getAudio();
-
-  player.load();
-  soundEnabled = true;
+  getAudio().load();
 }
 
 /**
@@ -46,7 +41,6 @@ export async function playNotificationSound(): Promise<boolean> {
   try {
     player.currentTime = 0;
     await player.play();
-    soundEnabled = true;
     return true;
   } catch {
     return false;

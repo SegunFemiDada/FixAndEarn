@@ -54,6 +54,9 @@ import { AdminRoleHierarchyService } from "./auth/admin-role-hierarchy.service";
 import { DashboardController } from "./dashboard/dashboard.controller";
 import { DashboardService } from "./dashboard/dashboard.service";
 import { DashboardRepo } from "./dashboard/dashboard.repo";
+import { AdminJobsController } from "./jobs/admin-jobs.controller";
+import { AdminJobsService } from "./jobs/admin-jobs.service";
+import { AdminJobsRepo } from "./jobs/admin-jobs.repo";
 @Module({
   imports: [
     ConfigModule,
@@ -88,6 +91,7 @@ import { DashboardRepo } from "./dashboard/dashboard.repo";
     AdminSettingsController,
     AdminReportsController,
     DashboardController,
+    AdminJobsController,
   ],
   providers: [
     CryptoService,
@@ -121,6 +125,8 @@ import { DashboardRepo } from "./dashboard/dashboard.repo";
     AdminRoleHierarchyService,
     DashboardRepo,
     DashboardService,
+    AdminJobsRepo,
+    AdminJobsService,
   ],
   exports: [AdminService, AdminAuditService, AdminFinanceService], 
 })

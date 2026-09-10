@@ -40,6 +40,11 @@ const navItems: AdminNavItem[] = [
     description: "Manage user status and notes",
   },
   {
+  href: "/admin/jobs",
+  label: "Job Management",
+  description: "Investigate jobs, applications, payments, and disputes",
+},
+  {
     href: "/admin/disputes",
     label: "Dispute Management",
     description: "Resolve platform disputes",
