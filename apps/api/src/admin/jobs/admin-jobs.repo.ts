@@ -328,7 +328,6 @@ export class AdminJobsRepo {
             reason: true,
             evidence: true,
             status: true,
-            resolutionType: true,
             resolvedByAdminId: true,
             resolvedAt: true,
             createdAt: true,

@@ -271,7 +271,6 @@ export class AdminPaymentsRepo {
                 id: true,
                 status: true,
                 reason: true,
-                resolutionType: true,
                 resolvedAt: true,
               },
             },

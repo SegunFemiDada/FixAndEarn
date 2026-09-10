@@ -80,7 +80,6 @@ export class AdminMessagingRepo {
               select: {
                 id: true,
                 status: true,
-                resolutionType: true,
               },
             },
           },
@@ -161,7 +160,6 @@ export class AdminMessagingRepo {
           ? {
               id: conversation.job.dispute.id,
               status: conversation.job.dispute.status,
-              resolutionType: conversation.job.dispute.resolutionType,
             }
           : null,
       };
@@ -199,7 +197,6 @@ export class AdminMessagingRepo {
               select: {
                 id: true,
                 status: true,
-                resolutionType: true,
                 createdAt: true,
                 resolvedAt: true,
               },

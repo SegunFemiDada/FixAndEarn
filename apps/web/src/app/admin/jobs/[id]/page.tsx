@@ -626,14 +626,6 @@ export default function AdminJobInvestigationPage() {
               />
 
               <Field
-                label="Resolution type"
-                value={
-                  job.dispute.resolutionType ??
-                  "Not resolved"
-                }
-              />
-
-              <Field
                 label="Created"
                 value={formatDate(job.dispute.createdAt)}
               />

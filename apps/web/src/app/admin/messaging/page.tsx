@@ -413,7 +413,6 @@ function ConversationDetailPanel({
             <div className="mt-3 space-y-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
               <div><span className="font-medium">Dispute ID:</span> {detail.dispute.id}</div>
               <div><span className="font-medium">Status:</span> {detail.dispute.status}</div>
-              <div><span className="font-medium">Resolution:</span> {detail.dispute.resolutionType ?? "Not resolved"}</div>
               <div><span className="font-medium">Opened:</span> {formatDateTime(detail.dispute.createdAt)}</div>
               <div><span className="font-medium">Resolved:</span> {formatDateTime(detail.dispute.resolvedAt)}</div>
             </div>

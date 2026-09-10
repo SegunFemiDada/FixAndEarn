@@ -5,40 +5,30 @@ import type {
   AdminDisputeChatResponse,
   ListAdminDisputesParams,
   ListAdminDisputesResponse,
-  ResolveDisputePayload,
   ResolveDisputeResponse,
 } from "@/lib/admin/disputes/types";
 
 export async function listAdminDisputes(
-  params: ListAdminDisputesParams = {}
+  params: ListAdminDisputesParams = {},
 ): Promise<ListAdminDisputesResponse> {
-  const response = await adminApi.get<ListAdminDisputesResponse>("/admin/disputes", {
-    params: {
-      status: params.status,
-      jobId: params.jobId?.trim() || undefined,
+  const response = await adminApi.get<ListAdminDisputesResponse>(
+    "/admin/disputes",
+    {
+      params: {
+        status: params.status,
+        jobId: params.jobId?.trim() || undefined,
+      },
     },
-  });
-
-  return response.data;
-}
-
-export async function resolveAdminDispute(
-  disputeId: string,
-  payload: ResolveDisputePayload
-): Promise<ResolveDisputeResponse> {
-  const response = await adminApi.post<ResolveDisputeResponse>(
-    `/admin/disputes/${disputeId}/resolve`,
-    payload
   );
 
   return response.data;
 }
 
 export async function resolveAdminDisputeAmicably(
-  disputeId: string
+  disputeId: string,
 ): Promise<ResolveDisputeResponse> {
   const response = await adminApi.post<ResolveDisputeResponse>(
-    `/admin/disputes/${disputeId}/resolve-amicably`
+    `/admin/disputes/${disputeId}/resolve-amicably`,
   );
 
   return response.data;
@@ -54,7 +44,7 @@ export async function getAdminDisputeChat(args: {
       params: {
         take: args.take,
       },
-    }
+    },
   );
 
   return response.data;
@@ -62,11 +52,11 @@ export async function getAdminDisputeChat(args: {
 
 export async function sendAdminDisputeChatMessage(
   disputeId: string,
-  payload: AdminDisputeChatMessagePayload
+  payload: AdminDisputeChatMessagePayload,
 ): Promise<AdminDisputeChatMessageResponse> {
   const response = await adminApi.post<AdminDisputeChatMessageResponse>(
     `/admin/disputes/${disputeId}/chat/messages`,
-    payload
+    payload,
   );
 
   return response.data;
@@ -74,6 +64,7 @@ export async function sendAdminDisputeChatMessage(
 
 export async function getAdminAuditExportUrl(): Promise<string> {
   const baseURL = adminApi.defaults.baseURL;
+
   if (!baseURL) {
     throw new Error("NEXT_PUBLIC_API_BASE_URL is not set.");
   }

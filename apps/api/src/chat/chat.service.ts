@@ -1151,8 +1151,6 @@ async getConversationDetail(
         id: dispute.id,
         status: dispute.status,
         reason: dispute.reason,
-        resolutionType:
-          dispute.resolutionType,
         createdAt: dispute.createdAt,
         resolvedAt: dispute.resolvedAt
       },

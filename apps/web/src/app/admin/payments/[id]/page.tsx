@@ -644,13 +644,6 @@ export default function AdminPaymentDetailPage() {
             />
 
             <Field
-              label="Resolution Type"
-              value={
-                payment.dispute.resolutionType ?? "—"
-              }
-            />
-
-            <Field
               label="Resolved At"
               value={formatDate(
                 payment.dispute.resolvedAt,

@@ -1,7 +1,7 @@
 //path: apps/api/src/admin/finance/admin-finance.repo.ts
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../infra/prisma/prisma.service";
-import { WalletRole } from "@prisma/client";
+import { WalletRole, Prisma } from "@prisma/client";
 
 @Injectable()
 export class AdminFinanceRepo {
@@ -172,59 +172,57 @@ const walletDifferenceMilliFec =
 expectedWithdrawableBalanceMilliFec -
   actualWithdrawableBalanceMilliFec;
 
+const allocationArgs = {
+  where: {
+    withdrawalId,
+  },
+  orderBy: {
+    createdAt: "asc" as const,
+  },
+  include: {
+    earning: {
+      include: {
+        job: {
+          include: {
+            client: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                isActive: true,
+              },
+            },
+            fixer: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                isActive: true,
+              },
+            },
+            payments: {
+              orderBy: {
+                createdAt: "desc" as const,
+              },
+              take: 1,
+            },
+            dispute: {
+              select: {
+                id: true,
+                resolvedAt: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+} satisfies Prisma.WithdrawalAllocationFindManyArgs;
+
 const allocations =
-  await this.prisma.withdrawalAllocation.findMany({
-    where: {
-      withdrawalId,
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-    include: {
-      earning: {
-  include: {
-    job: {
-  include: {
-    client: {
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        isActive: true,
-      },
-    },
+  await this.prisma.withdrawalAllocation.findMany(allocationArgs);
 
-    fixer: {
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        isActive: true,
-      },
-    },
-
-    payments: {
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 1,
-    },
-
-    dispute: {
-      select: {
-        id: true,
-        resolutionType: true,
-        resolvedAt: true,
-      },
-    },
-  },
-},
-  },
-},
-    },
-  });
-  
-  let cumulativeCoveredMilliFec = 0;
+let cumulativeCoveredMilliFec = 0;
 
 const entries = allocations.map((allocation) => {
   cumulativeCoveredMilliFec += allocation.amountMilliFec;
@@ -236,11 +234,10 @@ const entries = allocations.map((allocation) => {
 
     amountMilliFec: allocation.amountMilliFec,
 
-    allocatedMilliFec:
-    allocation.amountMilliFec,
+    allocatedMilliFec: allocation.amountMilliFec,
 
     remainingAvailableMilliFec:
-    allocation.earning.availableMilliFec,
+      allocation.earning.availableMilliFec,
 
     earningStatus:
       allocation.earning.status,
@@ -248,45 +245,43 @@ const entries = allocations.map((allocation) => {
     earnedAt:
       allocation.earning.createdAt,
 
-      withdrawalAllocationId:
-    allocation.id,
+    withdrawalAllocationId: allocation.id,
 
     cumulativeCoveredMilliFec,
 
     coversWithdrawalAfterThisEntry:
-      cumulativeCoveredMilliFec >=
-      withdrawal.amountMilliFec,
+      cumulativeCoveredMilliFec >= withdrawal.amountMilliFec,
 
     job: {
-  id: allocation.earning.job.id,
+      id: allocation.earning.job.id,
 
-  status: allocation.earning.job.status,
+      status: allocation.earning.job.status,
 
-  clientId: allocation.earning.job.clientId,
+      clientId: allocation.earning.job.clientId,
 
-  fixerId: allocation.earning.job.fixerId,
+      fixerId: allocation.earning.job.fixerId,
 
-  priceMilliFec:
-    allocation.earning.job.priceMilliFec,
+      priceMilliFec:
+        allocation.earning.job.priceMilliFec,
 
-  lockedPriceMilliFec:
-    allocation.earning.job.lockedPriceMilliFec,
+      lockedPriceMilliFec:
+        allocation.earning.job.lockedPriceMilliFec,
 
-  completedApprovedAt:
-    allocation.earning.job.completedApprovedAt,
+      completedApprovedAt:
+        allocation.earning.job.completedApprovedAt,
 
-  client:
-    allocation.earning.job.client,
+      client:
+        allocation.earning.job.client,
 
-  fixer:
-    allocation.earning.job.fixer,
+      fixer:
+        allocation.earning.job.fixer,
 
-  latestPayment:
-    allocation.earning.job.payments[0] ?? null,
+      latestPayment:
+        allocation.earning.job.payments[0] ?? null,
 
-  dispute:
-    allocation.earning.job.dispute,
-},
+      dispute:
+        allocation.earning.job.dispute,
+    },
   };
 });
 const totalAllocatedMilliFec =

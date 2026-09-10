@@ -538,7 +538,6 @@ model Dispute {
   reason            String
   evidence          Json?
   status            DisputeStatus          @default(OPEN)
-  resolutionType    DisputeResolutionType?
   resolvedByAdminId String?
   resolvedAt        DateTime?
   createdAt         DateTime               @default(now())
@@ -760,11 +759,6 @@ enum DisputeStatus {
   RESOLVED
 }
 
-enum DisputeResolutionType {
-  RELEASE_TO_FIXER
-  REFUND_TO_CLIENT
-  PARTIAL_SPLIT
-}
 
 enum DepositStatus {
   PENDING

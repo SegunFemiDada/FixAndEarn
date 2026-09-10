@@ -36,7 +36,6 @@ export type AdminMessagingConversationListItem = {
   dispute: {
     id: string;
     status: string;
-    resolutionType: string | null;
   } | null;
 };
 
@@ -115,7 +114,6 @@ export type AdminMessagingConversationDetailResponse = {
   dispute: {
     id: string;
     status: string;
-    resolutionType: string | null;
     createdAt: string;
     resolvedAt: string | null;
   } | null;

@@ -123,7 +123,6 @@ export type WithdrawalEarningsTraceEntry = {
 
     dispute: {
       id: string;
-      resolutionType: string | null;
       resolvedAt: string | null;
     } | null;
   };

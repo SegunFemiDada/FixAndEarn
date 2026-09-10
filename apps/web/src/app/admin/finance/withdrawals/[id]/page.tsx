@@ -839,21 +839,6 @@ async function confirmAction() {
               breakAll
             />
 
-            <div>
-  <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-    Resolution
-  </span>
-
-  <span
-    className={[
-      "mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold",
-      getResolutionClass(entry.job.dispute.resolutionType),
-    ].join(" ")}
-  >
-    {entry.job.dispute.resolutionType}
-  </span>
-</div>
-
             <DetailField
               label="Resolved At"
               value={formatDateTime(entry.job.dispute.resolvedAt)}

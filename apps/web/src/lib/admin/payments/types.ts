@@ -153,8 +153,6 @@ export type AdminPaymentDispute = {
 
   status: string;
 
-  resolutionType: string | null;
-
   resolvedByAdminId: string | null;
   resolvedAt: string | null;
 

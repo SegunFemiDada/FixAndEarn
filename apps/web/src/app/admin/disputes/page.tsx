@@ -1,35 +1,44 @@
-// Path: apps/web/src/app/admin/disputes/page.tsx
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
+
 import { extractApiErrorMessage } from "@/lib/admin/queries";
 import {
   useAdminDisputeChat,
   useAdminDisputesList,
-  useAdminResolveDispute,
   useAdminResolveDisputeAmicably,
   useAdminSendDisputeChatMessage,
 } from "@/lib/admin/disputes/queries";
+
 import type {
   AdminDisputeChatMessage,
   AdminDisputeItem,
-  DisputeResolutionType,
   DisputeStatus,
 } from "@/lib/admin/disputes/types";
+
 import { formatFecFromMilli } from "@/lib/wallet/ui";
 
-const STATUS_OPTIONS: Array<{ label: string; value: "" | DisputeStatus }> = [
+const STATUS_OPTIONS: Array<{
+  label: string;
+  value: "" | DisputeStatus;
+}> = [
   { label: "All", value: "" },
   { label: "Open", value: "OPEN" },
   { label: "Resolved", value: "RESOLVED" },
 ];
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "Not available";
+function formatDateTime(
+  value: string | null | undefined,
+) {
+  if (!value) {
+    return "Not available";
+  }
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
 
   return new Intl.DateTimeFormat("en-NG", {
     dateStyle: "medium",
@@ -37,200 +46,268 @@ function formatDateTime(value: string | null | undefined) {
   }).format(date);
 }
 
-function buildImageSrc(path?: string | null) {
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
-  if (!base) return path;
-
-  return path.startsWith("/") ? `${base}${path}` : `${base}/${path}`;
-}
-
-function getDisputeImagePath(evidence: unknown): string | null {
-  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) return null;
-  const maybe = (evidence as { imagePath?: unknown }).imagePath;
-  return typeof maybe === "string" && maybe.trim() ? maybe : null;
-}
-
-function getDisputeNote(evidence: unknown): string | null {
-  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) return null;
-  const maybe = (evidence as { note?: unknown }).note;
-  return typeof maybe === "string" && maybe.trim() ? maybe : null;
-}
-
-function formatEvidenceText(evidence: unknown) {
-  if (!evidence) return "No evidence provided";
-  if (typeof evidence === "string") return evidence;
-
-  try {
-    return JSON.stringify(evidence, null, 2);
-  } catch {
-    return "Evidence present but could not be rendered";
-  }
+function formatStatus(status: string) {
+  return status.replaceAll("_", " ");
 }
 
 function getStatusClass(status: string) {
-  if (status === "OPEN") return "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300";
-  if (status === "RESOLVED") return "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200";
-  return "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]";
+  if (status === "OPEN") {
+    return "border border-[#F5A623] bg-[#FEF8E7] text-[#B45309] dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300";
+  }
+
+  if (status === "RESOLVED") {
+    return "border border-[#B8D9B8] bg-[#F0FAF0] text-[#2E7D32] dark:border-green-700 dark:bg-green-900/20 dark:text-green-200";
+  }
+
+  return "border border-[#C5D5EE] bg-[#F4F8FF] text-[#6B7C99] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#8FA0BC]";
 }
 
-function isAdminMessage(message: AdminDisputeChatMessage) {
-  return message.body.trim().startsWith("[ADMIN]");
+function formatEvidenceText(evidence: unknown) {
+  if (evidence === null || evidence === undefined) {
+    return "No evidence provided.";
+  }
+
+  if (typeof evidence === "string") {
+    return evidence;
+  }
+
+  try {
+    return JSON.stringify(
+      evidence,
+      null,
+      2,
+    );
+  } catch {
+    return "Evidence is available but could not be displayed.";
+  }
 }
 
-function ResolutionActionButton({
-  label,
-  resolutionType,
-  dispute,
-  disabled,
-  onResolve,
+function getEvidenceNote(evidence: unknown) {
+  if (
+    !evidence ||
+    typeof evidence !== "object" ||
+    Array.isArray(evidence)
+  ) {
+    return null;
+  }
+
+  const note = (evidence as {
+    note?: unknown;
+  }).note;
+
+  return typeof note === "string" &&
+    note.trim().length > 0
+    ? note
+    : null;
+}
+
+function getEvidenceImagePath(evidence: unknown) {
+  if (
+    !evidence ||
+    typeof evidence !== "object" ||
+    Array.isArray(evidence)
+  ) {
+    return null;
+  }
+
+  const imagePath = (evidence as {
+    imagePath?: unknown;
+  }).imagePath;
+
+  return typeof imagePath === "string" &&
+    imagePath.trim().length > 0
+    ? imagePath
+    : null;
+}
+
+function isAdminMessage(
+  message: AdminDisputeChatMessage,
+) {
+  return message.body
+    .trim()
+    .startsWith("[ADMIN]");
+}
+
+function AdminDisputeChat({
+  disputeId,
 }: {
-  label: string;
-  resolutionType: DisputeResolutionType;
-  dispute: AdminDisputeItem;
-  disabled: boolean;
-  onResolve: (disputeId: string, resolutionType: DisputeResolutionType) => void;
+  disputeId: string;
 }) {
-  const styles =
-    resolutionType === "RELEASE_TO_FIXER"
-      ? "border border-[#B8D9B8] dark:border-green-700 bg-white dark:bg-[#1E2A3A] text-[#2E7D32] dark:text-green-200 hover:bg-[#F0FAF0] dark:hover:bg-green-900/20"
-      : "border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] text-[#6B7C99] dark:text-[#8FA0BC] hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]";
-
-  return (
-    <button
-  type="button"
-  disabled={disabled}
-  onClick={() => onResolve(dispute.id, resolutionType)}
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition
-    ${disabled
-      ? "cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
-      : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
-    }`}
->
-  {label}
-</button>
-
-  );
-}
-
-function DisputeChatPanel({ disputeId }: { disputeId: string }) {
   const [draft, setDraft] = React.useState("");
-  const [localMessage, setLocalMessage] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [feedback, setFeedback] =
+    React.useState<{
+      type: "success" | "error";
+      text: string;
+    } | null>(null);
 
-  const chatQuery = useAdminDisputeChat({ disputeId, take: 50 }, true);
-  const sendMutation = useAdminSendDisputeChatMessage(disputeId);
+  const chatQuery = useAdminDisputeChat(
+    {
+      disputeId,
+      take: 50,
+    },
+    true,
+  );
 
-  const messages = chatQuery.data?.messages ?? [];
-  const conversation = chatQuery.data?.conversation ?? null;
+  const sendMutation =
+    useAdminSendDisputeChatMessage(
+      disputeId,
+    );
+
+  const conversation =
+    chatQuery.data?.conversation ?? null;
+
+  const messages =
+    chatQuery.data?.messages ?? [];
 
   function handleSend() {
     const body = draft.trim();
-    if (!body) return;
 
-    setLocalMessage(null);
+    if (!body) {
+      return;
+    }
+
+    setFeedback(null);
 
     sendMutation.mutate(
       { body },
       {
         onSuccess: () => {
           setDraft("");
-          setLocalMessage({ type: "ok", text: "Admin message sent." });
+
+          setFeedback({
+            type: "success",
+            text: "Admin message sent.",
+          });
         },
         onError: (error) => {
-          setLocalMessage({ type: "err", text: extractApiErrorMessage(error) });
+          setFeedback({
+            type: "error",
+            text: extractApiErrorMessage(
+              error,
+            ),
+          });
         },
-      }
+      },
     );
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+    <div className="mt-6 rounded-2xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E] sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h4 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Dispute chat</h4>
+          <h4 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Dispute chat
+          </h4>
+
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Send an admin intervention message into the job chat tied to this dispute.
+            Review the job conversation and send an
+            administrative message when necessary.
           </p>
         </div>
 
         {conversation && (
-          <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-2 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-            <div>Conversation: {conversation.id}</div>
-            <div>Status: {conversation.status}</div>
+          <div className="rounded-xl border border-[#C5D5EE] bg-white px-3 py-2 text-xs text-[#6B7C99] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FA0BC]">
+            <p>
+              <span className="font-medium">
+                Conversation:
+              </span>{" "}
+              {conversation.id}
+            </p>
+
+            <p className="mt-1">
+              <span className="font-medium">
+                Status:
+              </span>{" "}
+              {conversation.status}
+            </p>
           </div>
         )}
       </div>
 
-      {localMessage && (
+      {feedback && (
         <div
           className={[
-            "mt-4 rounded-2xl border p-3 text-sm",
-            localMessage.type === "ok"
-              ? "border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
-              : "border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 text-[#D9534F] dark:text-red-300",
+            "mt-4 rounded-xl border p-3 text-sm",
+            feedback.type === "success"
+              ? "border-[#B8D9B8] bg-[#F0FAF0] text-[#2E7D32] dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
+              : "border-[#F2C0BC] bg-[#FFF4F3] text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300",
           ].join(" ")}
         >
-          {localMessage.text}
+          {feedback.text}
         </div>
       )}
 
       {chatQuery.isLoading ? (
-        <div className="mt-4 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          Loading chat...
+        <div className="mt-4 rounded-xl border border-[#C5D5EE] bg-white p-4 text-sm text-[#6B7C99] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FA0BC]">
+          Loading dispute chat...
         </div>
       ) : chatQuery.isError ? (
-        <div className="mt-4 rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300">
-          {extractApiErrorMessage(chatQuery.error)}
+        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+          {extractApiErrorMessage(
+            chatQuery.error,
+          )}
         </div>
       ) : !conversation ? (
-        <div className="mt-4 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          No linked chat conversation was found for this dispute.
+        <div className="mt-4 rounded-xl border border-[#C5D5EE] bg-white p-4 text-sm text-[#6B7C99] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FA0BC]">
+          No linked conversation was found for
+          this dispute.
         </div>
       ) : (
         <>
-          <div className="mt-4 max-h-105 space-y-3 overflow-y-auto rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4">
+          <div className="mt-4 max-h-112 space-y-3 overflow-y-auto rounded-2xl border border-[#C5D5EE] bg-white p-4 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
             {messages.length === 0 ? (
-              <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No messages yet.</div>
+              <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                No messages are available.
+              </p>
             ) : (
               messages.map((message) => {
-                const admin = isAdminMessage(message);
+                const adminMessage =
+                  isAdminMessage(message);
 
                 return (
                   <div
                     key={message.id}
                     className={[
                       "rounded-2xl border p-3",
-                      admin
-                        ? "border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20"
-                        : "border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E]",
+                      adminMessage
+                        ? "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
+                        : "border-[#C5D5EE] bg-[#F4F8FF] dark:border-[#2D3F55] dark:bg-[#16202E]",
                     ].join(" ")}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                        {admin ? "Admin liaison" : `User ${message.senderId}`}
-                      </div>
-                      <div className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                        {formatDateTime(message.createdAt)}
-                      </div>
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                        {adminMessage
+                          ? "Admin"
+                          : `User ${message.senderId}`}
+                      </span>
+
+                      <span className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                        {formatDateTime(
+                          message.createdAt,
+                        )}
+                      </span>
                     </div>
 
-                    <div className="mt-2 whitespace-pre-wrap text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
                       {message.body}
-                    </div>
+                    </p>
 
-                    {Array.isArray(message.flags) && message.flags.length > 0 && (
+                    {message.flags.length >
+                      0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {message.flags.map((flag) => (
-                          <span
-                            key={flag.id}
-                            className="rounded-full border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 px-2 py-1 text-[11px] font-medium text-[#B45309] dark:text-amber-300"
-                          >
-                            {flag.type}
-                            {flag.matched ? `: ${flag.matched}` : ""}
-                          </span>
-                        ))}
+                        {message.flags.map(
+                          (flag) => (
+                            <span
+                              key={flag.id}
+                              className="rounded-full border border-[#F5A623] bg-[#FEF8E7] px-2 py-1 text-[11px] font-medium text-[#B45309] dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                            >
+                              {flag.type}
+                              {flag.matched
+                                ? `: ${flag.matched}`
+                                : ""}
+                            </span>
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -239,38 +316,45 @@ function DisputeChatPanel({ disputeId }: { disputeId: string }) {
             )}
           </div>
 
-          <div className="mt-4 space-y-3">
-            <label htmlFor={`admin-dispute-chat-${disputeId}`} className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Send admin message
+          <div className="mt-4">
+            <label
+              htmlFor={`admin-dispute-message-${disputeId}`}
+              className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+            >
+              Admin message
             </label>
+
             <textarea
-              id={`admin-dispute-chat-${disputeId}`}
+              id={`admin-dispute-message-${disputeId}`}
               value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Type your message to the client and fixer..."
+              onChange={(event) =>
+                setDraft(event.target.value)
+              }
               rows={4}
-              className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+              placeholder="Write a message to the client and fixer..."
               disabled={sendMutation.isPending}
+              className="mt-2 w-full rounded-xl border border-[#C5D5EE] bg-white px-4 py-3 text-sm text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080]"
             />
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                Message is sent into the live job chat using the internal admin liaison account.
+                Administrative messages are marked
+                internally with the admin identifier.
               </p>
 
               <button
-  type="button"
-  disabled={sendMutation.isPending || !draft.trim()}
-  onClick={handleSend}
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
-    ${sendMutation.isPending || !draft.trim()
-      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500"
-      : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
-    }`}
->
-  {sendMutation.isPending ? "Sending..." : "Send admin message"}
-</button>
-
+                type="button"
+                onClick={handleSend}
+                disabled={
+                  sendMutation.isPending ||
+                  draft.trim().length === 0
+                }
+                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                {sendMutation.isPending
+                  ? "Sending..."
+                  : "Send admin message"}
+              </button>
             </div>
           </div>
         </>
@@ -279,413 +363,509 @@ function DisputeChatPanel({ disputeId }: { disputeId: string }) {
   );
 }
 
-export default function AdminDisputesPage() {
-  const [status, setStatus] = React.useState<"" | DisputeStatus>("OPEN");
-  const [jobIdInput, setJobIdInput] = React.useState("");
-  const [jobId, setJobId] = React.useState("");
-  const [expandedId, setExpandedId] = React.useState<string | null>(null);
-  const [message, setMessage] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [resolving, setResolving] = React.useState<{
-    disputeId: string;
-    resolutionType: DisputeResolutionType;
-  } | null>(null);
-  const [amicablyResolvingDisputeId, setAmicablyResolvingDisputeId] = React.useState<string | null>(null);
+function DisputeCard({
+  dispute,
+  expanded,
+  onToggle,
+  onResolveAmicably,
+  resolving,
+}: {
+  dispute: AdminDisputeItem;
+  expanded: boolean;
+  onToggle: () => void;
+  onResolveAmicably: (
+    disputeId: string,
+  ) => void;
+  resolving: boolean;
+}) {
+  const evidenceNote =
+    getEvidenceNote(dispute.evidence);
 
-  const listQuery = useAdminDisputesList(
-    {
-      status: status || undefined,
-      jobId: jobId || undefined,
-    },
-    true
+  const evidenceImagePath =
+    getEvidenceImagePath(
+      dispute.evidence,
+    );
+
+  return (
+    <article className="rounded-2xl border border-[#C5D5EE] bg-white p-4 shadow-[0_4px_20px_rgba(91,143,204,0.08)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] sm:p-5">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(
+                dispute.status,
+              )}`}
+            >
+              {formatStatus(dispute.status)}
+            </span>
+
+            <span className="rounded-full border border-[#C5D5EE] bg-[#F4F8FF] px-3 py-1 text-xs font-medium text-[#516786] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#AAB9D0]">
+              Job dispute
+            </span>
+          </div>
+
+          <h3 className="mt-3 break-all text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Dispute {dispute.id}
+          </h3>
+
+          <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Job ID
+              </p>
+
+              <p className="mt-1 break-all font-mono text-xs text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {dispute.jobId}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Opened By
+              </p>
+
+              <p className="mt-1 break-all font-mono text-xs text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {dispute.openedByUserId}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Created
+              </p>
+
+              <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {formatDateTime(
+                  dispute.createdAt,
+                )}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                Resolved
+              </p>
+
+              <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {formatDateTime(
+                  dispute.resolvedAt,
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
+            <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+              Reason
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
+              {dispute.reason}
+            </p>
+          </div>
+
+          {dispute.job && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Job Status
+                </p>
+
+                <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {formatStatus(
+                    dispute.job.status,
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Client ID
+                </p>
+
+                <p className="mt-1 break-all font-mono text-xs text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {dispute.job.clientId ??
+                    "—"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Fixer ID
+                </p>
+
+                <p className="mt-1 break-all font-mono text-xs text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {dispute.job.fixerId ??
+                    "—"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Locked Price
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {dispute.job.lockedPriceMilliFec !==
+                  null
+                    ? formatFecFromMilli(
+                        dispute.job
+                          .lockedPriceMilliFec,
+                      )
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {expanded && (
+            <div className="mt-6 border-t border-[#C5D5EE] pt-6 dark:border-[#2D3F55]">
+              <div className="grid gap-6 xl:grid-cols-2">
+                <section className="rounded-2xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
+                  <h4 className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    Evidence
+                  </h4>
+
+                  {evidenceNote && (
+                    <div className="mt-4 rounded-xl border border-[#C5D5EE] bg-white p-4 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
+                      <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                        Note
+                      </p>
+
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
+                        {evidenceNote}
+                      </p>
+                    </div>
+                  )}
+
+                  {evidenceImagePath && (
+                    <div className="mt-4 rounded-xl border border-[#C5D5EE] bg-white p-4 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
+                      <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                        Evidence image path
+                      </p>
+
+                      <p className="mt-2 break-all font-mono text-xs text-[#1A2B4A] dark:text-[#E8F0FA]">
+                        {evidenceImagePath}
+                      </p>
+                    </div>
+                  )}
+
+                  <pre className="mt-4 max-h-96 overflow-auto rounded-xl border border-[#C5D5EE] bg-white p-4 text-xs leading-5 text-[#1A2B4A] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA]">
+                    {formatEvidenceText(
+                      dispute.evidence,
+                    )}
+                  </pre>
+                </section>
+
+                <section>
+                  <AdminDisputeChat
+                    disputeId={dispute.id}
+                  />
+                </section>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2 xl:w-56">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex items-center justify-center rounded-lg border border-[#C5D5EE] bg-white px-4 py-3 text-sm font-semibold text-[#1A2B4A] transition-colors hover:bg-[#F4F8FF] focus:ring-2 focus:ring-[#5B8FCC]/30 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA] dark:hover:bg-[#16202E]"
+          >
+            {expanded
+              ? "Hide Investigation"
+              : "Open Investigation"}
+          </button>
+
+          {dispute.status ===
+            "OPEN" && (
+            <button
+              type="button"
+              onClick={() =>
+                onResolveAmicably(
+                  dispute.id,
+                )
+              }
+              disabled={resolving}
+              className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              {resolving
+                ? "Resolving..."
+                : "Resolve Amicably"}
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
   );
+}
 
-  const resolveMutation = useAdminResolveDispute();
-  const amicableResolveMutation = useAdminResolveDisputeAmicably();
-  const disputes = listQuery.data?.disputes ?? [];
+export default function AdminDisputesPage() {
+  const [status, setStatus] =
+    React.useState<
+      "" | DisputeStatus
+    >("OPEN");
 
-  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setExpandedId(null);
-    setJobId(jobIdInput.trim());
-  }
+  const [jobIdInput, setJobIdInput] =
+    React.useState("");
 
-  function handleResolve(disputeId: string, resolutionType: DisputeResolutionType) {
-    setMessage(null);
+  const [jobId, setJobId] =
+    React.useState("");
 
-    const confirmed = window.confirm(
-      resolutionType === "RELEASE_TO_FIXER"
-        ? "Resolve this dispute by releasing funds to the fixer?"
-        : "Resolve this dispute by refunding funds to the client?"
-    );
+  const [expandedId, setExpandedId] =
+    React.useState<string | null>(null);
 
-    if (!confirmed) return;
+  const [feedback, setFeedback] =
+    React.useState<{
+      type: "success" | "error";
+      text: string;
+    } | null>(null);
 
-    setResolving({ disputeId, resolutionType });
+  const [resolvingId, setResolvingId] =
+    React.useState<string | null>(null);
 
-    resolveMutation.mutate(
+  const listQuery =
+    useAdminDisputesList(
       {
-        disputeId,
-        payload: { resolutionType },
+        status:
+          status || undefined,
+        jobId:
+          jobId || undefined,
       },
-      {
-        onSuccess: (response) => {
-          setMessage({
-            type: "ok",
-            text: `Dispute resolved successfully. Current status: ${response.status}.`,
-          });
-          setResolving(null);
-        },
-        onError: (error) => {
-          setMessage({ type: "err", text: extractApiErrorMessage(error) });
-          setResolving(null);
-        },
-      }
+      true,
+    );
+
+  const resolveAmicablyMutation =
+    useAdminResolveDisputeAmicably();
+
+  const disputes =
+    listQuery.data?.disputes ?? [];
+
+  function handleSearch(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    setExpandedId(null);
+    setJobId(
+      jobIdInput.trim(),
     );
   }
 
-  function handleResolveAmicably(disputeId: string) {
-    setMessage(null);
+  function handleResolveAmicably(
+    disputeId: string,
+  ) {
+    setFeedback(null);
 
-    const confirmed = window.confirm(
-      "Resolve this dispute amicably and reopen the completion flow so the fixer can request completion again?"
-    );
+    const confirmed =
+      window.confirm(
+        "Resolve this dispute amicably? The dispute will close and the job will return to IN_PROGRESS so the fixer can request completion again. No refund or payout is performed by this action.",
+      );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
-    setAmicablyResolvingDisputeId(disputeId);
+    setResolvingId(disputeId);
 
-    amicableResolveMutation.mutate(
+    resolveAmicablyMutation.mutate(
       { disputeId },
       {
         onSuccess: () => {
-          setMessage({
-            type: "ok",
-            text: "Dispute resolved amicably. The fixer can now request completion again.",
+          setResolvingId(null);
+          setExpandedId(null);
+
+          setFeedback({
+            type: "success",
+            text:
+              "Dispute resolved amicably. The job is back in progress.",
           });
-          setAmicablyResolvingDisputeId(null);
         },
+
         onError: (error) => {
-          setMessage({ type: "err", text: extractApiErrorMessage(error) });
-          setAmicablyResolvingDisputeId(null);
+          setResolvingId(null);
+
+          setFeedback({
+            type: "error",
+            text: extractApiErrorMessage(
+              error,
+            ),
+          });
         },
-      }
+      },
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">Disputes</p>
-        <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Dispute management</h2>
-        <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          Review disputes, inspect uploaded evidence, search by job ID, chat directly into the live dispute conversation, and resolve cases using the live admin endpoints.
+      <section className="rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+          Disputes
         </p>
+
+        <h1 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+          Dispute Management
+        </h1>
+
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
+          Investigate disputed jobs, review evidence,
+          inspect job conversations, and resolve disputes
+          without moving customer funds through the platform.
+        </p>
+
+        <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+          FixAndEarn does not custody customer payment funds.
+          Dispute resolution therefore does not provide refund,
+          payout, release, or split-funds actions. An amicable
+          resolution returns the job to the normal completion
+          flow.
+        </div>
       </section>
 
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] sm:p-6">
+      {feedback && (
+        <div
+          className={[
+            "rounded-2xl border p-4 text-sm",
+            feedback.type === "success"
+              ? "border-[#B8D9B8] bg-[#F0FAF0] text-[#2E7D32] dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
+              : "border-[#F2C0BC] bg-[#FFF4F3] text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300",
+          ].join(" ")}
+        >
+          {feedback.text}
+        </div>
+      )}
+
+      <section className="rounded-2xl border border-[#C5D5EE] bg-white p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] sm:p-6">
         <form
           onSubmit={handleSearch}
-          className="flex flex-col gap-3 border-b border-[#C5D5EE] dark:border-[#2D3F55] pb-4 lg:grid lg:grid-cols-[1fr_220px_140px] lg:items-end"
+          className="grid gap-4 border-b border-[#C5D5EE] pb-5 dark:border-[#2D3F55] lg:grid-cols-[200px_1fr_auto]"
         >
           <div>
-            <label htmlFor="dispute-job-id" className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Search by Job ID
+            <label
+              htmlFor="dispute-status"
+              className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+            >
+              Status
             </label>
-            <input
-              id="dispute-job-id"
-              type="text"
-              value={jobIdInput}
-              onChange={(event) => setJobIdInput(event.target.value)}
-              placeholder="Enter job ID"
-              className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-            />
-          </div>
 
-          <div>
-            <label htmlFor="dispute-status" className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Filter by status
-            </label>
             <select
               id="dispute-status"
-              className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
               value={status}
               onChange={(event) => {
-                setStatus(event.target.value as "" | DisputeStatus);
+                setStatus(
+                  event.target
+                    .value as
+                    | ""
+                    | DisputeStatus,
+                );
                 setExpandedId(null);
               }}
+              className="mt-1 w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
             >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.label} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              {STATUS_OPTIONS.map(
+                (option) => (
+                  <option
+                    key={
+                      option.label
+                    }
+                    value={
+                      option.value
+                    }
+                  >
+                    {option.label}
+                  </option>
+                ),
+              )}
             </select>
           </div>
 
-         <button
-  type="submit"
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
-    bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
-    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
->
-  Search
-</button>
+          <div>
+            <label
+              htmlFor="dispute-job-id"
+              className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+            >
+              Job ID
+            </label>
 
+            <input
+              id="dispute-job-id"
+              value={jobIdInput}
+              onChange={(event) =>
+                setJobIdInput(
+                  event.target.value,
+                )
+              }
+              placeholder="Search by job ID"
+              className="mt-1 w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="self-end rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            Search
+          </button>
         </form>
 
-        {message && (
-          <div
-            className={[
-              "mt-4 rounded-2xl border p-3 text-sm",
-              message.type === "ok"
-                ? "border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
-                : "border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 text-[#D9534F] dark:text-red-300",
-            ].join(" ")}
-          >
-            {message.text}
-          </div>
-        )}
-
         {listQuery.isLoading ? (
-          <div className="py-6 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading disputes...</div>
+          <div className="py-10 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Loading disputes...
+          </div>
         ) : listQuery.isError ? (
-          <div className="mt-4 rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300">
-            {extractApiErrorMessage(listQuery.error)}
+          <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+            {extractApiErrorMessage(
+              listQuery.error,
+            )}
           </div>
         ) : disputes.length === 0 ? (
-          <div className="py-6 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No disputes found for the current filter.</div>
+          <div className="py-10 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            No disputes found for the selected filters.
+          </div>
         ) : (
-          <div className="mt-4 grid gap-4">
-            {disputes.map((dispute) => {
-              const isExpanded = expandedId === dispute.id;
-              const isOpen = dispute.status === "OPEN";
-              const isBusy = resolveMutation.isPending && resolving?.disputeId === dispute.id;
-              const isAmicableBusy =
-                amicableResolveMutation.isPending && amicablyResolvingDisputeId === dispute.id;
-
-              const evidenceImagePath = getDisputeImagePath(dispute.evidence);
-              const evidenceImageUrl = buildImageSrc(evidenceImagePath);
-              const evidenceNote = getDisputeNote(dispute.evidence);
-
-              return (
-                <article key={dispute.id} className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Dispute {dispute.id}</h3>
-                          <span
-                            className={[
-                              "rounded-full px-3 py-1 text-xs font-medium",
-                              getStatusClass(dispute.status),
-                            ].join(" ")}
-                          >
-                            {dispute.status}
-                          </span>
-                          {dispute.resolutionType && (
-                            <span className="rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 px-3 py-1 text-xs font-medium text-[#5B8FCC] dark:text-[#7AAEE0]">
-                              {dispute.resolutionType}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-3 grid gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] sm:grid-cols-2 lg:grid-cols-4">
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Job ID
-                            </span>
-                            <span className="mt-1 block break-all">{dispute.jobId}</span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Opened by user
-                            </span>
-                            <span className="mt-1 block break-all">{dispute.openedByUserId}</span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Created
-                            </span>
-                            <span className="mt-1 block">{formatDateTime(dispute.createdAt)}</span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Locked price
-                            </span>
-                            <span className="mt-1 block">
-                              {dispute.job?.lockedPriceMilliFec != null
-                                ? formatFecFromMilli(dispute.job.lockedPriceMilliFec)
-                                : "Not available"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-4">
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            Reason
-                          </span>
-                          <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">{dispute.reason}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 gap-2">
-                        <button
-  type="button"
-  onClick={() => setExpandedId(isExpanded ? null : dispute.id)}
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
-    border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
-    dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
->
-  {isExpanded ? "Hide details" : "Show details"}
-</button>
-
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Job status
-                            </span>
-                            <span className="mt-1 block text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {dispute.job?.status ?? "Not available"}
-                            </span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Client ID
-                            </span>
-                            <span className="mt-1 block break-all text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {dispute.job?.clientId ?? "Not available"}
-                            </span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Fixer ID
-                            </span>
-                            <span className="mt-1 block break-all text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {dispute.job?.fixerId ?? "Not available"}
-                            </span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Resolved at
-                            </span>
-                            <span className="mt-1 block text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {formatDateTime(dispute.resolvedAt)}
-                            </span>
-                          </div>
-
-                          <div>
-                            <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                              Resolved by admin ID
-                            </span>
-                            <span className="mt-1 block break-all text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {dispute.resolvedByAdminId ?? "Not available"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 space-y-3">
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            Evidence
-                          </span>
-
-                          {evidenceImageUrl && (
-                            <div className="relative h-64 w-full max-w-md overflow-hidden rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E]">
-                              <Image
-                                src={evidenceImageUrl}
-                                alt="Dispute evidence"
-                                fill
-                                unoptimized
-                                className="object-contain"
-                                sizes="(max-width: 768px) 100vw, 50vw"
-                              />
-                            </div>
-                          )}
-
-                          {evidenceNote && (
-                            <div className="rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {evidenceNote}
-                            </div>
-                          )}
-
-                          {!evidenceImageUrl && !evidenceNote && (
-                            <pre className="overflow-x-auto rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-3 text-xs whitespace-pre-wrap text-[#1A2B4A] dark:text-[#E8F0FA]">
-                              {formatEvidenceText(dispute.evidence)}
-                            </pre>
-                          )}
-                        </div>
-
-                        <div className="mt-4">
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            Resolution actions
-                          </span>
-
-                          {!isOpen ? (
-                            <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                              This dispute is already resolved. No further action is available.
-                            </p>
-                          ) : (
-                            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                              <ResolutionActionButton
-                                label={
-                                  isBusy && resolving?.resolutionType === "RELEASE_TO_FIXER"
-                                    ? "Resolving..."
-                                    : "Release to fixer"
-                                }
-                                resolutionType="RELEASE_TO_FIXER"
-                                dispute={dispute}
-                                disabled={isBusy || isAmicableBusy}
-                                onResolve={handleResolve}
-                              />
-
-                              <ResolutionActionButton
-                                label={
-                                  isBusy && resolving?.resolutionType === "REFUND_TO_CLIENT"
-                                    ? "Resolving..."
-                                    : "Refund to client"
-                                }
-                                resolutionType="REFUND_TO_CLIENT"
-                                dispute={dispute}
-                                disabled={isBusy || isAmicableBusy}
-                                onResolve={handleResolve}
-                              />
-
-                              <button
-  type="button"
-  disabled={isBusy || isAmicableBusy}
-  onClick={() => handleResolveAmicably(dispute.id)}
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition-colors
-    ${isBusy || isAmicableBusy
-      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
-      : "border border-amber-400 bg-white text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:bg-gray-800 dark:text-amber-300 dark:hover:bg-amber-900/20"
-    }`}
->
-  {isAmicableBusy ? "Resolving..." : "Resolve amicably"}
-</button>
-
-                            </div>
-                          )}
-                        </div>
-
-                        <DisputeChatPanel disputeId={dispute.id} />
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
+          <div className="mt-5 space-y-4">
+            {disputes.map(
+              (dispute) => (
+                <DisputeCard
+                  key={dispute.id}
+                  dispute={dispute}
+                  expanded={
+                    expandedId ===
+                    dispute.id
+                  }
+                  onToggle={() =>
+                    setExpandedId(
+                      (
+                        current,
+                      ) =>
+                        current ===
+                        dispute.id
+                          ? null
+                          : dispute.id,
+                    )
+                  }
+                  onResolveAmicably={
+                    handleResolveAmicably
+                  }
+                  resolving={
+                    resolvingId ===
+                    dispute.id
+                  }
+                />
+              ),
+            )}
           </div>
         )}
+
+        <div className="mt-6 flex items-center justify-between border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55]">
+          <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+            {disputes.length} dispute
+            {disputes.length === 1
+              ? ""
+              : "s"}
+          </p>
+        </div>
       </section>
     </div>
   );

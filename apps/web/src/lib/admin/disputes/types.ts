@@ -1,10 +1,5 @@
 export type DisputeStatus = "OPEN" | "RESOLVED";
 
-export type DisputeResolutionType =
-  | "RELEASE_TO_FIXER"
-  | "REFUND_TO_CLIENT"
-  | "PARTIAL_SPLIT";
-
 export type AdminDisputeJob = {
   id: string;
   clientId: string | null;
@@ -20,7 +15,6 @@ export type AdminDisputeItem = {
   reason: string;
   evidence: unknown;
   status: DisputeStatus;
-  resolutionType: DisputeResolutionType | null;
   resolvedByAdminId: string | null;
   createdAt: string;
   resolvedAt: string | null;
@@ -36,15 +30,10 @@ export type ListAdminDisputesResponse = {
   disputes: AdminDisputeItem[];
 };
 
-export type ResolveDisputePayload = {
-  resolutionType: DisputeResolutionType;
-};
-
 export type ResolveDisputeResponse = {
   ok: true;
   status: "RESOLVED";
-  resolutionType?: DisputeResolutionType;
-  mode?: "AMICABLE";
+  mode: "AMICABLE";
 };
 
 export type AdminDisputeChatFlag = {

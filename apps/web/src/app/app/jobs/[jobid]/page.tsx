@@ -926,12 +926,6 @@ async function handleDeleteDraft() {
                       ).toLocaleString()
                     : "—"}
                 </div>
-                {(existingDispute as { resolutionType?: string })?.resolutionType && (
-                  <div>
-                    <span className="font-semibold">Resolution:</span>{" "}
-                    {(existingDispute as { resolutionType: string }).resolutionType}
-                  </div>
-                )}
               </div>
             ) : canFixerOpenDisputeAfterCompletionReject ? (
               <div className="space-y-3">

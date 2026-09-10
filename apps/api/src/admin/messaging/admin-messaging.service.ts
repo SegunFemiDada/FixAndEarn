@@ -120,7 +120,6 @@ export class AdminMessagingService {
         ? {
             id: conversation.job.dispute.id,
             status: conversation.job.dispute.status,
-            resolutionType: conversation.job.dispute.resolutionType,
             createdAt: conversation.job.dispute.createdAt,
             resolvedAt: conversation.job.dispute.resolvedAt,
           }
