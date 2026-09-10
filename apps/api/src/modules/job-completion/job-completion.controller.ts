@@ -6,6 +6,7 @@ import { Roles } from "../../common/auth/roles.decorator";
 import { CurrentUser } from "../../common/auth/current-user.decorator";
 import { JobCompletionService } from "./job-completion.service";
 import { RequestCompletionDto } from "./dto/request-completion.dto";
+import { RejectCompletionDto } from "./dto/reject-completion.dto";
 import { ApproveCompletionDto } from "./dto/approve-completion.dto";
 
 @ApiTags("job-completion")
@@ -32,7 +33,7 @@ async request(
 async reject(
   @CurrentUser() u: { userId: string },
   @Param("id") jobId: string,
-  @Body() _dto: RequestCompletionDto // or RejectCompletionDto if you have one
+  @Body() _dto: RejectCompletionDto,
 ) {
   return this.svc.rejectCompletion(jobId, u.userId);
 }
