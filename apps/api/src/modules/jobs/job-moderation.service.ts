@@ -220,21 +220,25 @@ export class JobModerationService {
       });
 
       if (
-        successfulPayment?.type === "URGENT" &&
-        successfulPayment.fixerId &&
-        successfulPayment.conversationId &&
-        data.status === JobStatus.OPEN
-      ) {
-        await tx.conversation.update({
-          where: {
-            id: successfulPayment.conversationId,
-          },
-          data: {
-            status: "OPEN",
-            active: true,
-          },
-        });
-      }
+  successfulPayment?.type === "URGENT" &&
+  successfulPayment.fixerId &&
+  successfulPayment.conversationId &&
+  (
+    data.status === JobStatus.OPEN ||
+    job.status === JobStatus.OPEN ||
+    job.status === JobStatus.IN_PROGRESS
+  )
+) {
+  await tx.conversation.update({
+    where: {
+      id: successfulPayment.conversationId,
+    },
+    data: {
+      status: "OPEN",
+      active: true,
+    },
+  });
+}
 
       return updated;
     });

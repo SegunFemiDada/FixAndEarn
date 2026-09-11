@@ -17,6 +17,7 @@ export async function searchAdminJobs(
     params: {
       q: params.q?.trim() || undefined,
       status: params.status || undefined,
+      moderationStatus: params.moderationStatus || undefined,
       postingType: params.postingType || undefined,
       clientId: params.clientId?.trim() || undefined,
       fixerId: params.fixerId?.trim() || undefined,
@@ -33,6 +34,27 @@ export async function getAdminJobById(
 ): Promise<AdminJobDetail> {
   const response = await adminApi.get<AdminJobDetail>(
     `/admin/jobs/${id}`
+  );
+
+  return response.data;
+}
+export async function flagAdminJob(
+  id: string,
+  reason: string,
+): Promise<AdminJobDetail> {
+  const response = await adminApi.post<AdminJobDetail>(
+    `/admin/jobs/${id}/flag`,
+    { reason },
+  );
+
+  return response.data;
+}
+
+export async function unflagAdminJob(
+  id: string,
+): Promise<AdminJobDetail> {
+  const response = await adminApi.post<AdminJobDetail>(
+    `/admin/jobs/${id}/unflag`,
   );
 
   return response.data;

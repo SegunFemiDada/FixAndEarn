@@ -1,9 +1,14 @@
 "use client";
-
-import { useQuery } from "@tanstack/react-query";
 import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  flagAdminJob,
   getAdminJobById,
   searchAdminJobs,
+  unflagAdminJob,
 } from "./api";
 import type {
   AdminJobDetail,
@@ -20,6 +25,7 @@ export const adminJobsQueryKeys = {
       "list",
       params.q ?? "",
       params.status ?? "ALL",
+      params.moderationStatus ?? "ALL",
       params.postingType ?? "ALL",
       params.clientId ?? "",
       params.fixerId ?? "",
@@ -56,5 +62,48 @@ export function useAdminJobDetail(
     queryFn: () => getAdminJobById(id),
     enabled: enabled && Boolean(id),
     retry: false,
+  });
+}
+export function useAdminFlagJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      reason,
+    }: {
+      id: string;
+      reason: string;
+    }) => flagAdminJob(id, reason),
+
+    onSuccess: async (_, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: adminJobsQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: adminJobsQueryKeys.detail(variables.id),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useAdminUnflagJob() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => unflagAdminJob(id),
+
+    onSuccess: async (_, id) => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: adminJobsQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: adminJobsQueryKeys.detail(id),
+        }),
+      ]);
+    },
   });
 }

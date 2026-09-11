@@ -4,6 +4,7 @@ import Link from "next/link";
 import * as React from "react";
 import { useAdminJobsList } from "@/lib/admin/jobs/queries";
 import type {
+  AdminJobModerationStatus,
   AdminJobPostingType,
   AdminJobStatus,
 } from "@/lib/admin/jobs/types";
@@ -28,6 +29,14 @@ const TYPE_OPTIONS: Array<{
   { label: "All job types", value: "" },
   { label: "Standard", value: "STANDARD" },
   { label: "Urgent", value: "URGENT" },
+];
+const MODERATION_OPTIONS: Array<{
+  label: string;
+  value: "" | AdminJobModerationStatus;
+}> = [
+  { label: "All moderation", value: "" },
+  { label: "Clear", value: "CLEAR" },
+  { label: "Flagged", value: "FLAGGED" },
 ];
 
 function formatFec(milli: number | null | undefined) {
@@ -74,12 +83,14 @@ export default function AdminJobsPage() {
   const [searchInput, setSearchInput] = React.useState("");
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  const [status, setStatus] = React.useState<
-    "" | AdminJobStatus
-  >("");
+  const [status, setStatus] = React.useState<"" | AdminJobStatus>("");
 
   const [postingType, setPostingType] = React.useState<
     "" | AdminJobPostingType
+  >("");
+
+  const [moderationStatus, setModerationStatus] = React.useState<
+    "" | AdminJobModerationStatus
   >("");
 
   const [skip, setSkip] = React.useState(0);
@@ -90,6 +101,7 @@ export default function AdminJobsPage() {
     q: searchTerm || undefined,
     status: status || undefined,
     postingType: postingType || undefined,
+    moderationStatus: moderationStatus || undefined,
     skip,
     take,
   });
@@ -118,15 +130,15 @@ export default function AdminJobsPage() {
         </h2>
 
         <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          Investigate jobs across clients, fixers, applications,
-          negotiations, payments, completion, and disputes.
+          Investigate jobs across clients, fixers, applications, negotiations,
+          payments, completion, and disputes.
         </p>
       </section>
 
       <section className="rounded-2xl border border-[#C5D5EE] bg-white p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] sm:p-6">
         <form
           onSubmit={submitSearch}
-          className="grid gap-4 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] lg:grid-cols-[1fr_200px_200px_auto]"
+          className="grid gap-4 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] lg:grid-cols-[1fr_180px_180px_180px_auto]"
         >
           <div>
             <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
@@ -135,9 +147,7 @@ export default function AdminJobsPage() {
 
             <input
               value={searchInput}
-              onChange={(event) =>
-                setSearchInput(event.target.value)
-              }
+              onChange={(event) => setSearchInput(event.target.value)}
               placeholder="Job ID, skill, client, or fixer"
               className="mt-1 w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
             />
@@ -146,40 +156,43 @@ export default function AdminJobsPage() {
           <select
             value={status}
             onChange={(event) => {
-              setStatus(
-                event.target.value as "" | AdminJobStatus
-              );
+              setStatus(event.target.value as "" | AdminJobStatus);
               setSkip(0);
             }}
             className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
           >
             {STATUS_OPTIONS.map((option) => (
-              <option
-                key={option.label}
-                value={option.value}
-              >
+              <option key={option.label} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-
           <select
-            value={postingType}
+            value={moderationStatus}
             onChange={(event) => {
-              setPostingType(
-                event.target.value as
-                  | ""
-                  | AdminJobPostingType
+              setModerationStatus(
+                event.target.value as "" | AdminJobModerationStatus,
               );
               setSkip(0);
             }}
             className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
           >
+            {MODERATION_OPTIONS.map((option) => (
+              <option key={option.label} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={postingType}
+            onChange={(event) => {
+              setPostingType(event.target.value as "" | AdminJobPostingType);
+              setSkip(0);
+            }}
+            className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
+          >
             {TYPE_OPTIONS.map((option) => (
-              <option
-                key={option.label}
-                value={option.value}
-              >
+              <option key={option.label} value={option.value}>
                 {option.label}
               </option>
             ))}
@@ -224,6 +237,17 @@ export default function AdminJobsPage() {
                       >
                         {job.status}
                       </span>
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-medium ${
+                          job.moderationStatus === "FLAGGED"
+                            ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200"
+                            : "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
+                        }`}
+                      >
+                        {job.moderationStatus === "FLAGGED"
+                          ? "FLAGGED"
+                          : "CLEAR"}
+                      </span>
 
                       <span className="rounded-full border border-[#C5D5EE] bg-white px-2 py-1 text-xs font-medium text-[#516786] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#AAB9D0]">
                         {job.postingType}
@@ -264,7 +288,9 @@ export default function AdminJobsPage() {
                           Price
                         </p>
                         <p className="mt-1 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatFec(job.lockedPriceMilliFec ?? job.priceMilliFec)}
+                          {formatFec(
+                            job.lockedPriceMilliFec ?? job.priceMilliFec,
+                          )}
                         </p>
                       </div>
 
@@ -279,17 +305,20 @@ export default function AdminJobsPage() {
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      <span>
-                        {job._count.applications} applications
-                      </span>
-                      <span>
-                        {job._count.conversations} conversations
-                      </span>
-                      <span>
-                        {job._count.payments} payments
-                      </span>
+                      <span>{job._count.applications} applications</span>
+                      <span>{job._count.conversations} conversations</span>
+                      <span>{job._count.payments} payments</span>
                     </div>
                   </div>
+                  {job.moderationStatus === "FLAGGED" &&
+                    job.flagReason && (
+                      <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+                        <p className="font-semibold">
+                          Moderation reason
+                        </p>
+                        <p className="mt-1">{job.flagReason}</p>
+                      </div>
+                    )}
 
                   <Link
                     href={`/admin/jobs/${job.id}`}
@@ -311,11 +340,7 @@ export default function AdminJobsPage() {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() =>
-                setSkip((current) =>
-                  Math.max(0, current - take)
-                )
-              }
+              onClick={() => setSkip((current) => Math.max(0, current - take))}
               disabled={!hasPrevious}
               className="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             >
@@ -324,9 +349,7 @@ export default function AdminJobsPage() {
 
             <button
               type="button"
-              onClick={() =>
-                setSkip((current) => current + take)
-              }
+              onClick={() => setSkip((current) => current + take)}
               disabled={!hasNext}
               className="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
             >

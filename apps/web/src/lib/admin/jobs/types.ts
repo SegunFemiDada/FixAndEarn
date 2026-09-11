@@ -10,9 +10,14 @@ export type AdminJobPostingType =
   | "STANDARD"
   | "URGENT";
 
+  export type AdminJobModerationStatus =
+  | "CLEAR"
+  | "FLAGGED";
+
 export type AdminJobSearchParams = {
   q?: string;
   status?: AdminJobStatus;
+  moderationStatus?: AdminJobModerationStatus;
   postingType?: AdminJobPostingType;
   clientId?: string;
   fixerId?: string;
@@ -32,6 +37,10 @@ export type AdminJobListItem = {
   priceMilliFec: number;
   lockedPriceMilliFec: number | null;
   status: AdminJobStatus;
+  moderationStatus: AdminJobModerationStatus;
+  flaggedAt: string | null;
+  flaggedByAdminId: string | null;
+  flagReason: string | null;
   postingType: AdminJobPostingType;
   selectedConversationId: string | null;
   createdAt: string;

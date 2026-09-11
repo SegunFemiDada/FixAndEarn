@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
-import { useAdminJobDetail } from "@/lib/admin/jobs/queries";
+import {
+  useAdminFlagJob,
+  useAdminJobDetail,
+  useAdminUnflagJob,
+} from "@/lib/admin/jobs/queries";
 import type { AdminJobStatus } from "@/lib/admin/jobs/types";
 
 function formatFec(milli: number | null | undefined) {
@@ -100,6 +104,31 @@ export default function AdminJobInvestigationPage() {
 
   const query = useAdminJobDetail(jobId, Boolean(jobId));
   const job = query.data;
+  const flagMutation = useAdminFlagJob();
+const unflagMutation = useAdminUnflagJob();
+
+const [flagReason, setFlagReason] = React.useState("");
+const [showFlagForm, setShowFlagForm] = React.useState(false);
+
+const moderationBusy =
+  flagMutation.isPending ||
+  unflagMutation.isPending;
+
+async function handleFlag() {
+  const reason = flagReason.trim();
+
+  if (!reason) {
+    return;
+  }
+
+  await flagMutation.mutateAsync({
+    id: jobId,
+    reason,
+  });
+
+  setFlagReason("");
+  setShowFlagForm(false);
+}
 
   if (query.isLoading) {
     return (
@@ -175,6 +204,84 @@ export default function AdminJobInvestigationPage() {
           >
             Back to Jobs
           </Link>
+          <div className="flex flex-col gap-3 sm:items-end">
+  {job.moderationStatus === "FLAGGED" ? (
+    <button
+      type="button"
+      disabled={moderationBusy}
+      onClick={() => unflagMutation.mutate(jobId)}
+      className="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-green-500 dark:hover:bg-green-600"
+    >
+      {unflagMutation.isPending
+        ? "Clearing flag..."
+        : "Unflag Job"}
+    </button>
+  ) : (
+    <button
+      type="button"
+      disabled={moderationBusy}
+      onClick={() =>
+        setShowFlagForm((current) => !current)
+      }
+      className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-600"
+    >
+      Flag Job
+    </button>
+  )}
+
+  {showFlagForm &&
+    job.moderationStatus !== "FLAGGED" && (
+      <div className="w-full max-w-md rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/20">
+        <label className="block text-sm font-semibold text-red-800 dark:text-red-200">
+          Moderation reason
+        </label>
+
+        <textarea
+          value={flagReason}
+          onChange={(event) =>
+            setFlagReason(event.target.value)
+          }
+          rows={4}
+          placeholder="Explain why this job violates FixAndEarn policy."
+          className="mt-2 w-full rounded-xl border border-red-200 bg-white px-3 py-3 text-sm text-[#1A2B4A] outline-none focus:border-red-400 focus:ring-2 focus:ring-red-300/30 dark:border-red-700 dark:bg-[#1E2A3A] dark:text-[#E8F0FA]"
+        />
+
+        <div className="mt-3 flex gap-2">
+          <button
+            type="button"
+            disabled={
+              moderationBusy ||
+              !flagReason.trim()
+            }
+            onClick={handleFlag}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+          >
+            {flagMutation.isPending
+              ? "Flagging..."
+              : "Confirm Flag"}
+          </button>
+
+          <button
+            type="button"
+            disabled={moderationBusy}
+            onClick={() => {
+              setShowFlagForm(false);
+              setFlagReason("");
+            }}
+            className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
+
+        {flagMutation.isError && (
+          <p className="mt-3 text-sm text-red-700 dark:text-red-200">
+            Unable to flag this job. Please try again.
+          </p>
+        )}
+      </div>
+    )}
+</div>
         </div>
       </section>
 
@@ -231,6 +338,49 @@ export default function AdminJobInvestigationPage() {
           />
         </div>
       </Section>
+      <Section title="Moderation">
+  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <Field
+      label="Moderation status"
+      value={
+        <span
+          className={[
+            "inline-flex rounded-full border px-2 py-1 text-xs font-medium",
+            job.moderationStatus === "FLAGGED"
+              ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200"
+              : "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/20 dark:text-green-200",
+          ].join(" ")}
+        >
+          {job.moderationStatus}
+        </span>
+      }
+    />
+
+    <Field
+      label="Flagged at"
+      value={formatDate(job.flaggedAt)}
+    />
+
+    <Field
+      label="Flagged by admin"
+      value={
+        job.flaggedByAdminId ?? "Not flagged"
+      }
+      breakAll
+    />
+
+    <div className="sm:col-span-2 lg:col-span-4">
+      <Field
+        label="Flag reason"
+        value={
+          job.flagReason?.trim()
+            ? job.flagReason
+            : "No moderation flag."
+        }
+      />
+    </div>
+  </div>
+</Section>
 
       {/* Parties */}
       <Section title="Parties">
