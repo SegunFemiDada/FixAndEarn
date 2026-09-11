@@ -321,6 +321,12 @@ async getJob(args: {
       throw new ForbiddenException("JOB_NOT_AVAILABLE");
     }
   }
+  if (
+  job.moderationStatus === "FLAGGED" &&
+  job.clientId !== args.requesterId
+) {
+  throw new ForbiddenException("JOB_NOT_AVAILABLE");
+}
 
   return this.mapJob(job);
 }
@@ -534,6 +540,11 @@ if (job.status === JobStatus.OPEN) {
         },
       });
     } catch {}
+    if (job.moderationStatus !== "CLEAR") {
+  throw new ForbiddenException(
+    "Job is unavailable while under moderation review.",
+  );
+}
 
     return created;
   }

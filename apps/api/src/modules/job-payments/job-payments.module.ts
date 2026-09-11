@@ -8,6 +8,7 @@ import { JobPaymentsService } from "./job-payments.service";
 import { JobPaymentProcessorService } from "./job-payment-processor.service";
 import { ChatModule } from "../../chat/chat.module";
 import { FinalPaymentExpirationService } from "./final-payment-expiration.service";
+import { JobsModule } from "../jobs/jobs.module";
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { FinalPaymentExpirationService } from "./final-payment-expiration.servic
   NotificationsModule,
   forwardRef(() => PaymentsModule),
   forwardRef(() => ChatModule),
+  forwardRef(() => JobsModule),
 
 ],
   controllers: [JobPaymentsController],

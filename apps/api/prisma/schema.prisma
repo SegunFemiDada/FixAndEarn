@@ -221,6 +221,10 @@ model Job {
   area                   String?
   priceMilliFec          Int
   status                 JobStatus             @default(OPEN)
+  moderationStatus       JobModerationStatus   @default(CLEAR)
+  flaggedAt              DateTime?
+  flaggedByAdminId       String?
+  flagReason             String?
   lockedPriceMilliFec    Int?
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
@@ -246,6 +250,7 @@ model Job {
   @@index([state, city])
   @@index([clientId])
   @@map("jobs")
+  @@index([moderationStatus])
 }
 
 model JobImage {
@@ -532,19 +537,19 @@ model Notification {
 }
 
 model Dispute {
-  id                String                 @id @default(cuid())
-  jobId             String                 @unique
+  id                String        @id @default(cuid())
+  jobId             String        @unique
   openedByUserId    String
   reason            String
   evidence          Json?
-  status            DisputeStatus          @default(OPEN)
+  status            DisputeStatus @default(OPEN)
   resolvedByAdminId String?
   resolvedAt        DateTime?
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  job               Job                    @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  openedBy          User                   @relation("DisputesOpened", fields: [openedByUserId], references: [id])
-  resolvedByAdmin   Admin?                 @relation(fields: [resolvedByAdminId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  job               Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  openedBy          User          @relation("DisputesOpened", fields: [openedByUserId], references: [id])
+  resolvedByAdmin   Admin?        @relation(fields: [resolvedByAdminId], references: [id])
 
   @@index([status])
   @@map("disputes")
@@ -759,7 +764,6 @@ enum DisputeStatus {
   RESOLVED
 }
 
-
 enum DepositStatus {
   PENDING
   SUCCEEDED
@@ -795,4 +799,9 @@ enum ModerationFlagStatus {
   PENDING
   REVIEWED
   DISMISSED
+}
+
+enum JobModerationStatus {
+  CLEAR
+  FLAGGED
 }

@@ -2,16 +2,21 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { JobPostingType, JobStatus } from "@prisma/client";
+import { JobPostingType, JobStatus, JobModerationStatus, } from "@prisma/client";
 import { AdminJobsRepo } from "./admin-jobs.repo";
+import { JobModerationService } from "../../modules/jobs/job-moderation.service";
 
 @Injectable()
 export class AdminJobsService {
-  constructor(private readonly repo: AdminJobsRepo) {}
+  constructor(
+    private readonly repo: AdminJobsRepo,
+    private readonly moderation: JobModerationService,
+  ) {}
 
   async list(args: {
     q?: string;
     status?: JobStatus;
+    moderationStatus?: JobModerationStatus;
     postingType?: JobPostingType;
     clientId?: string;
     fixerId?: string;
@@ -24,6 +29,7 @@ export class AdminJobsService {
     return this.repo.listJobs({
       q: args.q,
       status: args.status,
+      moderationStatus: args.moderationStatus,
       postingType: args.postingType,
       clientId: args.clientId,
       fixerId: args.fixerId,
@@ -41,4 +47,19 @@ export class AdminJobsService {
 
     return job;
   }
+  async flag(
+  jobId: string,
+  adminId: string,
+  reason: string,
+) {
+  return this.moderation.flagJob({
+    jobId,
+    adminId,
+    reason,
+  });
+}
+
+async unflag(jobId: string) {
+  return this.moderation.unflagJob(jobId);
+}
 }

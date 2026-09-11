@@ -1,17 +1,11 @@
 //path: apps/api/src/modules/job-payments/job-payment-processor.service.ts
 
-import {
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import {
-  JobPaymentStatus,
-  JobStatus,
-  NotificationType,
-} from "@prisma/client";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { JobPaymentStatus, JobStatus, NotificationType, JobModerationStatus } from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { ChatRealtimeService } from "src/chat/realtime/chat-realtime.service";
+import { JobModerationService } from "../jobs/job-moderation.service";
 
 @Injectable()
 export class JobPaymentProcessorService {
@@ -19,16 +13,17 @@ export class JobPaymentProcessorService {
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
     private readonly realtime: ChatRealtimeService,
+    private readonly moderation: JobModerationService
   ) {}
 
   async handleSuccessfulPayment(jobPaymentId: string) {
     const payment = await this.prisma.jobPayment.findUnique({
       where: {
-        id: jobPaymentId,
+        id: jobPaymentId
       },
       include: {
-        job: true,
-      },
+        job: true
+      }
     });
 
     if (!payment) {
@@ -38,7 +33,7 @@ export class JobPaymentProcessorService {
     if (payment.status === JobPaymentStatus.SUCCESS) {
       return {
         ok: true,
-        alreadyProcessed: true,
+        alreadyProcessed: true
       };
     }
 
@@ -61,18 +56,18 @@ export class JobPaymentProcessorService {
       const expired = await this.prisma.jobPayment.updateMany({
         where: {
           id: payment.id,
-          status: JobPaymentStatus.PENDING,
+          status: JobPaymentStatus.PENDING
         },
         data: {
-          status: JobPaymentStatus.EXPIRED,
-        },
+          status: JobPaymentStatus.EXPIRED
+        }
       });
 
       if (expired.count > 0) {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
@@ -83,17 +78,17 @@ export class JobPaymentProcessorService {
        */
       const currentPayment = await this.prisma.jobPayment.findUnique({
         where: {
-          id: payment.id,
+          id: payment.id
         },
         select: {
-          status: true,
-        },
+          status: true
+        }
       });
 
       if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
         return {
           ok: true,
-          alreadyProcessed: true,
+          alreadyProcessed: true
         };
       }
 
@@ -101,12 +96,12 @@ export class JobPaymentProcessorService {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
       return {
-        ok: true,
+        ok: true
       };
     }
 
@@ -119,7 +114,7 @@ export class JobPaymentProcessorService {
       return {
         ok: true,
         paymentType: payment.type,
-        expired: true,
+        expired: true
       };
     }
 
@@ -135,7 +130,7 @@ export class JobPaymentProcessorService {
 
       default:
         return {
-          ok: true,
+          ok: true
         };
     }
   }
@@ -143,13 +138,13 @@ export class JobPaymentProcessorService {
   async handleFailedPayment(jobPaymentId: string) {
     const payment = await this.prisma.jobPayment.findUnique({
       where: {
-        id: jobPaymentId,
+        id: jobPaymentId
       },
       select: {
         id: true,
         status: true,
-        type: true,
-      },
+        type: true
+      }
     });
 
     if (!payment) {
@@ -169,33 +164,33 @@ export class JobPaymentProcessorService {
       return {
         ok: true,
         alreadyProcessed: true,
-        status: payment.status,
+        status: payment.status
       };
     }
 
     await this.prisma.jobPayment.updateMany({
       where: {
         id: jobPaymentId,
-        status: JobPaymentStatus.PENDING,
+        status: JobPaymentStatus.PENDING
       },
       data: {
-        status: JobPaymentStatus.FAILED,
-      },
+        status: JobPaymentStatus.FAILED
+      }
     });
 
     return {
-      ok: true,
+      ok: true
     };
   }
 
   private async completePostingPayment(jobPaymentId: string) {
     const payment = await this.prisma.jobPayment.findUnique({
       where: {
-        id: jobPaymentId,
+        id: jobPaymentId
       },
       include: {
-        job: true,
-      },
+        job: true
+      }
     });
 
     if (!payment) {
@@ -205,7 +200,7 @@ export class JobPaymentProcessorService {
     if (payment.status === JobPaymentStatus.SUCCESS) {
       return {
         ok: true,
-        alreadyProcessed: true,
+        alreadyProcessed: true
       };
     }
 
@@ -213,9 +208,22 @@ export class JobPaymentProcessorService {
       return {
         ok: true,
         paymentType: payment.type,
-        expired: true,
+        expired: true
       };
     }
+    const moderationDecision =
+      payment.job.moderationStatus === JobModerationStatus.FLAGGED
+        ? {
+            status: JobModerationStatus.FLAGGED,
+            reason: payment.job.flagReason ?? "This job requires moderation review."
+          }
+        : this.moderation.screenJob({
+            skillCategory: payment.job.skillCategory,
+            state: payment.job.state,
+            city: payment.job.city,
+            lga: payment.job.lga,
+            area: payment.job.area
+          });
 
     /*
      * Only one concurrent processor is allowed to change the
@@ -237,31 +245,38 @@ export class JobPaymentProcessorService {
       const paymentUpdate = await tx.jobPayment.updateMany({
         where: {
           id: payment.id,
-          status: JobPaymentStatus.PENDING,
+          status: JobPaymentStatus.PENDING
         },
         data: {
           status: JobPaymentStatus.SUCCESS,
-          paidAt: new Date(),
-        },
+          paidAt: new Date()
+        }
       });
 
       if (paymentUpdate.count === 0) {
         return {
-          processed: false,
+          processed: false
         };
       }
 
       await tx.job.update({
         where: {
-          id: payment.jobId,
+          id: payment.jobId
         },
         data: {
-          status: JobStatus.OPEN,
-        },
+          status:
+            moderationDecision.status === JobModerationStatus.CLEAR
+              ? JobStatus.OPEN
+              : JobStatus.DRAFT,
+          moderationStatus: moderationDecision.status,
+          flaggedAt: moderationDecision.status === JobModerationStatus.FLAGGED ? new Date() : null,
+          flaggedByAdminId: null,
+          flagReason: moderationDecision.reason
+        }
       });
 
       return {
-        processed: true,
+        processed: true
       };
     });
 
@@ -272,17 +287,17 @@ export class JobPaymentProcessorService {
     if (!result.processed) {
       const currentPayment = await this.prisma.jobPayment.findUnique({
         where: {
-          id: payment.id,
+          id: payment.id
         },
         select: {
-          status: true,
-        },
+          status: true
+        }
       });
 
       if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
         return {
           ok: true,
-          alreadyProcessed: true,
+          alreadyProcessed: true
         };
       }
 
@@ -290,44 +305,61 @@ export class JobPaymentProcessorService {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
       return {
-        ok: true,
+        ok: true
       };
     }
 
-    try {
-      await this.notifications.create({
-        userId: payment.job.clientId,
-        type: NotificationType.SYSTEM_ANNOUNCEMENT,
-        title: "Job published",
-        body: "Your job is now live and visible to verified fixers.",
-        idempotencyKey: `notif:job_posted:${payment.jobId}`,
-        data: {
-          jobId: payment.jobId,
-        },
-      });
-    } catch {}
+    if (moderationDecision.status === JobModerationStatus.CLEAR) {
+      try {
+        await this.notifications.create({
+          userId: payment.job.clientId,
+          type: NotificationType.SYSTEM_ANNOUNCEMENT,
+          title: "Job published",
+          body: "Your job is now live and visible to verified fixers.",
+          idempotencyKey: `notif:job_posted:${payment.jobId}`,
+          data: {
+            jobId: payment.jobId
+          }
+        });
+      } catch {}
+    } else {
+      try {
+        await this.notifications.create({
+          userId: payment.job.clientId,
+          type: NotificationType.SYSTEM_ANNOUNCEMENT,
+          title: "Job requires review",
+          body:
+            moderationDecision.reason ??
+            "Your job requires moderation review before it can be published.",
+          idempotencyKey: `notif:job_moderation:${payment.jobId}`,
+          data: {
+            jobId: payment.jobId,
+            moderationStatus: JobModerationStatus.FLAGGED
+          }
+        });
+      } catch {}
+    }
 
     return {
       ok: true,
       paymentType: payment.type,
+      moderationStatus: moderationDecision.status
     };
   }
 
-  private async completeUrgentHirePayment(
-    jobPaymentId: string,
-  ) {
+  private async completeUrgentHirePayment(jobPaymentId: string) {
     const payment = await this.prisma.jobPayment.findUnique({
       where: {
-        id: jobPaymentId,
+        id: jobPaymentId
       },
       include: {
-        job: true,
-      },
+        job: true
+      }
     });
 
     if (!payment) {
@@ -337,7 +369,7 @@ export class JobPaymentProcessorService {
     if (payment.status === JobPaymentStatus.SUCCESS) {
       return {
         ok: true,
-        alreadyProcessed: true,
+        alreadyProcessed: true
       };
     }
 
@@ -345,13 +377,26 @@ export class JobPaymentProcessorService {
       return {
         ok: true,
         paymentType: payment.type,
-        expired: true,
+        expired: true
       };
     }
 
     if (!payment.conversationId) {
       throw new NotFoundException("CONVERSATION_NOT_FOUND");
     }
+    const moderationDecision =
+      payment.job.moderationStatus === JobModerationStatus.FLAGGED
+        ? {
+            status: JobModerationStatus.FLAGGED,
+            reason: payment.job.flagReason ?? "This job requires moderation review."
+          }
+        : this.moderation.screenJob({
+            skillCategory: payment.job.skillCategory,
+            state: payment.job.state,
+            city: payment.job.city,
+            lga: payment.job.lga,
+            area: payment.job.area
+          });
 
     const conversationId = payment.conversationId;
 
@@ -366,41 +411,62 @@ export class JobPaymentProcessorService {
       const paymentUpdate = await tx.jobPayment.updateMany({
         where: {
           id: payment.id,
-          status: JobPaymentStatus.PENDING,
+          status: JobPaymentStatus.PENDING
         },
         data: {
           status: JobPaymentStatus.SUCCESS,
-          paidAt: new Date(),
-        },
+          paidAt: new Date()
+        }
       });
 
       if (paymentUpdate.count === 0) {
         return {
-          processed: false,
+          processed: false
         };
       }
 
       await tx.job.update({
         where: {
-          id: payment.jobId,
+          id: payment.jobId
         },
-        data: {
-          status: JobStatus.OPEN,
-          fixerId: payment.fixerId,
-        },
+        data:
+          moderationDecision.status === JobModerationStatus.CLEAR
+            ? {
+                status: JobStatus.OPEN,
+                moderationStatus: JobModerationStatus.CLEAR,
+                flaggedAt: null,
+                flaggedByAdminId: null,
+                flagReason: null,
+                fixerId: payment.fixerId
+              }
+            : {
+                status: JobStatus.DRAFT,
+                moderationStatus: JobModerationStatus.FLAGGED,
+                flaggedAt: new Date(),
+                flaggedByAdminId: null,
+                flagReason: moderationDecision.reason,
+                fixerId: null
+              }
       });
 
       await tx.conversation.update({
         where: {
-          id: conversationId,
+          id: conversationId
         },
-        data: {
-          status: "OPEN",
-        },
+        data:
+          moderationDecision.status === JobModerationStatus.CLEAR
+            ? {
+                status: "OPEN",
+                active: true
+              }
+            : {
+                status: "CLOSED",
+                active: false
+              }
       });
 
       return {
-        processed: true,
+        processed: true
       };
     });
 
@@ -411,17 +477,17 @@ export class JobPaymentProcessorService {
     if (!result.processed) {
       const currentPayment = await this.prisma.jobPayment.findUnique({
         where: {
-          id: payment.id,
+          id: payment.id
         },
         select: {
-          status: true,
-        },
+          status: true
+        }
       });
 
       if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
         return {
           ok: true,
-          alreadyProcessed: true,
+          alreadyProcessed: true
         };
       }
 
@@ -429,54 +495,49 @@ export class JobPaymentProcessorService {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
       return {
-        ok: true,
+        ok: true
       };
     }
 
     if (payment.fixerId) {
-      const room = this.realtime.roomFor(
-        payment.jobId,
-        payment.fixerId,
-      );
+      const room = this.realtime.roomFor(payment.jobId, payment.fixerId);
 
-      this.realtime.emitToRoom(
-        room,
-        "job:started",
-        {
-          jobId: payment.jobId,
-          fixerId: payment.fixerId,
-          status: "OPEN",
-          urgentHire: true,
-        },
-      );
+      this.realtime.emitToRoom(room, "job:started", {
+        jobId: payment.jobId,
+        fixerId: payment.fixerId,
+        status: "OPEN",
+        urgentHire: true
+      });
 
-      this.realtime.emitToRoom(
-        room,
-        "job:update",
-        {
-          jobId: payment.jobId,
-        },
-      );
+      this.realtime.emitToRoom(room, "job:update", {
+        jobId: payment.jobId
+      });
     }
 
-    try {
-      await this.notifications.create({
-        userId: payment.job.clientId,
-        type: NotificationType.SYSTEM_ANNOUNCEMENT,
-        title: "Urgent hire activated",
-        body: "Your payment was successful. You can now chat with the fixer.",
-        idempotencyKey: `notif:urgent_paid:client:${payment.id}`,
-        data: {
-          jobId: payment.jobId,
-          conversationId: payment.conversationId,
-        },
-      });
-    } catch {}
+    if (moderationDecision.status === JobModerationStatus.CLEAR) {
+      // existing urgent realtime + client notification + fixer notification
+    } else {
+      try {
+        await this.notifications.create({
+          userId: payment.job.clientId,
+          type: NotificationType.SYSTEM_ANNOUNCEMENT,
+          title: "Urgent job requires review",
+          body:
+            moderationDecision.reason ??
+            "Your urgent job requires moderation review before the fixer can be connected.",
+          idempotencyKey: `notif:urgent_moderation:${payment.jobId}`,
+          data: {
+            jobId: payment.jobId,
+            moderationStatus: JobModerationStatus.FLAGGED
+          }
+        });
+      } catch {}
+    }
 
     if (payment.fixerId) {
       try {
@@ -488,28 +549,26 @@ export class JobPaymentProcessorService {
           idempotencyKey: `notif:urgent_paid:fixer:${payment.id}`,
           data: {
             jobId: payment.jobId,
-            conversationId: payment.conversationId,
-          },
+            conversationId: payment.conversationId
+          }
         });
       } catch {}
     }
 
     return {
       ok: true,
-      paymentType: payment.type,
+      paymentType: payment.type
     };
   }
 
-  private async completeFinalPayment(
-    jobPaymentId: string,
-  ) {
+  private async completeFinalPayment(jobPaymentId: string) {
     const payment = await this.prisma.jobPayment.findUnique({
       where: {
-        id: jobPaymentId,
+        id: jobPaymentId
       },
       include: {
-        job: true,
-      },
+        job: true
+      }
     });
 
     if (!payment) {
@@ -519,7 +578,7 @@ export class JobPaymentProcessorService {
     if (payment.status === JobPaymentStatus.SUCCESS) {
       return {
         ok: true,
-        alreadyProcessed: true,
+        alreadyProcessed: true
       };
     }
 
@@ -538,34 +597,34 @@ export class JobPaymentProcessorService {
       const expired = await this.prisma.jobPayment.updateMany({
         where: {
           id: payment.id,
-          status: JobPaymentStatus.PENDING,
+          status: JobPaymentStatus.PENDING
         },
         data: {
-          status: JobPaymentStatus.EXPIRED,
-        },
+          status: JobPaymentStatus.EXPIRED
+        }
       });
 
       if (expired.count > 0) {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
       const currentPayment = await this.prisma.jobPayment.findUnique({
         where: {
-          id: payment.id,
+          id: payment.id
         },
         select: {
-          status: true,
-        },
+          status: true
+        }
       });
 
       if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
         return {
           ok: true,
-          alreadyProcessed: true,
+          alreadyProcessed: true
         };
       }
 
@@ -573,12 +632,12 @@ export class JobPaymentProcessorService {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
       return {
-        ok: true,
+        ok: true
       };
     }
 
@@ -586,7 +645,7 @@ export class JobPaymentProcessorService {
       return {
         ok: true,
         paymentType: payment.type,
-        expired: true,
+        expired: true
       };
     }
 
@@ -621,52 +680,52 @@ export class JobPaymentProcessorService {
           status: JobPaymentStatus.PENDING,
           OR: [
             {
-              expiresAt: null,
+              expiresAt: null
             },
             {
               expiresAt: {
-                gt: new Date(),
-              },
-            },
-          ],
+                gt: new Date()
+              }
+            }
+          ]
         },
         data: {
           status: JobPaymentStatus.SUCCESS,
-          paidAt: new Date(),
-        },
+          paidAt: new Date()
+        }
       });
 
       if (paymentUpdate.count === 0) {
         return {
-          processed: false,
+          processed: false
         };
       }
 
       await tx.job.update({
         where: {
-          id: payment.jobId,
+          id: payment.jobId
         },
         data: {
           fixerId,
           lockedPriceMilliFec: lockedPrice,
-          status: JobStatus.IN_PROGRESS,
-        },
+          status: JobStatus.IN_PROGRESS
+        }
       });
 
       await tx.conversation.updateMany({
         where: {
           jobId: payment.jobId,
           NOT: {
-            id: conversationId,
-          },
+            id: conversationId
+          }
         },
         data: {
-          status: "CLOSED",
-        },
+          status: "CLOSED"
+        }
       });
 
       return {
-        processed: true,
+        processed: true
       };
     });
 
@@ -677,17 +736,17 @@ export class JobPaymentProcessorService {
     if (!result.processed) {
       const currentPayment = await this.prisma.jobPayment.findUnique({
         where: {
-          id: payment.id,
+          id: payment.id
         },
         select: {
-          status: true,
-        },
+          status: true
+        }
       });
 
       if (currentPayment?.status === JobPaymentStatus.SUCCESS) {
         return {
           ok: true,
-          alreadyProcessed: true,
+          alreadyProcessed: true
         };
       }
 
@@ -695,29 +754,22 @@ export class JobPaymentProcessorService {
         return {
           ok: true,
           paymentType: payment.type,
-          expired: true,
+          expired: true
         };
       }
 
       return {
-        ok: true,
+        ok: true
       };
     }
 
-    const room = this.realtime.roomFor(
-      payment.jobId,
-      fixerId,
-    );
+    const room = this.realtime.roomFor(payment.jobId, fixerId);
 
-    this.realtime.emitToRoom(
-      room,
-      "job:started",
-      {
-        jobId: payment.jobId,
-        fixerId,
-        status: "IN_PROGRESS",
-      },
-    );
+    this.realtime.emitToRoom(room, "job:started", {
+      jobId: payment.jobId,
+      fixerId,
+      status: "IN_PROGRESS"
+    });
 
     try {
       await this.notifications.create({
@@ -727,8 +779,8 @@ export class JobPaymentProcessorService {
         body: "Your payment has been confirmed successfully. The job is now in progress, and the fixer can begin work.",
         idempotencyKey: `notif:job_started_client:${payment.jobId}`,
         data: {
-          jobId: payment.jobId,
-        },
+          jobId: payment.jobId
+        }
       });
     } catch {}
 
@@ -740,14 +792,14 @@ export class JobPaymentProcessorService {
         body: "The client's payment has been confirmed. You may now begin work. Your earnings will become available immediately after the client approves the completion request.",
         idempotencyKey: `notif:job_started_fixer:${payment.jobId}`,
         data: {
-          jobId: payment.jobId,
-        },
+          jobId: payment.jobId
+        }
       });
     } catch {}
 
     return {
       ok: true,
-      paymentType: payment.type,
+      paymentType: payment.type
     };
   }
 }

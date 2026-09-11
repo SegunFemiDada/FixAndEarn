@@ -8,6 +8,7 @@ import { WalletModule } from "../wallet/wallet.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { StorageModule } from "../../common/storage/storage.module";
 import { JobPaymentsModule } from "../job-payments/job-payments.module";
+import { JobModerationService } from "./job-moderation.service";
 @Module({
   imports: [
   WalletModule,
@@ -17,10 +18,15 @@ import { JobPaymentsModule } from "../job-payments/job-payments.module";
 ],
   controllers: [JobsController],
   providers: [
-    JobsService,
-    JobsRepo,
-    PrismaService,
-    ],
-  exports: [JobsService, JobsRepo],
+  JobsService,
+  JobsRepo,
+  JobModerationService,
+  PrismaService,
+],
+exports: [
+  JobsService,
+  JobsRepo,
+  JobModerationService,
+],
 })
 export class JobsModule {}

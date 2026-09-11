@@ -72,9 +72,10 @@ async listOpenJobs(query: {
   skip: number;
 }) {
   const where: Prisma.JobWhereInput = {
-    status: "OPEN",
-    fixerId: null,
-  };
+  status: "OPEN",
+  moderationStatus: "CLEAR",
+  fixerId: null,
+};
 
   if (query.skill) {
     where.skillCategory = {
@@ -142,9 +143,10 @@ async getMarketplaceStats() {
   const [openJobs, inProgressJobs, completedJobs] = await Promise.all([
     this.prisma.job.count({
       where: {
-        status: "OPEN",
-        fixerId: null,
-      },
+  status: "OPEN",
+  moderationStatus: "CLEAR",
+  fixerId: null,
+},
     }),
 
     this.prisma.job.count({
@@ -241,9 +243,10 @@ async getMarketplaceStats() {
 
   this.prisma.job.findMany({
     where: {
-      fixerId: args.fixerId,
-      postingType: "URGENT",
-    },
+  fixerId: args.fixerId,
+  postingType: "URGENT",
+  moderationStatus: "CLEAR",
+},
   }),
 ]);
 

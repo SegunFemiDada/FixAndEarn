@@ -1,5 +1,16 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from "class-validator";
-import { JobPostingType, JobStatus } from "@prisma/client";
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from "class-validator";
+import {
+  JobModerationStatus,
+  JobPostingType,
+  JobStatus,
+} from "@prisma/client";
 import { Type } from "class-transformer";
 
 export class AdminJobSearchDto {
@@ -10,6 +21,10 @@ export class AdminJobSearchDto {
   @IsOptional()
   @IsEnum(JobStatus)
   status?: JobStatus;
+
+  @IsOptional()
+@IsEnum(JobModerationStatus)
+moderationStatus?: JobModerationStatus;
 
   @IsOptional()
   @IsEnum(JobPostingType)

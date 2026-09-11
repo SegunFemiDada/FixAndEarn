@@ -1,6 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { JobStatus, JobPostingType, Prisma } from "@prisma/client";
+import {
+  JobModerationStatus,
+  JobPostingType,
+  JobStatus,
+  Prisma,
+} from "@prisma/client";
 import { PrismaService } from "../../infra/prisma/prisma.service";
+
 
 @Injectable()
 export class AdminJobsRepo {
@@ -9,6 +15,7 @@ export class AdminJobsRepo {
   async listJobs(args: {
     q?: string;
     status?: JobStatus;
+    moderationStatus?: JobModerationStatus;
     postingType?: JobPostingType;
     clientId?: string;
     fixerId?: string;
@@ -79,6 +86,9 @@ export class AdminJobsRepo {
     if (args.status) {
       where.status = args.status;
     }
+    if (args.moderationStatus) {
+  where.moderationStatus = args.moderationStatus;
+}
 
     if (args.postingType) {
       where.postingType = args.postingType;
@@ -112,6 +122,10 @@ export class AdminJobsRepo {
           priceMilliFec: true,
           lockedPriceMilliFec: true,
           status: true,
+          moderationStatus: true,
+          flaggedAt: true,
+          flaggedByAdminId: true,
+          flagReason: true,
           postingType: true,
           selectedConversationId: true,
           createdAt: true,
@@ -179,6 +193,10 @@ export class AdminJobsRepo {
         lockedPriceMilliFec: true,
 
         status: true,
+        moderationStatus: true,
+        flaggedAt: true,
+        flaggedByAdminId: true,
+        flagReason: true,
         postingType: true,
 
         selectedConversationId: true,

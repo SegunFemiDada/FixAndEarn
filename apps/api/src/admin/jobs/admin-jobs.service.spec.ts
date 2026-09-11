@@ -2,6 +2,7 @@ import { NotFoundException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { AdminJobsService } from "./admin-jobs.service";
 import { AdminJobsRepo } from "./admin-jobs.repo";
+import { JobModerationService } from "../../modules/jobs/job-moderation.service";
 
 describe("AdminJobsService", () => {
   let service: AdminJobsService;
@@ -10,16 +11,24 @@ describe("AdminJobsService", () => {
     listJobs: jest.fn(),
     getJob: jest.fn(),
   };
+  const moderation = {
+  flagJob: jest.fn(),
+  unflagJob: jest.fn(),
+};
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        AdminJobsService,
-        {
-          provide: AdminJobsRepo,
-          useValue: repo,
-        },
-      ],
+  AdminJobsService,
+  {
+    provide: AdminJobsRepo,
+    useValue: repo,
+  },
+  {
+    provide: JobModerationService,
+    useValue: moderation,
+  },
+],
     }).compile();
 
     service = module.get(AdminJobsService);
