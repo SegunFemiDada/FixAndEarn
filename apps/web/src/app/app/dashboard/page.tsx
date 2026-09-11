@@ -50,128 +50,148 @@ function JobCard({
   job,
   secondaryAction,
   onDelete,
+  isDeleting,
 }: {
   job: any;
   secondaryAction?: { href: string; label: string } | null;
   onDelete?: (jobId: string) => void;
+  isDeleting?: boolean;
 }) {
-  const location = [job.area, job.lga, job.city, job.state].filter(Boolean).join(", ");
-  const displayAmountMilliFec = getDisplayedJobAmountMilliFec(job);
+  const location = [job.area, job.lga, job.city, job.state]
+    .filter(Boolean)
+    .join(", ");
+
+  const displayAmountMilliFec =
+    getDisplayedJobAmountMilliFec(job);
+
   const isNegotiatedPrice =
-    Number.isFinite(Number(job?.lockedPriceMilliFec)) && Number(job?.lockedPriceMilliFec) > 0;
+    Number.isFinite(Number(job?.lockedPriceMilliFec)) &&
+    Number(job?.lockedPriceMilliFec) > 0;
+
   const status = String(job?.status ?? "UNKNOWN");
-  const isFlagged =
-  job?.moderationStatus === "FLAGGED";
-  
+  const isFlagged = job?.moderationStatus === "FLAGGED";
 
   return (
     <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-  <div className="flex items-center justify-between gap-4">
-    {job?.moderationStatus === "FLAGGED" && (
-  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
-    <p className="font-semibold">
-      This job is flagged and is not visible to fixers.
-    </p>
 
-    {job.flagReason ? (
-      <p className="mt-1">
-        Reason: {job.flagReason}
-      </p>
-    ) : null}
+      {isFlagged ? (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-700 dark:bg-red-900/20">
+          <p className="font-semibold text-red-800 dark:text-red-200">
+            This job is flagged and is not visible to fixers.
+          </p>
 
-    <p className="mt-2">
-      Edit the job to correct the issue. The job remains under moderation
-      review until it is cleared.
-    </p>
-  </div>
-)}
-    {/* Left content */}
-    <div className="min-w-0">
-      <div className="truncate text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-        {job.skillCategory}
+          {job.flagReason ? (
+            <div className="mt-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-red-700 dark:text-red-200">
+                Moderation reason
+              </p>
+
+              <p className="mt-1 text-sm leading-5 text-red-800 dark:text-red-100">
+                {job.flagReason}
+              </p>
+            </div>
+          ) : null}
+
+          <p className="mt-3 text-sm text-red-800 dark:text-red-100">
+            Edit the job to correct the issue. The job remains under
+            moderation review until it is cleared.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="flex items-center justify-between gap-4">
+        {/* Left content */}
+        <div className="min-w-0">
+          <div className="truncate text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            {job.skillCategory}
+          </div>
+
+          <div className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            {location || "Location not available"}
+          </div>
+        </div>
+
+        {/* Right content */}
+        <div className="flex shrink-0 flex-col items-end justify-center gap-2 pt-1 text-right">
+          {isNegotiatedPrice && (
+            <div className="inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+              Locked agreed price
+            </div>
+          )}
+
+          <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            {formatFecFromMilli(displayAmountMilliFec)}
+          </div>
+
+          <div
+            className={[
+              "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
+              getStatusBadgeClass(status),
+            ].join(" ")}
+          >
+            {status}
+          </div>
+
+          {isFlagged && (
+            <div className="inline-flex rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+              FLAGGED
+            </div>
+          )}
+        </div>
       </div>
-      <div className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-        {location || "Location not available"}
+
+      {/* Actions */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {isFlagged ? (
+          <>
+            <Link
+              href={`/app/jobs/${job.id}/edit`}
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors shadow-md dark:bg-blue-500 dark:hover:bg-blue-600"
+            >
+              Edit Job
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => onDelete?.(job.id)}
+              disabled={isDeleting}
+              className={[
+                "inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold transition-colors",
+                isDeleting
+                  ? "cursor-not-allowed bg-red-300 text-white dark:bg-red-900/60"
+                  : "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600",
+              ].join(" ")}
+            >
+              {isDeleting ? "Deleting..." : "Delete Job"}
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              href={`/app/jobs/${job.id}`}
+              className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold
+                bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
+                transition-colors shadow-md
+                dark:bg-blue-500 dark:text-white dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+            >
+              View job
+            </Link>
+
+            {secondaryAction && (
+              <Link
+                href={secondaryAction.href}
+                className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold
+                  bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
+                  transition-colors
+                  dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"
+              >
+                {secondaryAction.label}
+              </Link>
+            )}
+          </>
+        )}
       </div>
     </div>
-
-    {/* Right content */}
-<div className="flex flex-col items-end justify-center gap-2 pt-1 shrink-0 text-right">
-  {isNegotiatedPrice && (
-    <div className="inline-flex rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-2.5 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-      Locked agreed price
-    </div>
-  )}
-  <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-    {formatFecFromMilli(displayAmountMilliFec)}
-  </div>
-  {isFlagged && job.flagReason ? (
-  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-700 dark:bg-red-900/20">
-    <p className="text-xs font-bold uppercase tracking-wide text-red-700 dark:text-red-200">
-      Moderation reason
-    </p>
-
-    <p className="mt-1 text-sm leading-5 text-red-800 dark:text-red-100">
-      {job.flagReason}
-    </p>
-  </div>
-) : null}
-  <div
-    className={[
-      "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
-      getStatusBadgeClass(status),
-    ].join(" ")}
-  >
-    {status}
-  </div>
-  {isFlagged && (
-  <div className="mt-2 inline-flex rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
-    FLAGGED
-  </div>
-)}
-</div>
-
-  </div>
-
-  {/* Actions */}
-  {isFlagged ? (
-  <>
-    <Link
-      href={`/app/jobs/${job.id}/edit`}
-      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-    >
-      Edit Job
-    </Link>
-
-    <button
-      type="button"
-      onClick={() => onDelete?.(job.id)}
-      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-    >
-      Delete Job
-    </button>
-  </>
-) : (
-  <>
-    <Link
-      href={`/app/jobs/${job.id}`}
-      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-    >
-      View job
-    </Link>
-
-    {secondaryAction && (
-      <Link
-        href={secondaryAction.href}
-        className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-      >
-        {secondaryAction.label}
-      </Link>
-    )}
-  </>
-)}
-</div>
-
   );
 }
 
@@ -274,6 +294,7 @@ async function handleDeleteFlaggedJob(jobId: string) {
   key={job.id}
   job={job}
   onDelete={handleDeleteFlaggedJob}
+  isDeleting={deletingJobId === job.id}
 />
   ))}
 </div>
