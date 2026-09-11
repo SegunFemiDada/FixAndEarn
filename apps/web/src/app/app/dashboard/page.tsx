@@ -12,6 +12,7 @@ import {
   setMyAvailability,
   type FixerAvailabilityResponse,
 } from "@/lib/fixers/availability";
+import { deleteDraftJob } from "@/lib/job-payments/api";
 
 
 function formatFecFromMilli(milli: number) {
@@ -48,19 +49,42 @@ function getStatusBadgeClass(status: string) {
 function JobCard({
   job,
   secondaryAction,
+  onDelete,
 }: {
   job: any;
   secondaryAction?: { href: string; label: string } | null;
+  onDelete?: (jobId: string) => void;
 }) {
   const location = [job.area, job.lga, job.city, job.state].filter(Boolean).join(", ");
   const displayAmountMilliFec = getDisplayedJobAmountMilliFec(job);
   const isNegotiatedPrice =
     Number.isFinite(Number(job?.lockedPriceMilliFec)) && Number(job?.lockedPriceMilliFec) > 0;
   const status = String(job?.status ?? "UNKNOWN");
+  const isFlagged =
+  job?.moderationStatus === "FLAGGED";
+  
 
   return (
     <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
   <div className="flex items-center justify-between gap-4">
+    {job?.moderationStatus === "FLAGGED" && (
+  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+    <p className="font-semibold">
+      This job is flagged and is not visible to fixers.
+    </p>
+
+    {job.flagReason ? (
+      <p className="mt-1">
+        Reason: {job.flagReason}
+      </p>
+    ) : null}
+
+    <p className="mt-2">
+      Edit the job to correct the issue. The job remains under moderation
+      review until it is cleared.
+    </p>
+  </div>
+)}
     {/* Left content */}
     <div className="min-w-0">
       <div className="truncate text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
@@ -81,6 +105,17 @@ function JobCard({
   <div className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
     {formatFecFromMilli(displayAmountMilliFec)}
   </div>
+  {isFlagged && job.flagReason ? (
+  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-700 dark:bg-red-900/20">
+    <p className="text-xs font-bold uppercase tracking-wide text-red-700 dark:text-red-200">
+      Moderation reason
+    </p>
+
+    <p className="mt-1 text-sm leading-5 text-red-800 dark:text-red-100">
+      {job.flagReason}
+    </p>
+  </div>
+) : null}
   <div
     className={[
       "inline-flex rounded-full border px-2.5 py-1 text-xs font-medium",
@@ -89,18 +124,38 @@ function JobCard({
   >
     {status}
   </div>
+  {isFlagged && (
+  <div className="mt-2 inline-flex rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+    FLAGGED
+  </div>
+)}
 </div>
 
   </div>
 
   {/* Actions */}
-  <div className="mt-4 flex flex-wrap gap-2">
+  {isFlagged ? (
+  <>
+    <Link
+      href={`/app/jobs/${job.id}/edit`}
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+    >
+      Edit Job
+    </Link>
+
+    <button
+      type="button"
+      onClick={() => onDelete?.(job.id)}
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+    >
+      Delete Job
+    </button>
+  </>
+) : (
+  <>
     <Link
       href={`/app/jobs/${job.id}`}
-      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold
-        bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
-        transition-colors shadow-md
-        dark:bg-blue-500 dark:text-white dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+      className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
     >
       View job
     </Link>
@@ -108,15 +163,13 @@ function JobCard({
     {secondaryAction && (
       <Link
         href={secondaryAction.href}
-        className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold
-          bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400
-          transition-colors
-          dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"
+        className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
       >
         {secondaryAction.label}
       </Link>
     )}
-  </div>
+  </>
+)}
 </div>
 
   );
@@ -144,6 +197,23 @@ const hasNextPage =
   fetchedJobs.length > DASHBOARD_PAGE_SIZE;
 
 const list = fetchedJobs.slice(0, DASHBOARD_PAGE_SIZE);
+const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+
+async function handleDeleteFlaggedJob(jobId: string) {
+  const confirmed = window.confirm(
+    "Delete this flagged job from your dashboard? Your payment and job history will be preserved."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    setDeletingJobId(jobId);
+    await deleteDraftJob(jobId);
+    window.location.reload();
+  } finally {
+    setDeletingJobId(null);
+  }
+}
 
   const grouped = useMemo(() => {
     const byStatus: Record<string, any[]> = {};
@@ -200,7 +270,11 @@ const list = fetchedJobs.slice(0, DASHBOARD_PAGE_SIZE);
 
       <div className="grid gap-3">
   {list.map((job: any) => (
-    <JobCard key={job.id} job={job} />
+    <JobCard
+  key={job.id}
+  job={job}
+  onDelete={handleDeleteFlaggedJob}
+/>
   ))}
 </div>
 

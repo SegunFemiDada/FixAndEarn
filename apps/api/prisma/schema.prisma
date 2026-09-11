@@ -225,6 +225,7 @@ model Job {
   flaggedAt              DateTime?
   flaggedByAdminId       String?
   flagReason             String?
+  clientArchivedAt       DateTime?
   lockedPriceMilliFec    Int?
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
@@ -249,8 +250,9 @@ model Job {
   @@index([skillCategory])
   @@index([state, city])
   @@index([clientId])
-  @@map("jobs")
   @@index([moderationStatus])
+  @@index([clientId, clientArchivedAt])
+  @@map("jobs")
 }
 
 model JobImage {

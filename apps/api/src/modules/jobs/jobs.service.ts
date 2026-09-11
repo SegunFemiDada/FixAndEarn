@@ -458,6 +458,30 @@ if (job.status === JobStatus.OPEN) {
       "You can only delete your own jobs."
     );
   }
+  if (job.moderationStatus === "FLAGGED") {
+  const successfulPayment =
+    await this.prisma.jobPayment.findFirst({
+      where: {
+        jobId: job.id,
+        status: "SUCCESS",
+        type: {
+          in: ["POSTING", "URGENT"],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+  if (successfulPayment) {
+    await this.repo.archiveClientJob(job.id);
+
+    return {
+      success: true,
+      archived: true,
+    };
+  }
+}
 
   if (job.status !== JobStatus.DRAFT) {
     throw new ForbiddenException(

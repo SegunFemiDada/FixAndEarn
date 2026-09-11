@@ -150,6 +150,10 @@ type JobShape = {
   priceMilliFec?: number | null;
   lockedPriceMilliFec?: number | null;
   status?: string | null;
+  moderationStatus?: "CLEAR" | "FLAGGED" | null;
+  flagReason?: string | null;
+  flaggedAt?: string | null;
+  clientArchivedAt?: string | null;
   images?: JobImage[];
   completedRequestedAt?: string | null;
   completedApprovedAt?: string | null;
@@ -247,18 +251,31 @@ export default function JobDetailsPage() {
   const applicationsQuery = useJobApplications(jobId, { skip: 0, take: 1, enabled: isClient && isJobOwner && !!jobId });
   const hasApplications = (applicationsQuery.data?.total ?? 0) > 0;
   const isUrgentJob = job?.postingType === "URGENT";
+  const isFlaggedJob =
+  isClient &&
+  isJobOwner &&
+  job?.moderationStatus === "FLAGGED";
 
   const canEdit =
-    isClient &&
-    isJobOwner &&
-    !isUrgentJob &&
-    job?.status === "OPEN" &&
-    !hasApplications;
-
+  isClient &&
+  isJobOwner &&
+  (
+    (
+      isFlaggedJob &&
+      job?.status === "DRAFT"
+    ) ||
+    (
+      !isFlaggedJob &&
+      !isUrgentJob &&
+      job?.status === "OPEN" &&
+      !hasApplications
+    )
+  );
   const isDraftJob =
     isClient &&
     isJobOwner &&
-    job?.status === "DRAFT";
+    job?.status === "DRAFT" &&
+    !isFlaggedJob;
 
   const canApply = useMemo(() => {
     if (!isFixer) return false;
@@ -336,7 +353,9 @@ window.location.href = payment.authorizationUrl;
 }
 async function handleDeleteDraft() {
   const confirmed = window.confirm(
-    "Delete this draft job? This cannot be undone."
+    isFlaggedJob
+      ? "Delete this flagged job from your dashboard? Your payment and job history will be preserved for platform records."
+      : "Delete this draft job? This cannot be undone."
   );
 
   if (!confirmed) return;
@@ -509,6 +528,64 @@ async function handleDeleteDraft() {
           </div>
         </div>
       )}
+      {isFlaggedJob && (
+  <section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-[0_4px_24px_rgba(220,38,38,0.08)] dark:border-red-700 dark:bg-red-900/20">
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex rounded-full border border-red-300 bg-red-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-red-700 dark:border-red-700 dark:bg-red-900/40 dark:text-red-200">
+            FLAGGED
+          </span>
+
+          <span className="text-sm font-semibold text-red-800 dark:text-red-200">
+            This job is not visible to fixers.
+          </span>
+        </div>
+
+        <p className="mt-3 text-sm leading-6 text-red-800 dark:text-red-100">
+          Your job has been flagged because it may not comply with
+          FixAndEarn job-posting rules.
+        </p>
+
+        {job.flagReason ? (
+          <div className="mt-3 rounded-xl border border-red-200 bg-white p-4 dark:border-red-700 dark:bg-[#1E2A3A]">
+            <p className="text-xs font-bold uppercase tracking-wide text-red-700 dark:text-red-200">
+              Reason
+            </p>
+
+            <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+              {job.flagReason}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Link
+          href={`/app/jobs/${jobId}/edit`}
+          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600"
+        >
+          Edit Job
+        </Link>
+
+        <button
+          type="button"
+          onClick={handleDeleteDraft}
+          disabled={deletingDraft}
+          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+        >
+          {deletingDraft ? "Deleting..." : "Delete Job"}
+        </button>
+      </div>
+
+      {job.flaggedAt ? (
+        <p className="text-xs text-red-700 dark:text-red-300">
+          Flagged: {new Date(job.flaggedAt).toLocaleString()}
+        </p>
+      ) : null}
+    </div>
+  </section>
+)}
 
       {/* Role mismatch warning */}
       {isClientOwnedJobViewedInFixerMode && (
@@ -592,7 +669,7 @@ async function handleDeleteDraft() {
       )}
 
       {/* Quick actions (only if not in read-only fixer mode) */}
-      {!isClientOwnedJobViewedInFixerMode && (
+      {!isClientOwnedJobViewedInFixerMode && !isFlaggedJob && (
         <div className="space-y-3 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Quick actions</div>
 
@@ -727,7 +804,7 @@ async function handleDeleteDraft() {
       )}
 
       {/* Apply section (fixer only) */}
-      {!isClientOwnedJobViewedInFixerMode && isFixer && (
+     {!isClientOwnedJobViewedInFixerMode && !isFlaggedJob && isFixer && (
         <div className="space-y-3 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Apply</p>
 
@@ -781,7 +858,7 @@ async function handleDeleteDraft() {
       )}
 
       {/* Job completion section */}
-      {!isClientOwnedJobViewedInFixerMode && job?.status !== "COMPLETED" && (
+      {!isClientOwnedJobViewedInFixerMode && !isFlaggedJob && job?.status !== "COMPLETED" && (
         <div className="space-y-3 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Job completion</p>
 

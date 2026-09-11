@@ -57,6 +57,16 @@ export class JobsRepo {
     },
   });
 }
+archiveClientJob(jobId: string) {
+  return this.prisma.job.update({
+    where: {
+      id: jobId,
+    },
+    data: {
+      clientArchivedAt: new Date(),
+    },
+  });
+}
 
   countApplications(jobId: string) {
     return this.prisma.jobApplication.count({ where: { jobId } });
@@ -191,7 +201,11 @@ async getMarketplaceStats() {
     skip: number;
     take: number;
   }) {
-    const where: Prisma.JobWhereInput = { clientId: args.clientId };
+    const where: Prisma.JobWhereInput = {
+    clientId: args.clientId,
+    clientArchivedAt: null,
+  };
+  
     if (args.status) where.status = args.status as any;
 
     return this.prisma.job.findMany({
@@ -201,6 +215,7 @@ async getMarketplaceStats() {
       take: args.take,
     });
   }
+  
 
   async listApplicationsByFixerId(args: {
   fixerId: string;
