@@ -2,37 +2,26 @@
 
 import type { AxiosError } from "axios";
 
+import {
+  getUserFacingErrorMessage,
+} from "@/lib/shared/user-facing-error";
+
 export function renderAxiosError(
   err: unknown
 ): string {
-  const e =
-    err as AxiosError<{
-      message?:
-        | string
-        | string[];
-    }>;
-
-  const msg =
-    e.response?.data
-      ?.message;
-
-  if (
-    Array.isArray(msg)
-  ) {
-    return msg.join(", ");
-  }
-
-  if (msg) {
-    return String(msg);
-  }
-
-  if (e.message) {
-    return e.message;
-  }
-
-  return "Unknown error";
+  return getUserFacingErrorMessage(
+    err,
+    "We couldn't load this chat. Please try again.",
+  );
 }
 
+/**
+ * Returns the raw backend message for internal chat-state logic.
+ *
+ * This is intentionally NOT used for customer-facing error rendering.
+ * It is still needed by chat bootstrap/state logic that checks specific
+ * backend codes such as CONVERSATION_NOT_FOUND.
+ */
 export function getBackendMessage(
   err: unknown
 ): string | null {
@@ -59,6 +48,7 @@ export function getBackendMessage(
 
   return String(msg);
 }
+
 export function getConversationBootstrapState(
   backendMsg?: string | null
 ) {
@@ -83,6 +73,7 @@ export function getConversationBootstrapState(
       needsAgreement,
   };
 }
+
 export function milliToFecInput(
   milli?: number | null
 ) {
