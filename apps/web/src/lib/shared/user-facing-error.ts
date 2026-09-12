@@ -85,18 +85,56 @@ const MACHINE_ERROR_MESSAGES: Record<string, string> = {
 };
 
 const HTTP_ERROR_MESSAGES: Record<number, string> = {
-  400: "The request could not be completed. Please check the information and try again.",
-  401: "Your session is no longer valid. Please sign in again.",
-  403: "You do not have permission to perform this action.",
-  404: "The requested item could not be found.",
-  409: "This action could not be completed because the current state has changed.",
-  422: "Some of the information provided is invalid. Please review it and try again.",
-  429: "Too many requests. Please wait a moment and try again.",
-  500: "Something went wrong on our side. Please try again.",
-  502: "The service is temporarily unavailable. Please try again.",
-  503: "The service is temporarily unavailable. Please try again.",
-  504: "The service took too long to respond. Please try again.",
+  400:
+    "The request could not be completed. Please check the information and try again.",
+  401:
+    "Your session is no longer valid. Please sign in again.",
+  403:
+    "You do not have permission to perform this action.",
+  404:
+    "The requested item could not be found.",
+  409:
+    "This action could not be completed because the current state has changed.",
+  422:
+    "Some of the information provided is invalid. Please review it and try again.",
+  429:
+    "Too many requests. Please wait a moment and try again.",
+  500:
+    "Something went wrong on our side. Please try again.",
+  502:
+    "The service is temporarily unavailable. Please try again.",
+  503:
+    "The service is temporarily unavailable. Please try again.",
+  504:
+    "The service took too long to respond. Please try again.",
 };
+
+/**
+ * NestJS / HTTP framework messages that should never be shown
+ * directly to a customer when a proper status-based message exists.
+ */
+const GENERIC_HTTP_MESSAGES = new Set([
+  "Bad Request",
+  "Unauthorized",
+  "Forbidden",
+  "Not Found",
+  "Method Not Allowed",
+  "Not Acceptable",
+  "Request Timeout",
+  "Conflict",
+  "Gone",
+  "Length Required",
+  "Precondition Failed",
+  "Payload Too Large",
+  "Unsupported Media Type",
+  "Unprocessable Entity",
+  "Too Many Requests",
+  "Internal Server Error",
+  "Not Implemented",
+  "Bad Gateway",
+  "Service Unavailable",
+  "Gateway Timeout",
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -108,6 +146,10 @@ function isMachineErrorCode(value: string): boolean {
   if (!normalized) return false;
 
   return /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/.test(normalized);
+}
+
+function isGenericHttpMessage(value: string): boolean {
+  return GENERIC_HTTP_MESSAGES.has(value.trim());
 }
 
 function cleanString(value: unknown): string | null {
@@ -122,9 +164,7 @@ function cleanString(value: unknown): string | null {
 
 function normalizeCandidate(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value
-      .flatMap((item) => normalizeCandidate(item))
-      .filter(Boolean);
+    return value.flatMap((item) => normalizeCandidate(item));
   }
 
   const stringValue = cleanString(value);
@@ -137,12 +177,25 @@ function normalizeCandidate(value: unknown): string[] {
     return [mapped];
   }
 
-  // Never expose an unknown machine-readable backend code.
+  /*
+   * Unknown backend machine-readable codes should never be
+   * exposed directly to the customer.
+   */
   if (isMachineErrorCode(stringValue)) {
     return [];
   }
 
-  // Axios' generic technical message is not useful to customers.
+  /*
+   * Generic NestJS / HTTP exception names should not bypass
+   * the HTTP status mapping below.
+   */
+  if (isGenericHttpMessage(stringValue)) {
+    return [];
+  }
+
+  /*
+   * Axios technical errors are not useful to customers.
+   */
   if (/^Request failed with status code \d+$/i.test(stringValue)) {
     return [];
   }
@@ -165,7 +218,9 @@ function getStatus(error: unknown): number | null {
 
   if (!isRecord(response)) return null;
 
-  return typeof response.status === "number" ? response.status : null;
+  return typeof response.status === "number"
+    ? response.status
+    : null;
 }
 
 function getResponsePayload(error: unknown): ErrorPayload | null {
@@ -200,36 +255,71 @@ export function getUserFacingErrorMessage(
   fallback = "Something went wrong. Please try again.",
 ): string {
   const payload = getResponsePayload(error);
+  const status = getStatus(error);
 
+  /*
+   * IMPORTANT:
+   * Known machine-readable backend codes always take priority.
+   *
+   * Example:
+   * 400 + INVALID_AMOUNT
+   *
+   * should display the specific INVALID_AMOUNT message rather
+   * than the generic 400 message.
+   */
   const candidates = [
-    ...(normalizeCandidate(payload?.message) ?? []),
-    ...(normalizeCandidate(payload?.error) ?? []),
-    ...(normalizeCandidate(payload?.code) ?? []),
+    ...normalizeCandidate(payload?.message),
+    ...normalizeCandidate(payload?.error),
+    ...normalizeCandidate(payload?.code),
   ];
 
-  const uniqueCandidates = Array.from(new Set(candidates));
+  const uniqueCandidates = Array.from(
+    new Set(candidates),
+  );
 
   if (uniqueCandidates.length > 0) {
     return uniqueCandidates.join(" ");
   }
 
-  const status = getStatus(error);
-
+  /*
+   * Generic HTTP/NestJS messages are handled here by status.
+   *
+   * Examples:
+   * "Forbidden" -> 403 friendly message
+   * "Bad Request" -> 400 friendly message
+   * "Not Found" -> 404 friendly message
+   * "Conflict" -> 409 friendly message
+   */
   if (status !== null && HTTP_ERROR_MESSAGES[status]) {
     return HTTP_ERROR_MESSAGES[status];
   }
 
+  /*
+   * Network failure.
+   */
   if (getNetworkFailure(error)) {
-    return "We couldn't reach FixAndEarn. Please check your internet connection and try again.";
+    return (
+      "We couldn't reach FixAndEarn. Please check your internet connection and try again."
+    );
   }
 
+  /*
+   * Last safe fallback:
+   * preserve a genuinely useful human-readable message,
+   * but never expose machine codes or generic technical
+   * Axios/framework messages.
+   */
   if (isRecord(error)) {
     const rawMessage = cleanString(error.message);
 
     if (
       rawMessage &&
       !isMachineErrorCode(rawMessage) &&
-      !/^Request failed with status code \d+$/i.test(rawMessage)
+      !isGenericHttpMessage(rawMessage) &&
+      !/^Request failed with status code \d+$/i.test(rawMessage) &&
+      rawMessage !== "Network Error" &&
+      rawMessage !== "ERR_NETWORK" &&
+      rawMessage !== "ECONNABORTED"
     ) {
       return rawMessage;
     }

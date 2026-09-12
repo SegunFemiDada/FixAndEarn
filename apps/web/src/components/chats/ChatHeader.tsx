@@ -64,8 +64,7 @@ export default function ChatHeader({
 
       {!chatOpen && (
         <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
-          This chat is closed. Previous messages remain
-          available for reference.
+          This chat is closed. 
         </div>
       )}
 
