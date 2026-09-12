@@ -90,7 +90,11 @@ export function useMyJobs(
 }
 
 export function useMyApplications(
-  params?: { skip?: number; take?: number },
+  params?: {
+    skip?: number;
+    take?: number;
+    jobStatus?: string;
+  },
   options?: { enabled?: boolean }
 ) {
   return useQuery({

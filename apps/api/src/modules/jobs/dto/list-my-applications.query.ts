@@ -1,6 +1,5 @@
-//path: apps/api/src/modules/jobs/dto/list-my-applications.query.ts
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsInt, IsOptional, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Min } from "class-validator";
 import { Type } from "class-transformer";
 
 export class ListMyApplicationsQuery {
@@ -17,4 +16,9 @@ export class ListMyApplicationsQuery {
   @IsInt()
   @Min(1)
   take?: number;
+
+  @ApiPropertyOptional({ example: "OPEN" })
+  @IsOptional()
+  @IsString()
+  jobStatus?: string;
 }

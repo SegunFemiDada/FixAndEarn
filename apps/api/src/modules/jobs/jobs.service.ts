@@ -200,13 +200,14 @@ return {
 
   async listMyApplications(args: {
   fixerId: string;
+  jobStatus?: string;
   skip: number;
   take: number;
 }) {
   await this.assertVerifiedUser(args.fixerId);
 
   const rows =
-    await this.repo.listApplicationsByFixerId(args);
+  await this.repo.listApplicationsByFixerId(args);
 
   return rows.map((row: any) => ({
     type: row.type,

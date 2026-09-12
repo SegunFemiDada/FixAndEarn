@@ -199,6 +199,7 @@ function ClientDashboard() {
   const DASHBOARD_PAGE_SIZE = 10;
 
 const [dashboardPage, setDashboardPage] = useState(1);
+const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
 const dashboardSkip =
   (dashboardPage - 1) * DASHBOARD_PAGE_SIZE;
@@ -207,6 +208,9 @@ const { data: jobs, isLoading, isError, isFetching } = useMyJobs(
   {
     skip: dashboardSkip,
     take: DASHBOARD_PAGE_SIZE + 1,
+    ...(selectedStatus !== "ALL"
+      ? { status: selectedStatus }
+      : {}),
   },
   { enabled: true }
 );
@@ -217,7 +221,17 @@ const hasNextPage =
   fetchedJobs.length > DASHBOARD_PAGE_SIZE;
 
 const list = fetchedJobs.slice(0, DASHBOARD_PAGE_SIZE);
+const statusOptions = [
+  "ALL",
+  "IN_PROGRESS",
+  "DRAFT",
+  "OPEN",
+  "COMPLETED",
+] as const;
 const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
+useEffect(() => {
+  setDashboardPage(1);
+}, [selectedStatus]);
 
 async function handleDeleteFlaggedJob(jobId: string) {
   const confirmed = window.confirm(
@@ -273,17 +287,48 @@ async function handleDeleteFlaggedJob(jobId: string) {
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
           <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Status on this page</div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {Object.entries(grouped).map(([status, items]) => (
-              <span
-                key={status}
-                className={[
-                  "inline-flex rounded-full border px-3 py-1.5 text-xs font-medium",
-                  getStatusBadgeClass(status),
-                ].join(" ")}
-              >
-                {status}: {items.length}
-              </span>
-            ))}
+            <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+  <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+    Filter by status
+  </div>
+
+  <div className="mt-3 flex flex-wrap gap-2">
+    {statusOptions.map((status) => {
+      const count =
+        status === "ALL"
+          ? list.length
+          : list.filter(
+              (job: any) => String(job?.status) === status
+            ).length;
+
+      const selected = selectedStatus === status;
+
+      return (
+        <button
+          key={status}
+          type="button"
+          onClick={() => {
+            setSelectedStatus(status);
+            setDashboardPage(1);
+          }}
+          className={[
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+            selected
+              ? getStatusBadgeClass(
+                  status === "ALL" ? "UNKNOWN" : status
+                )
+              : "border-[#C5D5EE] bg-white text-[#516786] hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#AAB9D0] dark:hover:bg-[#1E2A3A]",
+          ].join(" ")}
+        >
+          {status}
+          <span className="opacity-80">
+            {count}
+          </span>
+        </button>
+      );
+    })}
+  </div>
+</section>
           </div>
         </section>
       ) : null}
@@ -356,6 +401,7 @@ function FixerDashboard() {
 const DASHBOARD_PAGE_SIZE = 10;
 
 const [dashboardPage, setDashboardPage] = useState(1);
+const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
 const dashboardSkip =
   (dashboardPage - 1) * DASHBOARD_PAGE_SIZE;
@@ -365,9 +411,15 @@ const { data: apps, isLoading, isError, isFetching } =
     {
       skip: dashboardSkip,
       take: DASHBOARD_PAGE_SIZE + 1,
+      ...(selectedStatus !== "ALL"
+        ? { jobStatus: selectedStatus }
+        : {}),
     },
     { enabled: true }
   );
+  useEffect(() => {
+  setDashboardPage(1);
+}, [selectedStatus]);
 
   const [avail, setAvail] = useState<FixerAvailabilityResponse | null>(null);
   const [availLoading, setAvailLoading] = useState(false);
@@ -418,7 +470,23 @@ const applications =
 const jobs = applications
   .map((a: any) => a?.job)
   .filter(Boolean);
+  const fixerStatusOptions = [
+  "ALL",
+  "OPEN",
+  "IN_PROGRESS",
+  "COMPLETED",
+] as const;
 
+const groupedFixerJobs = useMemo(() => {
+  const counts: Record<string, number> = {};
+
+  for (const job of jobs) {
+    const status = String(job?.status ?? "UNKNOWN");
+    counts[status] = (counts[status] ?? 0) + 1;
+  }
+
+  return counts;
+}, [jobs]);
 return (
   <div className="space-y-4">
     <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -499,7 +567,46 @@ return (
         </div>
       ) : null}
     </section>
+      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+  <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+    Filter by status
+  </div>
 
+  <div className="mt-3 flex flex-wrap gap-2">
+    {fixerStatusOptions.map((status) => {
+      const count =
+        status === "ALL"
+          ? jobs.length
+          : groupedFixerJobs[status] ?? 0;
+
+      const selected = selectedStatus === status;
+
+      return (
+        <button
+          key={status}
+          type="button"
+          onClick={() => {
+            setSelectedStatus(status);
+            setDashboardPage(1);
+          }}
+          className={[
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+            selected
+              ? getStatusBadgeClass(
+                  status === "ALL" ? "UNKNOWN" : status
+                )
+              : "border-[#C5D5EE] bg-white text-[#516786] hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#AAB9D0] dark:hover:bg-[#1E2A3A]",
+          ].join(" ")}
+        >
+          {status}
+          <span className="opacity-80">
+            {count}
+          </span>
+        </button>
+      );
+    })}
+  </div>
+</section>
     <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
       <div className="space-y-1">
         <div className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">

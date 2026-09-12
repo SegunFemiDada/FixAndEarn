@@ -98,7 +98,13 @@ export async function listMyJobs(params?: { skip?: number; take?: number; status
   return res.data;
 }
 
-export async function listMyApplications(params?: { skip?: number; take?: number }): Promise<any[]> {
+export async function listMyApplications(
+  params?: {
+    skip?: number;
+    take?: number;
+    jobStatus?: string;
+  }
+): Promise<any[]> {
   const res = await apiClient.get("/jobs/applications/mine", { params });
   return res.data;
 }

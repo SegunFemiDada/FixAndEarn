@@ -77,10 +77,11 @@ async marketplaceStats() {
     @Query() q: ListMyApplicationsQuery
   ) {
     return this.jobsService.listMyApplications({
-      fixerId: user.userId,
-      skip: q.skip ?? 0,
-      take: q.take ?? 20,
-    });
+    fixerId: user.userId,
+    jobStatus: q.jobStatus,
+    skip: q.skip ?? 0,
+    take: q.take ?? 20,
+  });
   }
 
   @Get(":id")
