@@ -82,6 +82,59 @@ const MACHINE_ERROR_MESSAGES: Record<string, string> = {
     "Your admin session has expired. Please sign in again.",
   ADMIN_ALREADY_EXISTS:
     "An administrator with that email already exists.",
+
+    // Chat / negotiation
+  USER_INACTIVE:
+    "This account is currently inactive. Please contact FixAndEarn support for assistance.",
+
+  MESSAGING_NOT_ALLOWED_FOR_JOB_STATUS:
+    "Messaging is not available because this job has already been completed or cancelled.",
+
+  NEGOTIATION_NOT_ALLOWED_FOR_JOB_STATUS:
+    "Price negotiation is no longer available for this job.",
+
+  NOT_A_PARTICIPANT:
+    "You are not a participant in this conversation.",
+
+  FIXER_NOT_AUTHORIZED:
+    "You are not authorized to participate in this job conversation.",
+
+  CHAT_CLOSED:
+    "This chat has been closed and can no longer receive messages.",
+
+  FIXER_CANNOT_SEND_FIRST_MESSAGE:
+    "The client must start the conversation before you can send a message.",
+
+  PRICE_ALREADY_AGREED:
+    "A price has already been agreed for this job.",
+
+  PRICE_NOT_LOCKED:
+    "There is no locked price to respond to yet.",
+
+  LOCKER_ALREADY_AUTO_ACCEPTED:
+    "You already locked this price and accepted it automatically.",
+
+  MISSING_LOCKED_PRICE:
+    "The agreed job price could not be found. Please try again.",
+
+  DISPUTE_NOT_FOUND:
+    "We couldn't find that dispute.",
+
+  DISPUTE_JOB_NOT_FOUND:
+    "The job linked to this dispute could not be found.",
+
+  DISPUTE_JOB_HAS_NO_FIXER:
+    "This dispute cannot be processed because no fixer is assigned to the job.",
+
+  MESSAGE_BODY_REQUIRED:
+    "Please enter a message before sending it.",
+
+  CONVERSATION_NOT_FOUND:
+    "We couldn't find this conversation.",
+
+  CONVERSATION_ALREADY_CLOSED:
+    "This conversation has already been closed and cannot receive new messages.",
+    
 };
 
 const HTTP_ERROR_MESSAGES: Record<number, string> = {
