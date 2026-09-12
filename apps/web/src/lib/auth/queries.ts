@@ -6,6 +6,7 @@ import type { AxiosError } from "axios";
 import apiClient from "@/lib/apiClient";
 import { clearSession, saveSession } from "@/lib/auth/session";
 import { sendPhoneVerificationCode, verifyPhoneCode } from "./api";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 type ApiErrorPayload = {
   message?: string | string[];
@@ -77,26 +78,10 @@ type ResendVerificationResponse = {
 };
 
 export function extractAuthErrorMessage(error: unknown): string {
-  const axiosError = error as AxiosError<ApiErrorPayload> | undefined;
-  const payload = axiosError?.response?.data;
-
-  if (Array.isArray(payload?.message)) {
-    return payload.message.join(", ");
-  }
-
-  if (typeof payload?.message === "string" && payload.message.trim()) {
-    return payload.message;
-  }
-
-  if (typeof payload?.error === "string" && payload.error.trim()) {
-    return payload.error;
-  }
-
-  if (axiosError?.message) {
-    return axiosError.message;
-  }
-
-  return "Request failed";
+  return getUserFacingErrorMessage(
+    error,
+    "We couldn't sign you in. Please check your details and try again.",
+  );
 }
 
 export function useLogin() {

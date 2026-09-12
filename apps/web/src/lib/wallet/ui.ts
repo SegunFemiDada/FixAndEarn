@@ -1,4 +1,5 @@
 // Path: apps/web/src/lib/wallet/ui.ts
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 export type Role = "CLIENT" | "FIXER";
 
@@ -31,10 +32,9 @@ export function formatFecFromMilli(milli: number): string {
   return `${fec.toFixed(2)}FEC`;
 }
 
-export function backendMessage(err: any): string | null {
-  const e: any = err;
-  const msg = e?.response?.data?.message;
-  if (!msg) return null;
-  if (Array.isArray(msg)) return msg.join(", ");
-  return String(msg);
+export function backendMessage(err: unknown): string | null {
+  return getUserFacingErrorMessage(
+    err,
+    "We couldn't complete that wallet action. Please try again.",
+  );
 }

@@ -12,6 +12,7 @@ import { z } from "zod";
 import { useCreateJob, } from "@/lib/jobs/queries";
 import { useMyVerification } from "@/lib/verification/queries";
 import { getToken, getStoredRoles } from "@/lib/auth/session";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 const CreateJobUiSchema = z.object({
   skillCategory: z.string().min(2, "Skill category is required"),
@@ -34,7 +35,6 @@ type PreviewItem = {
 };
 
 export default function NewJobPage() {
-  const router = useRouter();
   const { data: ver, isLoading: verLoading } = useMyVerification();
   const createMutation = useCreateJob();
 
@@ -339,15 +339,10 @@ export default function NewJobPage() {
               <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
                 <p className="font-semibold">Post failed.</p>
                 <p className="mt-2 whitespace-pre-wrap text-xs leading-6">
-                  {(() => {
-                    const e: any = createMutation.error;
-                    const data = e?.response?.data;
-                    if (!data) return e?.message ?? "Unknown error";
-                    if (typeof data === "string") return data;
-                    if (typeof data?.message === "string") return data.message;
-                    if (Array.isArray(data?.message)) return data.message.join(", ");
-                    return e?.message ?? "Something went wrong.";
-                  })()}
+                  {getUserFacingErrorMessage(
+                  createMutation.error,
+                  "We couldn't post your job. Please try again.",
+                )}
                 </p>
               </div>
             )}

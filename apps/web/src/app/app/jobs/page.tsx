@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/session";
 import { decodeJwtUserId } from "@/lib/auth/jwt";
 import HiringPathModal from "@/components/jobs/HiringPathModal";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 function formatFec(milli?: number | null) {
   if (typeof milli !== "number") return "—";
@@ -27,11 +28,10 @@ function roleForUi(roles: Role[], active: Role | null): Role | null {
 }
 
 function backendMsg(err: unknown): string {
-  const e: any = err;
-  if (Array.isArray(e?.response?.data?.message)) {
-    return e.response.data.message.join(", ");
-  }
-  return e?.response?.data?.message || e?.message || "Failed to load jobs";
+  return getUserFacingErrorMessage(
+    err,
+    "We couldn't load the jobs. Please try again.",
+  );
 }
 
 function buildImageSrc(path?: string | null) {

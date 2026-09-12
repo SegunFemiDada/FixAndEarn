@@ -29,6 +29,7 @@ import {
 } from "@/lib/auth/session";
 import { decodeJwtUserId } from "@/lib/auth/jwt";
 import ReportJobModal from "@/components/jobs/ReportJobModal";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 function fmtFec(milli?: number | null): string {
   if (typeof milli !== "number") return "—";
@@ -46,19 +47,10 @@ function buildImageSrc(path?: string | null) {
 }
 
 function renderAxiosError(err: unknown): string {
-  if (!err || typeof err !== "object") return "Unknown error";
-
-  const e = err as {
-    message?: unknown;
-    response?: { data?: { message?: unknown } };
-  };
-
-  const msg = e.response?.data?.message;
-  if (Array.isArray(msg)) return msg.map(String).join(", ");
-  if (msg != null) return String(msg);
-  if (e.message != null) return String(e.message);
-
-  return "Unknown error";
+  return getUserFacingErrorMessage(
+    err,
+    "We couldn't load this job. Please try again.",
+  );
 }
 
 function roleForUi(roles: Role[], active: Role | null): Role | null {

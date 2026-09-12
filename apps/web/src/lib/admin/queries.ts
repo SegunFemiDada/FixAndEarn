@@ -6,7 +6,6 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import type { AxiosError } from "axios";
 
 import adminApi from "@/lib/admin/api";
 import {
@@ -20,46 +19,18 @@ import type {
   AdminLogoutAllResponse,
   AdminMeResponse,
 } from "@/lib/admin/types";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 export const adminQueryKeys = {
   me: ["admin", "me"] as const,
 };
 
-type ApiErrorPayload = {
-  message?: string | string[];
-  error?: string;
-  statusCode?: number;
-};
 
 function extractApiErrorMessage(error: unknown): string {
-  const axiosError =
-    error as AxiosError<ApiErrorPayload> | undefined;
-
-  const payload = axiosError?.response?.data;
-
-  if (Array.isArray(payload?.message)) {
-    return payload.message.join(", ");
-  }
-
-  if (
-    typeof payload?.message === "string" &&
-    payload.message.trim()
-  ) {
-    return payload.message;
-  }
-
-  if (
-    typeof payload?.error === "string" &&
-    payload.error.trim()
-  ) {
-    return payload.error;
-  }
-
-  if (axiosError?.message) {
-    return axiosError.message;
-  }
-
-  return "Request failed";
+  return getUserFacingErrorMessage(
+    error,
+    "We couldn't complete that admin action. Please try again.",
+  );
 }
 
 export function useAdminLogin() {

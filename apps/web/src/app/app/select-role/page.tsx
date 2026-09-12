@@ -12,13 +12,13 @@ import {
   setStoredRoles,
   type Role,
 } from "@/lib/auth/session";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 function backendMessage(err: unknown): string | null {
-  const e: any = err;
-  const msg = e?.response?.data?.message;
-  if (!msg) return null;
-  if (Array.isArray(msg)) return msg.join(", ");
-  return String(msg);
+  return getUserFacingErrorMessage(
+    err,
+    "Role switch failed. Please try again."
+  );
 }
 
 export default function SelectRolePage() {

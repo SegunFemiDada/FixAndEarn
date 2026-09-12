@@ -15,9 +15,8 @@ import {
   sendMessage,
 } from "@/lib/chat/api";
 
-
-import type { AxiosError } from "axios";
 import { initializeFinalPayment } from "@/lib/jobs/api";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 type Params = {
   jobId: string;
@@ -37,35 +36,11 @@ type Params = {
   ) => void;
 };
 
-function renderAxiosError(
-  err: unknown
-): string {
-  const e =
-    err as AxiosError<{
-      message?:
-        | string
-        | string[];
-    }>;
-
-  const msg =
-    e.response?.data
-      ?.message;
-
-  if (
-    Array.isArray(msg)
-  ) {
-    return msg.join(", ");
-  }
-
-  if (msg) {
-    return String(msg);
-  }
-
-  if (e.message) {
-    return e.message;
-  }
-
-  return "Unknown error";
+function renderAxiosError(err: unknown): string {
+  return getUserFacingErrorMessage(
+    err,
+    "We couldn't complete that chat action. Please try again.",
+  );
 }
 
 export function useChatActions({

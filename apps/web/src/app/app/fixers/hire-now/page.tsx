@@ -4,17 +4,11 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  useDiscoverFixers,
-} from "@/lib/users/queries";
+import { useDiscoverFixers } from "@/lib/users/queries";
 
-import {
-  getToken,
-} from "@/lib/auth/session";
+import { getToken } from "@/lib/auth/session";
 
-import {
-  decodeJwtUserId,
-} from "@/lib/auth/jwt";
+import { decodeJwtUserId } from "@/lib/auth/jwt";
 
 import useHireNowFilters from "@/hooks/useHireNowFilters";
 
@@ -22,11 +16,9 @@ import FixerFilters from "@/components/fixers/FixerFilters";
 import FixerList from "@/components/fixers/FixerList";
 import UrgentHireModal from "@/components/jobs/UrgentHireModal";
 
-import {
-  FixerItem,
-  extractErrorMessage,
-} from "@/types/fixer";
+import { FixerItem } from "@/types/fixer";
 
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 export default function HireNowPage() {
   const {
@@ -45,72 +37,43 @@ export default function HireNowPage() {
     queryParams,
   } = useHireNowFilters();
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const [
-    currentUserId,
-    setCurrentUserId,
-  ] = useState<string | null>(null);
+  const [selectedFixer, setSelectedFixer] = useState<FixerItem | null>(null);
 
-
-  const [
-    selectedFixer,
-    setSelectedFixer,
-  ] = useState<FixerItem | null>(null);
-
-
-  const [
-    modalOpen,
-    setModalOpen,
-  ] = useState(false);
-
-
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const token = getToken();
 
     if (token) {
-      setCurrentUserId(
-        decodeJwtUserId(token)
-      );
+      setCurrentUserId(decodeJwtUserId(token));
     }
   }, []);
-
 
   const {
     data,
     isLoading,
     isError,
     error,
-  } = useDiscoverFixers(
-    queryParams,
-    true
-  );
+  } = useDiscoverFixers(queryParams, true);
 
+  const fixers = (data ?? []) as FixerItem[];
 
-  const fixers =
-    (data ?? []) as FixerItem[];
-
-
-  function openHireModal(
-    fixer: FixerItem
-  ) {
+  function openHireModal(fixer: FixerItem) {
     setSelectedFixer(fixer);
     setModalOpen(true);
   }
-
 
   function closeHireModal() {
     setModalOpen(false);
     setSelectedFixer(null);
   }
 
-
-  const listErrorMessage =
-    extractErrorMessage(
-      error,
-      "Unable to load fixers."
-    );
-
+  const listErrorMessage = getUserFacingErrorMessage(
+    error,
+    "Unable to load fixers.",
+  );
 
   return (
     <div
@@ -132,7 +95,6 @@ export default function HireNowPage() {
           space-y-6
         "
       >
-
         <section
           className="
             rounded-2xl
@@ -190,21 +152,17 @@ export default function HireNowPage() {
           </p>
         </section>
 
-
         <FixerFilters
           skill={skill}
           state={state}
           city={city}
           minRating={minRating}
-
           setSkill={setSkill}
           setState={setState}
           setCity={setCity}
           setMinRating={setMinRating}
-
           onReset={resetFilters}
         />
-
 
         {isLoading ? (
           <div
@@ -248,13 +206,11 @@ export default function HireNowPage() {
           />
         )}
 
-
         <UrgentHireModal
           fixer={selectedFixer}
           open={modalOpen}
           onClose={closeHireModal}
         />
-
       </div>
     </div>
   );

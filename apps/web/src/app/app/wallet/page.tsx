@@ -6,17 +6,17 @@ import Link from "next/link";
 import { useMyVerification } from "@/lib/verification/queries";
 import { useWalletBalance } from "@/lib/wallet/queries";
 import { getToken, getStoredRoles, getActiveRole, type Role } from "@/lib/auth/session";
+import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
 function formatFecFromMilli(milli: number): string {
   return `${(milli / 1000).toFixed(2)} FEC`;
 }
 
 function backendMessage(err: unknown): string | null {
-  const e = err as { response?: { data?: { message?: unknown } } };
-  const msg = e?.response?.data?.message;
-  if (!msg) return null;
-  if (Array.isArray(msg)) return msg.join(", ");
-  return String(msg);
+  return getUserFacingErrorMessage(
+    err,
+    "We couldn't complete that wallet action. Please try again.",
+  );
 }
 
 function roleForUi(roles: Role[], active: Role | null): Role | null {
