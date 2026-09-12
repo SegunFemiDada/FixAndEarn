@@ -157,7 +157,7 @@ export default function HireNowPage() {
               dark:text-[#7AAEE0]
             "
           >
-            Urgent hiring
+            Urgent Connections
           </p>
 
           <h1
@@ -169,7 +169,7 @@ export default function HireNowPage() {
               dark:text-[#E8F0FA]
             "
           >
-            Hire a fixer now
+            Connect with a fixer now
           </h1>
 
           <p

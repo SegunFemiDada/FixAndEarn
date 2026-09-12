@@ -122,7 +122,7 @@ export default function FixerCard({
               text-[#6B7C99]
               dark:text-[#8FA0BC]
             "
-          >
+          >{fixer.verification?.lga ?? "LGA"},{" "}
             {fixer.verification?.city ?? "City"},{" "}
             {fixer.verification?.state ?? "State"}
           </p>
@@ -196,14 +196,6 @@ export default function FixerCard({
                   effectiveAvailability
                 )}
               </span>
-            </div>
-
-            <div>
-              <span className="font-medium">
-                LGA:
-              </span>{" "}
-              {fixer.verification?.lga ??
-                "Not available"}
             </div>
           </div>
 
