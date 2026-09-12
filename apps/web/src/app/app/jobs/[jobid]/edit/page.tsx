@@ -85,15 +85,9 @@ const canEdit =
     priceFec: Number(job.priceMilliFec ?? 0) / 1000,
   });
 }, [
-  job.id, 
-  job.skillCategory, 
-  job.state, 
-  job.city, 
-  job.lga, 
-  job.area, 
-  job.priceMilliFec, 
-  form, 
-  job]);
+  job,
+  form,
+]);
 
   async function onSubmit(values: EditJobForm) {
   try {
