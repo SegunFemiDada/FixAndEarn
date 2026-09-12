@@ -28,15 +28,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.usersService.findById(payload.sub);
 
     if (!user) {
-      throw new UnauthorizedException("SESSION_EXPIRED");
-    }
+  throw new UnauthorizedException("SESSION_EXPIRED");
+}
 
-    if (
-      payload.sessionVersion !==
-      user.sessionVersion
-    ) {
-      throw new UnauthorizedException("SESSION_REVOKED");
-    }
+if (
+  payload.sessionVersion !==
+  user.sessionVersion
+) {
+  throw new UnauthorizedException("SESSION_REVOKED");
+}
+
+if (!user.isActive) {
+  throw new UnauthorizedException("ACCOUNT_SUSPENDED");
+}
 
     return {
       userId: user.id,

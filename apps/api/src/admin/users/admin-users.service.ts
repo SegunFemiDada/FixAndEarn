@@ -1,11 +1,14 @@
 //path: apps/api/src/admin/users/admin-users.service.ts
 import { ForbiddenException, ConflictException, Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { AdminRole } from "@prisma/client";
+import {
+  AdminRole,
+  NotificationType,
+} from "@prisma/client";
 import { AdminAuditService } from "../audit/admin-audit.service";
 import { AdminUsersRepo } from "./admin-users.repo";
 import { CurrentUserPayload } from "src/common/types/current-user";
 import { AdminUserUpdateDto } from "./dto/admin-user-update.dto";
-
+import { NotificationsService } from "../../modules/notifications/notifications.service";
 
 
 type AdminCtx = { adminId: string; role: AdminRole };
@@ -35,7 +38,11 @@ const ROLES_UPDATE = new Set<AdminRole>([AdminRole.SUPER_ADMIN, AdminRole.SUPPOR
 const ROLES_SUPPORT_OR_SUPER = new Set<AdminRole>([AdminRole.SUPER_ADMIN, AdminRole.SUPPORT_OFFICER]);
 @Injectable()
 export class AdminUsersService {
-  constructor(private readonly repo: AdminUsersRepo, private readonly audit: AdminAuditService) {}
+  constructor(
+  private readonly repo: AdminUsersRepo,
+  private readonly audit: AdminAuditService,
+  private readonly notifications: NotificationsService,
+) {}
 
   async search(q: {
   q?: string;
@@ -104,35 +111,110 @@ export class AdminUsersService {
     return this.maskSensitive(user, admin.role);
   }
 
-  async suspend(userId: string, admin: AdminCtx, reason?: string) {
-    if (!ROLES_SUSPEND.has(admin.role)) throw new ForbiddenException("ADMIN_FORBIDDEN");
-
-    await this.repo.setActive(userId, false);
-
-    await this.audit.log({
-      actorAdminId: admin.adminId,
-      action: "USER_SUSPEND",
-      description: "Suspended user",
-      metadata: { userId, reason: reason?.trim() ?? null }
-    });
-
-    return { ok: true };
+  async suspend(
+  userId: string,
+  admin: AdminCtx,
+  reason?: string,
+) {
+  if (!ROLES_SUSPEND.has(admin.role)) {
+    throw new ForbiddenException("ADMIN_FORBIDDEN");
   }
 
-  async unsuspend(userId: string, admin: AdminCtx, reason?: string) {
-    if (!ROLES_SUSPEND.has(admin.role)) throw new ForbiddenException("ADMIN_FORBIDDEN");
+  const cleanReason =
+    reason?.trim() || "Your account has been suspended by FixAndEarn administration.";
 
-    await this.repo.setActive(userId, true);
+  const updated =
+    await this.repo.setActiveAndRevokeSessions(
+      userId,
+      false,
+    );
 
-    await this.audit.log({
-      actorAdminId: admin.adminId,
-      action: "USER_UNSUSPEND",
-      description: "Re-activated user",
-      metadata: { userId, reason: reason?.trim() ?? null }
-    });
+  await this.notifications.create({
+    userId,
+    type: NotificationType.SYSTEM_ANNOUNCEMENT,
+    title: "Your account has been suspended",
+    body:
+      `${cleanReason} ` +
+      "You can no longer use authenticated FixAndEarn services until the account is restored.",
+    idempotencyKey:
+      `USER_SUSPENDED:${userId}:${updated.sessionVersion}`,
+    data: {
+      event: "USER_SUSPENDED",
+      reason: cleanReason,
+      suspendedAt: new Date().toISOString(),
+    },
+  });
 
-    return { ok: true };
+  await this.audit.log({
+    actorAdminId: admin.adminId,
+    action: "USER_SUSPEND",
+    description: "Suspended user account and revoked active sessions",
+    metadata: {
+      userId,
+      reason: cleanReason,
+      sessionVersion: updated.sessionVersion,
+    },
+  });
+
+  return {
+    ok: true,
+    isActive: false,
+    sessionVersion: updated.sessionVersion,
+  };
+}
+
+  async unsuspend(
+  userId: string,
+  admin: AdminCtx,
+  reason?: string,
+) {
+  if (!ROLES_SUSPEND.has(admin.role)) {
+    throw new ForbiddenException("ADMIN_FORBIDDEN");
   }
+
+  const cleanReason =
+    reason?.trim() ||
+    "Your FixAndEarn account has been restored by administration.";
+
+  const updated =
+    await this.repo.setActiveAndRevokeSessions(
+      userId,
+      true,
+    );
+
+  await this.notifications.create({
+    userId,
+    type: NotificationType.SYSTEM_ANNOUNCEMENT,
+    title: "Your account has been restored",
+    body:
+      `${cleanReason} ` +
+      "You can log in again and resume eligible FixAndEarn activities.",
+    idempotencyKey:
+      `USER_UNSUSPENDED:${userId}:${updated.sessionVersion}`,
+    data: {
+      event: "USER_UNSUSPENDED",
+      reason: cleanReason,
+      restoredAt: new Date().toISOString(),
+    },
+  });
+
+  await this.audit.log({
+    actorAdminId: admin.adminId,
+    action: "USER_UNSUSPEND",
+    description: "Restored user account and rotated sessions",
+    metadata: {
+      userId,
+      reason: cleanReason,
+      sessionVersion: updated.sessionVersion,
+    },
+  });
+
+  return {
+    ok: true,
+    isActive: true,
+    sessionVersion: updated.sessionVersion,
+  };
+}
 
   async forceReverify(userId: string, admin: AdminCtx, reason?: string) {
     if (!ROLES_FORCE_REVERIFY.has(admin.role)) throw new ForbiddenException("ADMIN_FORBIDDEN");

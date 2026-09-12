@@ -18,9 +18,10 @@ export class AdminUsersRepo {
     if (args.q?.trim()) {
       const q = args.q.trim();
       where.OR = [
-        { email: { contains: q, mode: "insensitive" } },
-        { fullName: { contains: q, mode: "insensitive" } },
-      ];
+    { id: { contains: q, mode: "insensitive" } },
+    { email: { contains: q, mode: "insensitive" } },
+    { fullName: { contains: q, mode: "insensitive" } },
+  ];
     }
 
     if (args.role) {
@@ -93,6 +94,25 @@ export class AdminUsersRepo {
   async setActive(userId: string, isActive: boolean) {
     return this.prisma.user.update({ where: { id: userId }, data: { isActive } });
   }
+  async setActiveAndRevokeSessions(
+  userId: string,
+  isActive: boolean,
+) {
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: {
+      isActive,
+      sessionVersion: {
+        increment: 1,
+      },
+    },
+    select: {
+      id: true,
+      isActive: true,
+      sessionVersion: true,
+    },
+  });
+}
 
   async setForceReverify(userId: string, forceReverify: boolean) {
     return this.prisma.user.update({ where: { id: userId }, data: { forceReverify } });

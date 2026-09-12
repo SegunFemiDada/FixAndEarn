@@ -103,6 +103,9 @@ export class AuthService {
 
   const ok = await argon2.verify(user.passwordHash, input.password);
   if (!ok) throw new UnauthorizedException("Invalid credentials.");
+  if (!user.isActive) {
+  throw new UnauthorizedException("ACCOUNT_SUSPENDED");
+}
 
   const session = await this.usersService.incrementSessionVersion(user.id);
 
