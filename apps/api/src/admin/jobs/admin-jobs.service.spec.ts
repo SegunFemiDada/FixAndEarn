@@ -10,6 +10,7 @@ describe("AdminJobsService", () => {
   const repo = {
     listJobs: jest.fn(),
     getJob: jest.fn(),
+    countFlaggedJobs: jest.fn(),
   };
   const moderation = {
   flagJob: jest.fn(),
@@ -37,27 +38,32 @@ describe("AdminJobsService", () => {
   });
 
   it("lists jobs with bounded pagination", async () => {
-    repo.listJobs.mockResolvedValue({
-      items: [],
-      total: 0,
+  repo.listJobs.mockResolvedValue({
+    items: [],
+    total: 0,
+    skip: 0,
+    take: 100,
+  });
+
+  repo.countFlaggedJobs.mockResolvedValue(0);
+
+  const result = await service.list({
+    skip: -20,
+    take: 500,
+  });
+
+  expect(repo.listJobs).toHaveBeenCalledWith(
+    expect.objectContaining({
       skip: 0,
       take: 100,
-    });
+    })
+  );
 
-    const result = await service.list({
-      skip: -20,
-      take: 500,
-    });
+  expect(repo.countFlaggedJobs).toHaveBeenCalled();
 
-    expect(repo.listJobs).toHaveBeenCalledWith(
-      expect.objectContaining({
-        skip: 0,
-        take: 100,
-      })
-    );
-
-    expect(result.total).toBe(0);
-  });
+  expect(result.total).toBe(0);
+  expect(result.flaggedTotal).toBe(0);
+});
 
   it("returns a job investigation record", async () => {
     const job = {

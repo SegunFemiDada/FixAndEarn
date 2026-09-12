@@ -44,6 +44,7 @@ export function useAdminJobsList(
   return useQuery<{
     items: AdminJobListItem[];
     total: number;
+    flaggedTotal: number;
     skip: number;
     take: number;
   }>({

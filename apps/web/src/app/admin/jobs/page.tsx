@@ -108,6 +108,7 @@ export default function AdminJobsPage() {
 
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
+  const flaggedTotal = query.data?.flaggedTotal ?? 0;
 
   const hasPrevious = skip > 0;
   const hasNext = skip + take < total;
@@ -134,6 +135,12 @@ export default function AdminJobsPage() {
           payments, completion, and disputes.
         </p>
       </section>
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
+      <span>Flagged jobs</span>
+      <span className="rounded-full bg-red-600 px-2 py-0.5 text-xs text-white dark:bg-red-500">
+        {flaggedTotal}
+      </span>
+    </div>
 
       <section className="rounded-2xl border border-[#C5D5EE] bg-white p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] sm:p-6">
         <form
@@ -178,10 +185,15 @@ export default function AdminJobsPage() {
             className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]"
           >
             {MODERATION_OPTIONS.map((option) => (
-              <option key={option.label} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            <option
+              key={option.label}
+              value={option.value}
+            >
+              {option.value === "FLAGGED"
+                ? `Flagged (${flaggedTotal})`
+                : option.label}
+            </option>
+          ))}
           </select>
           <select
             value={postingType}

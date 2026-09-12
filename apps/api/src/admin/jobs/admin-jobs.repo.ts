@@ -405,4 +405,11 @@ export class AdminJobsRepo {
       },
     });
   }
+  async countFlaggedJobs() {
+  return this.prisma.job.count({
+    where: {
+      moderationStatus: JobModerationStatus.FLAGGED,
+    },
+  });
+}
 }

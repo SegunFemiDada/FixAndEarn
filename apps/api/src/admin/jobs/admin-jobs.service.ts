@@ -26,7 +26,8 @@ export class AdminJobsService {
     const skip = Math.max(0, args.skip ?? 0);
     const take = Math.min(Math.max(1, args.take ?? 20), 100);
 
-    return this.repo.listJobs({
+    const [result, flaggedTotal] = await Promise.all([
+    this.repo.listJobs({
       q: args.q,
       status: args.status,
       moderationStatus: args.moderationStatus,
@@ -35,7 +36,14 @@ export class AdminJobsService {
       fixerId: args.fixerId,
       skip,
       take,
-    });
+    }),
+    this.repo.countFlaggedJobs(),
+  ]);
+
+return {
+  ...result,
+  flaggedTotal,
+};
   }
 
   async getOne(jobId: string) {

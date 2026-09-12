@@ -108,7 +108,7 @@ describe("JobModerationService", () => {
 
       expect(result.status).toBe("FLAGGED");
       expect(result.reason).toBe(
-        "This job appears to violate FixAndEarn safety or usage rules."
+        "Unauthorized access, hacking, or malicious cyber activity is not allowed."
       );
     });
 

@@ -106,9 +106,10 @@ export function useJobById(id: string) {
   return useQuery({
     queryKey: keys.byId(id),
     queryFn: () => getJobById(id),
-    enabled: !!id,
+    enabled: Boolean(id),
     staleTime: 10_000,
     retry: 1,
+    refetchOnMount: "always",
   });
 }
 
@@ -244,12 +245,23 @@ export function useJobDetail(jobId: string, options?: { enabled?: boolean }) {
 }
 export function useUpdateJob(jobId: string) {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: (data: Parameters<typeof updateJob>[1]) => updateJob(jobId, data),
-    onSuccess: () => {
-      // Invalidate the specific job detail and the jobs list
-      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    mutationFn: (data: Parameters<typeof updateJob>[1]) =>
+      updateJob(jobId, data),
+
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: keys.byId(jobId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: keys.mine,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: keys.list,
+        }),
+      ]);
     },
   });
 }

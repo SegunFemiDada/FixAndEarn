@@ -44,7 +44,12 @@ export default function EditJobPage() {
 
   const gateOk = !!token && isVerifiedApproved && isClient;
 
-  const { data: job, isLoading } = useJobById(jobId);
+  const {
+  data: job,
+  isLoading,
+  isError,
+  error,
+} = useJobById(jobId);
   const updateJob = useUpdateJob(jobId);
   const applicationsQuery = useJobApplications(jobId, { skip: 0, take: 1, enabled: gateOk && !!jobId });
   const hasApplications = (applicationsQuery.data?.total ?? 0) > 0;
@@ -69,39 +74,55 @@ const canEdit =
   });
 
   useEffect(() => {
-    if (job) {
-      form.reset({
-        skillCategory: job.skillCategory ?? "",
-        state: job.state ?? "",
-        city: job.city ?? "",
-        lga: job.lga ?? "",
-        area: job.area ?? "",
-        priceFec: (job.priceMilliFec ?? 0) / 1000,
-      });
-    }
-  }, [job, form]);
+  if (!job) return;
+
+  form.reset({
+    skillCategory: job.skillCategory ?? "",
+    state: job.state ?? "",
+    city: job.city ?? "",
+    lga: job.lga ?? "",
+    area: job.area ?? "",
+    priceFec: Number(job.priceMilliFec ?? 0) / 1000,
+  });
+}, [
+  job.id, 
+  job.skillCategory, 
+  job.state, 
+  job.city, 
+  job.lga, 
+  job.area, 
+  job.priceMilliFec, 
+  form, 
+  job]);
 
   async function onSubmit(values: EditJobForm) {
+  try {
     await updateJob.mutateAsync({
-      skillCategory: values.skillCategory,
-      state: values.state,
-      city: values.city,
-      lga: values.lga || undefined,
-      area: values.area || undefined,
+      skillCategory: values.skillCategory.trim(),
+      state: values.state.trim(),
+      city: values.city.trim(),
+      lga: values.lga?.trim() || undefined,
+      area: values.area?.trim() || undefined,
       priceMilliFec: toMilliFec(values.priceFec),
     });
-    router.push(`/app/jobs/${jobId}`);
-  }
 
-  if (!mounted || isLoading) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-6">
-        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          Loading...
-        </div>
-      </div>
-    );
+    router.replace(`/app/jobs/${jobId}`);
+  } catch {
+    // The mutation error is displayed below the form.
   }
+}
+
+  if (!mounted || isLoading || !job) {
+  return (
+    <div className="mx-auto max-w-2xl px-4 py-6">
+      <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        {isError
+          ? error?.message || "Failed to load this job."
+          : "Loading job details..."}
+      </div>
+    </div>
+  );
+}
 
   if (!gateOk) {
     return (
