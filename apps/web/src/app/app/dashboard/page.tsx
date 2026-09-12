@@ -321,9 +321,6 @@ async function handleDeleteFlaggedJob(jobId: string) {
           ].join(" ")}
         >
           {status}
-          <span className="opacity-80">
-            {count}
-          </span>
         </button>
       );
     })}
@@ -599,9 +596,6 @@ return (
           ].join(" ")}
         >
           {status}
-          <span className="opacity-80">
-            {count}
-          </span>
         </button>
       );
     })}
