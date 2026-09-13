@@ -132,6 +132,7 @@ if (
   previousRekognitionFaceId &&
   previousRekognitionFaceId !== newRekognitionFaceId
 ) {
+  
   try {
     await this.face.deleteFace(previousRekognitionFaceId);
   } catch {
