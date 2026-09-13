@@ -61,6 +61,8 @@ import { AdminPaymentsController } from "./payments/admin-payments.controller";
 import { AdminPaymentsService } from "./payments/admin-payments.service";
 import { AdminPaymentsRepo } from "./payments/admin-payments.repo";
 import { JobsModule } from "../modules/jobs/jobs.module";
+import { VerificationModule } from "../modules/verification/verification.module";
+
 @Module({
   imports: [
     ConfigModule,
@@ -71,6 +73,7 @@ import { JobsModule } from "../modules/jobs/jobs.module";
     ChatModule,
     PassportModule,
     JobsModule,
+    VerificationModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

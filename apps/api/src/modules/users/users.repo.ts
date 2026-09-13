@@ -203,6 +203,7 @@ async getSessionVersion(userId: string) {
     const rows = await this.prisma.user.findMany({
       where: {
         isActive: true,
+        forceReverify: false,
         averageRating: minRating != null ? { gte: minRating } : undefined,
         roles: {
           some: {

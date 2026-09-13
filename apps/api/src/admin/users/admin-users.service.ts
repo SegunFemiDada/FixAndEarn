@@ -217,19 +217,48 @@ export class AdminUsersService {
 }
 
   async forceReverify(userId: string, admin: AdminCtx, reason?: string) {
-    if (!ROLES_FORCE_REVERIFY.has(admin.role)) throw new ForbiddenException("ADMIN_FORBIDDEN");
-
-    await this.repo.setForceReverify(userId, true);
-
-    await this.audit.log({
-      actorAdminId: admin.adminId,
-      action: "USER_FORCE_REVERIFY",
-      description: "Forced user re-verification",
-      metadata: { userId, reason: reason?.trim() ?? null }
-    });
-
-    return { ok: true };
+  if (!ROLES_FORCE_REVERIFY.has(admin.role)) {
+    throw new ForbiddenException("ADMIN_FORBIDDEN");
   }
+
+  const cleanReason =
+    reason?.trim() ||
+    "Additional identity verification is required for your FixAndEarn account.";
+
+  const updated = await this.repo.setForceReverify(userId, true);
+
+  await this.notifications.create({
+    userId,
+    type: NotificationType.SYSTEM_ANNOUNCEMENT,
+    title: "Additional verification required",
+    body:
+      `${cleanReason} ` +
+      "Please open your verification page and submit your verification information again.",
+    idempotencyKey:
+      `USER_FORCE_REVERIFY:${userId}:${updated.updatedAt.toISOString()}`,
+    data: {
+      event: "USER_FORCE_REVERIFY",
+      reason: cleanReason,
+      forcedAt: updated.updatedAt.toISOString(),
+    },
+  });
+
+  await this.audit.log({
+    actorAdminId: admin.adminId,
+    action: "USER_FORCE_REVERIFY",
+    description: "Forced user to complete verification again",
+    metadata: {
+      userId,
+      reason: cleanReason,
+      forceReverify: true,
+    },
+  });
+
+  return {
+    ok: true,
+    forceReverify: true,
+  };
+}
  // Add these methods inside AdminUsersService class
 async getDeletionRequests(status?: "PENDING" | "APPROVED" | "REJECTED") {
   return this.repo.getDeletionRequests(status);

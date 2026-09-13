@@ -93,6 +93,7 @@ model IdentityVerification {
   userId            String             @unique
   ninHash           String             @unique
   faceHash          String             @unique
+  rekognitionFaceId String?            @unique
   ninImagePath      String
   selfieImagePath   String
   utilityBillPath   String

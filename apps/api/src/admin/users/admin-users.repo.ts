@@ -114,9 +114,17 @@ export class AdminUsersRepo {
   });
 }
 
-  async setForceReverify(userId: string, forceReverify: boolean) {
-    return this.prisma.user.update({ where: { id: userId }, data: { forceReverify } });
-  }
+ async setForceReverify(userId: string, forceReverify: boolean) {
+  return this.prisma.user.update({
+    where: { id: userId },
+    data: { forceReverify },
+    select: {
+      id: true,
+      forceReverify: true,
+      updatedAt: true,
+    },
+  });
+}
 
   async updateAdminNotes(userId: string, notes: string | null) {
     return this.prisma.user.update({ where: { id: userId }, data: { adminNotes: notes } });

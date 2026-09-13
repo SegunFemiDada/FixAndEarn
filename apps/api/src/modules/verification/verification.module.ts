@@ -5,17 +5,17 @@ import { VerificationController } from "./verification.controller";
 import { VerificationService } from "./verification.service";
 import { OCR_PROVIDER, FACE_MATCH_PROVIDER } from "./providers/providers.tokens";
 import { StubOcrProvider } from "./providers/stub-ocr.provider";
-import { StubFaceMatchProvider } from "./providers/stub-face-match.provider";
-
+import { RekognitionFaceMatchProvider } from "./providers/rekognition-face-match.provider";
 @Module({
   imports: [StorageModule],
   controllers: [VerificationController],
   providers: [
     VerificationService,
     { provide: OCR_PROVIDER, useClass: StubOcrProvider },
-    { provide: FACE_MATCH_PROVIDER, useClass: StubFaceMatchProvider },
+    { provide: FACE_MATCH_PROVIDER, useClass: RekognitionFaceMatchProvider,},
     StubOcrProvider,
-    StubFaceMatchProvider
-  ]
+    RekognitionFaceMatchProvider
+  ],
+  exports: [FACE_MATCH_PROVIDER],
 })
 export class VerificationModule {}

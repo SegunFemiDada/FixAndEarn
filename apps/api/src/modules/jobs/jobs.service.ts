@@ -40,11 +40,30 @@ export class JobsService {
   }
 
   async assertVerifiedUser(userId: string): Promise<void> {
-    const rec = await this.repo.findIdentityVerificationByUserId(userId);
-    if (!rec) {
-      throw new ForbiddenException("Verification required.");
-    }
+  const user = await this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      forceReverify: true,
+      verification: {
+        select: {
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!user?.verification) {
+    throw new ForbiddenException("VERIFICATION_REQUIRED");
   }
+
+  if (user.forceReverify) {
+    throw new ForbiddenException("REVERIFICATION_REQUIRED");
+  }
+
+  if (user.verification.status !== "APPROVED") {
+    throw new ForbiddenException("VERIFICATION_REQUIRED");
+  }
+}
 
   private mapJobImage(image: any) {
     return {
@@ -140,6 +159,7 @@ export class JobsService {
         where: {
           id: fixerId,
           isActive: true,
+          forceReverify: false,
           roles: {
             some: {
               role: {

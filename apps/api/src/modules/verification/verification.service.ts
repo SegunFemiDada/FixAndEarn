@@ -108,6 +108,43 @@ export class VerificationService {
 
     return normalized;
   }
+  private async ensureNoBiometricDuplicate(args: {
+  userId: string;
+  selfiePath: string;
+}) {
+  const match = await this.face.searchExistingFace(args.selfiePath);
+
+  if (!match) {
+    return null;
+  }
+
+  const matchedVerification = await this.prisma.identityVerification.findFirst({
+    where: {
+      rekognitionFaceId: match.faceId,
+    },
+    select: {
+      userId: true,
+      status: true,
+    },
+  });
+
+  if (!matchedVerification) {
+    return null;
+  }
+
+  // During normal registration/resubmission, a face already
+  // belonging to another verified identity is prohibited.
+  if (
+    matchedVerification.userId !== args.userId &&
+    matchedVerification.status === "APPROVED"
+  ) {
+    throw new ConflictException(
+      "Duplicate identity detected (face already belongs to another verified account).",
+    );
+  }
+
+  return match;
+}
 
   private async ensureUniqueIdentity(args: {
     currentUserId: string;
@@ -128,9 +165,19 @@ export class VerificationService {
   }
 
   async submit(userId: string, input: SubmitVerificationInput) {
-    const existing = await this.prisma.identityVerification.findUnique({
-      where: { userId },
-    });
+    const [existing, user] = await Promise.all([
+  this.prisma.identityVerification.findUnique({
+    where: { userId },
+  }),
+  this.prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      forceReverify: true,
+    },
+  }),
+]);
+
+const forceReverify = Boolean(user?.forceReverify);
 
     if (!existing) {
       const bio = this.ensureRequiredString(input.bio, "BIO_REQUIRED");
@@ -142,14 +189,22 @@ export class VerificationService {
       if (!input.utilityBillPath) throw new BadRequestException("UTILITY_BILL_REQUIRED");
 
       const nin = await this.ocr.extractNinNumber(input.ninImagePath);
-      const ninHash = this.hash(nin);
-      const faceHash = await this.face.generateFaceHash(input.selfiePath);
+const ninHash = this.hash(nin);
 
-      await this.ensureUniqueIdentity({
-        currentUserId: userId,
-        ninHash,
-        faceHash,
-      });
+// Keep faceHash temporarily for backward database compatibility.
+// It is no longer the biometric duplicate detector.
+const faceHash = this.hash(input.selfiePath);
+
+await this.ensureUniqueIdentity({
+  currentUserId: userId,
+  ninHash,
+  faceHash,
+});
+
+await this.ensureNoBiometricDuplicate({
+  userId,
+  selfiePath: input.selfiePath,
+});
 
       return this.prisma.identityVerification.create({
         data: {
@@ -174,9 +229,87 @@ export class VerificationService {
       });
     }
 
-    if (existing.status !== "REJECTED") {
-      throw new ConflictException("Verification already submitted for this account.");
-    }
+
+    if (forceReverify) {
+  const bio = this.ensureRequiredString(input.bio, "BIO_REQUIRED");
+  const skills = this.ensureRequiredStringArray(
+    input.skills,
+    "SKILLS_REQUIRED",
+  );
+  const address = this.ensureRequiredAddress(input.address);
+
+  if (!input.ninImagePath) {
+    throw new BadRequestException("NIN_IMAGE_REQUIRED");
+  }
+
+  if (!input.selfiePath) {
+    throw new BadRequestException("SELFIE_REQUIRED");
+  }
+
+  if (!input.utilityBillPath) {
+    throw new BadRequestException("UTILITY_BILL_REQUIRED");
+  }
+
+  const nin = await this.ocr.extractNinNumber(input.ninImagePath);
+  const ninHash = this.hash(nin);
+  const faceHash = input.selfiePath
+  ? this.hash(input.selfiePath)
+  : existing.faceHash;
+
+await this.ensureUniqueIdentity({
+  currentUserId: userId,
+  ninHash,
+  faceHash,
+});
+
+if (input.selfiePath) {
+  await this.ensureNoBiometricDuplicate({
+    userId,
+    selfiePath: input.selfiePath,
+  });
+}
+
+  return this.prisma.$transaction(async (tx) => {
+    const updatedVerification = await tx.identityVerification.update({
+      where: { userId },
+      data: {
+        status: "PENDING",
+        reviewReason: null,
+        reviewedByAdminId: null,
+        reviewedAt: null,
+        ninHash,
+        faceHash,
+        ninImagePath: input.ninImagePath!,
+        selfieImagePath: input.selfiePath!,
+        utilityBillPath: input.utilityBillPath!,
+        bio,
+        skills: skills.join(","),
+        addressHouse: address.house,
+        addressStreet: address.street,
+        addressArea: address.area,
+        nearestBusStop: address.busStop,
+        lga: address.lga,
+        city: address.city,
+        state: address.state,
+        instagram: input.instagram?.trim() || null,
+        tiktok: input.tiktok?.trim() || null,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        forceReverify: false,
+      },
+    });
+
+    return updatedVerification;
+  });
+}
+
+if (existing.status !== "REJECTED") {
+  throw new ConflictException("Verification already submitted for this account.");
+}
 
     const reupload = this.parseReviewReason(existing.reviewReason);
 
@@ -234,16 +367,22 @@ export class VerificationService {
         ? this.hash(await this.ocr.extractNinNumber(input.ninImagePath))
         : existing.ninHash;
 
-    const faceHash =
-      input.selfiePath
-        ? await this.face.generateFaceHash(input.selfiePath)
-        : existing.faceHash;
+    const faceHash = input.selfiePath
+  ? this.hash(input.selfiePath)
+  : existing.faceHash;
 
-    await this.ensureUniqueIdentity({
-      currentUserId: userId,
-      ninHash,
-      faceHash,
-    });
+await this.ensureUniqueIdentity({
+  currentUserId: userId,
+  ninHash,
+  faceHash,
+});
+
+if (input.selfiePath) {
+  await this.ensureNoBiometricDuplicate({
+    userId,
+    selfiePath: input.selfiePath,
+  });
+}
 
     return this.prisma.identityVerification.update({
       where: { userId },
@@ -273,7 +412,8 @@ export class VerificationService {
   }
 
   async getMine(userId: string) {
-    const record = await this.prisma.identityVerification.findUnique({
+  const [record, user] = await Promise.all([
+    this.prisma.identityVerification.findUnique({
       where: { userId },
       select: {
         status: true,
@@ -293,36 +433,43 @@ export class VerificationService {
         selfieImagePath: true,
         utilityBillPath: true,
       },
-    });
-
-    if (!record) return null;
-
-    const parsed = this.parseReviewReason(record.reviewReason);
-
-    return {
-      status: record.status,
-      reviewReason: parsed.reason,
-      reuploadFields: parsed.fields,
-      forceReverify: false,
-      submittedData: {
-        bio: record.bio ?? "",
-        skills: String(record.skills ?? "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        addressHouse: record.addressHouse ?? "",
-        addressStreet: record.addressStreet ?? "",
-        addressArea: record.addressArea ?? "",
-        nearestBusStop: record.nearestBusStop ?? "",
-        lga: record.lga ?? "",
-        city: record.city ?? "",
-        state: record.state ?? "",
-        instagram: record.instagram ?? "",
-        tiktok: record.tiktok ?? "",
-        hasNinImage: Boolean(record.ninImagePath),
-        hasSelfieImage: Boolean(record.selfieImagePath),
-        hasUtilityBill: Boolean(record.utilityBillPath),
+    }),
+    this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        forceReverify: true,
       },
-    };
-  }
+    }),
+  ]);
+
+  if (!record) return null;
+
+  const parsed = this.parseReviewReason(record.reviewReason);
+
+  return {
+    status: record.status,
+    reviewReason: parsed.reason,
+    reuploadFields: parsed.fields,
+    forceReverify: Boolean(user?.forceReverify),
+    submittedData: {
+      bio: record.bio ?? "",
+      skills: String(record.skills ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      addressHouse: record.addressHouse ?? "",
+      addressStreet: record.addressStreet ?? "",
+      addressArea: record.addressArea ?? "",
+      nearestBusStop: record.nearestBusStop ?? "",
+      lga: record.lga ?? "",
+      city: record.city ?? "",
+      state: record.state ?? "",
+      instagram: record.instagram ?? "",
+      tiktok: record.tiktok ?? "",
+      hasNinImage: Boolean(record.ninImagePath),
+      hasSelfieImage: Boolean(record.selfieImagePath),
+      hasUtilityBill: Boolean(record.utilityBillPath),
+    },
+  };
+}
 }

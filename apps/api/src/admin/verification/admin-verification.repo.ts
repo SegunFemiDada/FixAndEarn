@@ -36,20 +36,53 @@ export class AdminVerificationRepo {
     });
   }
 
+  getByRekognitionFaceId(faceId: string) {
+  return this.prisma.identityVerification.findUnique({
+    where: {
+      rekognitionFaceId: faceId,
+    },
+    select: {
+      userId: true,
+      status: true,
+    },
+  });
+}
+
   async decide(args: {
-    id: string;
-    status: "APPROVED" | "REJECTED";
-    adminId: string;
-    reason?: string | null;
-  }) {
-    return this.prisma.identityVerification.update({
+  id: string;
+  status: "APPROVED" | "REJECTED";
+  adminId: string;
+  reason?: string | null;
+  rekognitionFaceId?: string | null;
+}) {
+  return this.prisma.$transaction(async (tx) => {
+    const updated = await tx.identityVerification.update({
       where: { id: args.id },
       data: {
         status: args.status,
         reviewedByAdminId: args.adminId,
         reviewedAt: new Date(),
-        reviewReason: args.reason ?? null
-      }
+        reviewReason: args.reason ?? null,
+        ...(args.status === "APPROVED"
+          ? {
+              rekognitionFaceId: args.rekognitionFaceId ?? null,
+            }
+          : {}),
+      },
     });
-  }
+
+    if (args.status === "APPROVED") {
+      await tx.user.update({
+        where: {
+          id: updated.userId,
+        },
+        data: {
+          forceReverify: false,
+        },
+      });
+    }
+
+    return updated;
+  });
+}
 }

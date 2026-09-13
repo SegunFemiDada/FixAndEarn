@@ -1,11 +1,30 @@
-// Path: /apps/api/src/modules/verification/providers/stub-face-match.provider.ts
 import { Injectable } from "@nestjs/common";
-import { FaceMatchProvider } from "./face-match.provider";
-import { createHash } from "crypto";
+
+import {
+  FaceMatchProvider,
+  FaceMatchResult,
+  IndexedFaceResult,
+} from "./face-match.provider";
 
 @Injectable()
 export class StubFaceMatchProvider implements FaceMatchProvider {
-  async generateFaceHash(selfiePath: string): Promise<string> {
-    return createHash("sha256").update(selfiePath).digest("hex");
+  async searchExistingFace(
+    _selfiePath: string,
+  ): Promise<FaceMatchResult | null> {
+    return null;
+  }
+
+  async indexApprovedFace(
+    _selfiePath: string,
+    userId: string,
+  ): Promise<IndexedFaceResult> {
+    return {
+      faceId: `stub-face-${userId}`,
+      externalImageId: userId,
+    };
+  }
+
+  async deleteFace(_faceId: string): Promise<void> {
+    return;
   }
 }

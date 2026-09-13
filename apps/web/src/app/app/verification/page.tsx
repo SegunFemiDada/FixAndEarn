@@ -193,6 +193,7 @@ export default function VerificationPage() {
 
   const status = (data as any)?.status as "PENDING" | "APPROVED" | "REJECTED" | undefined;
   const reviewReason = (data as any)?.reviewReason ?? null;
+  const forceReverify = Boolean((data as any)?.forceReverify);
   const reuploadFields = (((data as any)?.reuploadFields ?? []) as string[]).filter(Boolean);
   const reuploadLabels = humanizeReuploadFields(reuploadFields);
 
@@ -482,6 +483,18 @@ export default function VerificationPage() {
             Submit your documents. Approval is required before core features.
           </p>
         </div>
+        {forceReverify && (
+  <div className="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+    <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+      Additional verification required
+    </div>
+
+    <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
+      FixAndEarn requires you to complete verification again before you can continue using verification-dependent services.
+      Please submit your NIN, selfie, utility bill, profile information, and address again.
+    </p>
+  </div>
+)}
 
         {/* Status Card */}
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
