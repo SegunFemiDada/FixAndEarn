@@ -188,6 +188,7 @@ export class ProfilesController {
             fullName: true,
             fixerPreferredAvailability: true,
             fixerAvailabilityUpdatedAt: true,
+            forceReverify: true,
             jobsAssigned: {
               where: {
                 status: "IN_PROGRESS",
@@ -242,7 +243,7 @@ export class ProfilesController {
       );
 
     const isVerified =
-      approvedWithSelfie;
+      approvedWithSelfie && !u.forceReverify;
 
     const avatarPath =
       approvedWithSelfie
@@ -270,7 +271,8 @@ export class ProfilesController {
       id: u.id,
       fullName: u.fullName,
       isVerified,
-
+      forceReverify: u.forceReverify,
+      
       avatarPath,
 
       avatarUrl:
@@ -598,6 +600,7 @@ export class ProfilesController {
           fullName: true,
           phone: true,
           phoneVerifiedAt: true,
+          forceReverify: true,
 
           fixerPreferredAvailability:
             true,
@@ -679,7 +682,7 @@ export class ProfilesController {
       );
 
     const isVerified =
-      approvedWithSelfie;
+    approvedWithSelfie && !u.forceReverify;
 
     const avatarPath =
       approvedWithSelfie
@@ -718,7 +721,8 @@ export class ProfilesController {
         u.phoneVerifiedAt ??
         null,
 
-      isVerified,
+        isVerified,
+  forceReverify: u.forceReverify,
 
       avatarPath,
 

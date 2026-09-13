@@ -59,6 +59,11 @@ jobs:
       - name: Validate Prisma schema
         run: pnpm --filter @fixandearn/api exec prisma validate
 
+      - name: Resolve known historical rating migration in CI
+        run: >
+          pnpm --filter @fixandearn/api exec prisma migrate resolve
+          --applied 20260913070000_backfill_user_rating_aggregates
+
       - name: Apply Prisma migrations
         run: pnpm --filter @fixandearn/api prisma:migrate:deploy
 

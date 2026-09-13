@@ -588,45 +588,6 @@ const verificationSubmittingLabel =
             Submit your documents. Approval is required before core features.
           </p>
         </div>
-        {forceReverify && (
-  <div className="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
-    <div className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-      Additional verification required
-    </div>
-
-    <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-      FixAndEarn requires you to complete verification again before you can continue using verification-dependent services.
-      Please submit your NIN, selfie, utility bill, profile information, and address again.
-    </p>
-  </div>
-)}
-{isForcedReverification && (
-  <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-700 dark:bg-amber-900/20">
-    <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-lg">⚠️</div>
-
-      <div className="min-w-0">
-        <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-          Additional verification required
-        </h2>
-
-        <p className="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-200">
-          FixAndEarn requires you to complete identity verification again.
-          Your previous verification remains recorded, but you must submit
-          updated verification information before verification-dependent
-          services can continue.
-        </p>
-
-        {reviewReason && (
-          <div className="mt-3 rounded-xl border border-amber-200 bg-white/70 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-gray-900/40 dark:text-amber-100">
-            <span className="font-semibold">Reason:</span>{" "}
-            {reviewReason}
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
 
         {/* Status Card */}
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
