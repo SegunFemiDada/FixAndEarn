@@ -108,6 +108,8 @@ useEffect(() => {
 
   const { data: verification } = useMyVerification();
   const isVerified = verification?.status === "APPROVED";
+  const forceReverify = Boolean(verification?.forceReverify);
+  const showVerification = !isVerified || forceReverify;
 
   function handleSignOut() {
     clearSession();
@@ -172,11 +174,18 @@ useEffect(() => {
   </Link>
 )}
 
-  {!isVerified ? (
-    <Link href="/app/verification" className={navLinkClass()}>
-      <span>Verification</span>
-    </Link>
-  ) : null}
+  {showVerification ? (
+  <Link
+    href="/app/verification"
+    className={`${navLinkClass()} ${
+      forceReverify
+        ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30"
+        : ""
+    }`}
+  >
+    <span>{forceReverify ? "Re-verify" : "Verification"}</span>
+  </Link>
+) : null}
 
   <Link href="/app/profile" className={navLinkClass()}>
     <User className="h-4 w-4" />

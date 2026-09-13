@@ -191,17 +191,76 @@ export default function VerificationPage() {
   const isClient = roleForUi === "CLIENT";
   const isFixer = roleForUi === "FIXER";
 
-  const status = (data as any)?.status as "PENDING" | "APPROVED" | "REJECTED" | undefined;
-  const reviewReason = (data as any)?.reviewReason ?? null;
-  const forceReverify = Boolean((data as any)?.forceReverify);
-  const reuploadFields = (((data as any)?.reuploadFields ?? []) as string[]).filter(Boolean);
-  const reuploadLabels = humanizeReuploadFields(reuploadFields);
+  const status = (data as any)?.status as
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | undefined;
 
-  const parsedReason = parseReviewReason(reviewReason);
-  const isRejected = status === "REJECTED";
-  const hasTargetedReupload = isRejected && reuploadFields.length > 0;
-  const isReuploadRequest = isRejected && hasTargetedReupload && parsedReason.isReuploadRequest;
-  const canSubmit = isAuthed && (!status || isRejected);
+const reviewReason = (data as any)?.reviewReason ?? null;
+const forceReverify = Boolean((data as any)?.forceReverify);
+
+const reuploadFields = (
+  ((data as any)?.reuploadFields ?? []) as string[]
+).filter(Boolean);
+
+const reuploadLabels = humanizeReuploadFields(reuploadFields);
+
+const parsedReason = parseReviewReason(reviewReason);
+
+const isRejected = status === "REJECTED";
+
+const hasTargetedReupload =
+  isRejected && reuploadFields.length > 0;
+
+const isReuploadRequest =
+  isRejected &&
+  hasTargetedReupload &&
+  parsedReason.isReuploadRequest;
+
+/**
+ * A previously approved account that has been explicitly
+ * marked for re-verification may submit again.
+ *
+ * Once submission changes the verification to PENDING,
+ * forceReverify remains true until admin approval, so
+ * PENDING must NOT remain submittable.
+ */
+const isForcedReverification =
+  status === "APPROVED" && forceReverify;
+
+const canSubmit =
+  isAuthed &&
+  (
+    !status ||
+    isRejected ||
+    isForcedReverification
+  );
+
+const verificationFormTitle =
+  isForcedReverification
+    ? "Complete re-verification"
+    : isReuploadRequest
+      ? "Correct and resubmit requested field(s)"
+      : isRejected
+        ? "Resubmit verification"
+        : "Submit verification";
+
+const verificationSubmitLabel =
+  isForcedReverification
+    ? "Submit re-verification"
+    : isReuploadRequest
+      ? "Submit corrected field(s)"
+      : isRejected
+        ? "Resubmit verification"
+        : "Submit verification";
+
+const verificationSubmittingLabel =
+  isForcedReverification
+    ? "Submitting re-verification…"
+    : isRejected
+      ? "Resubmitting…"
+      : "Submitting…";
 
   const needsFile = (field: "ninImage" | "selfie" | "utilityBill") =>
     !hasTargetedReupload || reuploadFields.includes(field);
@@ -397,32 +456,78 @@ export default function VerificationPage() {
         );
 
       case "APPROVED":
-        return (
-          <div className="rounded-2xl border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold text-[#2E7D32] dark:text-green-200">
-                  Verification approved
-                </div>
-                <p className="mt-2 text-sm text-[#2E7D32] dark:text-green-200">
-                  Your account is verified. Core features are now unlocked.
-                </p>
-              </div>
-              <VerifiedBadge role={roleForUi} />
-            </div>
-            <div className="mt-4">
-              <Link
-  href="/app/jobs"
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
-    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md hover:shadow-lg
-    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
->
-  Go to jobs
-</Link>
-
-            </div>
+  return (
+    <div
+      className={`rounded-2xl border p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]
+        ${
+          isForcedReverification
+            ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20"
+            : "border-[#B8D9B8] bg-[#F0FAF0] dark:border-green-700 dark:bg-green-900/20"
+        }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div
+            className={`text-sm font-semibold ${
+              isForcedReverification
+                ? "text-amber-900 dark:text-amber-100"
+                : "text-[#2E7D32] dark:text-green-200"
+            }`}
+          >
+            {isForcedReverification
+              ? "Additional verification required"
+              : "Verification approved"}
           </div>
-        );
+
+          <p
+            className={`mt-2 text-sm ${
+              isForcedReverification
+                ? "text-amber-800 dark:text-amber-200"
+                : "text-[#2E7D32] dark:text-green-200"
+            }`}
+          >
+            {isForcedReverification
+              ? "Your account requires another identity verification before you can continue using verification-dependent services."
+              : "Your account is verified. Core features are now unlocked."}
+          </p>
+        </div>
+
+        {isForcedReverification ? (
+          <span className="shrink-0 inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+            Re-verification required
+          </span>
+        ) : (
+          <VerifiedBadge role={roleForUi} />
+        )}
+      </div>
+
+      <div className="mt-4">
+        {isForcedReverification ? (
+          <button
+            type="button"
+            onClick={() => {
+              document
+                .getElementById("verification-form")
+                ?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+            }}
+            className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-amber-700 focus:ring-2 focus:ring-amber-400 dark:bg-amber-500 dark:hover:bg-amber-600"
+          >
+            Start re-verification
+          </button>
+        ) : (
+          <Link
+            href="/app/jobs"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
+          >
+            Go to jobs
+          </Link>
+        )}
+      </div>
+    </div>
+  );
 
       case "REJECTED":
         if (isReuploadRequest) {
@@ -495,6 +600,33 @@ export default function VerificationPage() {
     </p>
   </div>
 )}
+{isForcedReverification && (
+  <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-700 dark:bg-amber-900/20">
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 text-lg">⚠️</div>
+
+      <div className="min-w-0">
+        <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+          Additional verification required
+        </h2>
+
+        <p className="mt-1 text-sm leading-6 text-amber-800 dark:text-amber-200">
+          FixAndEarn requires you to complete identity verification again.
+          Your previous verification remains recorded, but you must submit
+          updated verification information before verification-dependent
+          services can continue.
+        </p>
+
+        {reviewReason && (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-white/70 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-gray-900/40 dark:text-amber-100">
+            <span className="font-semibold">Reason:</span>{" "}
+            {reviewReason}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Status Card */}
         <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
@@ -527,14 +659,10 @@ export default function VerificationPage() {
         </div>
 
         {/* Form */}
-        {(!status || status === "REJECTED") && (
-          <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        {canSubmit && (
+          <div id="verification-form" className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
             <h2 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              {isReuploadRequest
-                ? "Correct and resubmit requested field(s)"
-                : isRejected
-                  ? "Resubmit verification"
-                  : "Submit verification"}
+              {verificationFormTitle}
             </h2>
 
             {showOnlyTargetedFields && (
@@ -801,14 +929,8 @@ export default function VerificationPage() {
   `}
 >
   {submitMutation.isPending
-    ? isRejected
-      ? "Resubmitting…"
-      : "Submitting…"
-    : isReuploadRequest
-      ? "Submit corrected field(s)"
-      : isRejected
-        ? "Resubmit verification"
-        : "Submit verification"}
+  ? verificationSubmittingLabel
+  : verificationSubmitLabel}
 </button>
 
 

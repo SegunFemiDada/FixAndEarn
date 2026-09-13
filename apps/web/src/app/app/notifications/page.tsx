@@ -54,9 +54,13 @@ function resolveHref(n: NotificationRow): string | null {
         : null;
 
     case "SYSTEM_ANNOUNCEMENT":
-      return jobId
-        ? `/app/jobs/${jobId}`
-        : null;
+  if (data.event === "USER_FORCE_REVERIFY") {
+    return "/app/verification";
+  }
+
+  return jobId
+    ? `/app/jobs/${jobId}`
+    : null;
 
     default:
       return jobId

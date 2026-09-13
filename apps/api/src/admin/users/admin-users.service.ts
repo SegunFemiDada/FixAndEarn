@@ -240,6 +240,7 @@ export class AdminUsersService {
       event: "USER_FORCE_REVERIFY",
       reason: cleanReason,
       forcedAt: updated.updatedAt.toISOString(),
+      href: "/app/verification",
     },
   });
 
