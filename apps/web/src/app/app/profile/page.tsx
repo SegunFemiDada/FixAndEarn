@@ -839,15 +839,6 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                 <button
-  type="submit"
-  className={`flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-colors
-    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
->
-  Change
-</button>
 
 <button
   type="button"
@@ -857,6 +848,15 @@ export default function ProfilePage() {
     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
 >
   Cancel
+</button>
+<button
+  type="submit"
+  className={`flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-colors
+    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
+    disabled:opacity-50 disabled:cursor-not-allowed
+    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
+>
+  Change
 </button>
 </div>
               </form>

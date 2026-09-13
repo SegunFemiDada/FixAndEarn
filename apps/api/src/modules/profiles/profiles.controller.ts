@@ -1,4 +1,5 @@
 //path: apps/api/src/modules/profiles/profiles.controller.ts
+
 import {
   Controller,
   Get,
@@ -14,8 +15,11 @@ import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 
 function normalizeHandle(v: unknown): string | null {
   if (typeof v !== "string") return null;
+
   const s = v.trim();
+
   if (!s) return null;
+
   return s.startsWith("@") ? s.slice(1) : s;
 }
 
@@ -28,19 +32,39 @@ function toTiktokUrl(handle: string): string {
 }
 
 function hasApprovedSelfie(
-  verification: { status?: string | null; selfieImagePath?: string | null } | null | undefined
+  verification:
+    | {
+        status?: string | null;
+        selfieImagePath?: string | null;
+      }
+    | null
+    | undefined
 ) {
-  return verification?.status === "APPROVED" && !!verification?.selfieImagePath;
+  return (
+    verification?.status === "APPROVED" &&
+    !!verification?.selfieImagePath
+  );
 }
 
-function normalizeStoredUploadPath(pathOrKey: string | null | undefined): string | null {
+function normalizeStoredUploadPath(
+  pathOrKey: string | null | undefined
+): string | null {
   if (!pathOrKey) return null;
 
-  if (pathOrKey.startsWith("/uploads/")) return pathOrKey;
-  if (pathOrKey.startsWith("http://") || pathOrKey.startsWith("https://")) return pathOrKey;
+  if (pathOrKey.startsWith("/uploads/")) {
+    return pathOrKey;
+  }
+
+  if (
+    pathOrKey.startsWith("http://") ||
+    pathOrKey.startsWith("https://")
+  ) {
+    return pathOrKey;
+  }
 
   const normalized = pathOrKey.replace(/\\/g, "/");
   const idx = normalized.lastIndexOf("/uploads/");
+
   if (idx >= 0) {
     return normalized.slice(idx);
   }
@@ -48,113 +72,260 @@ function normalizeStoredUploadPath(pathOrKey: string | null | undefined): string
   return pathOrKey;
 }
 
-function mapRoleCodes(rawRoles: any[] | null | undefined): string[] {
+function mapRoleCodes(
+  rawRoles: any[] | null | undefined
+): string[] {
   if (!Array.isArray(rawRoles)) return [];
 
   return rawRoles
     .map((r: any) => {
       if (!r) return null;
-      if (typeof r === "string") return r;
-      if (typeof r.code === "string") return r.code;
-      if (typeof r.role === "string") return r.role;
-      if (r.role && typeof r.role.code === "string") return r.role.code;
-      if (r.role && typeof r.role.role === "string") return r.role.role;
+
+      if (typeof r === "string") {
+        return r;
+      }
+
+      if (typeof r.code === "string") {
+        return r.code;
+      }
+
+      if (typeof r.role === "string") {
+        return r.role;
+      }
+
+      if (
+        r.role &&
+        typeof r.role.code === "string"
+      ) {
+        return r.role.code;
+      }
+
+      if (
+        r.role &&
+        typeof r.role.role === "string"
+      ) {
+        return r.role.role;
+      }
+
       return null;
     })
     .filter(Boolean);
 }
 
-function maskClientName(fullName?: string | null): string {
+function maskClientName(
+  fullName?: string | null
+): string {
   if (!fullName) return "Client";
-  const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "Client";
-  if (parts.length === 1) return parts[0];
+
+  const parts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return "Client";
+  }
+
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
   return `${parts[0]} ${parts[1][0]}.`;
 }
 
 @UseGuards(JwtAuthGuard)
 @Controller("profiles")
 export class ProfilesController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService
+  ) {}
 
-  @Get("fixers/:fixerId")
-  async getFixerPublic(@Param("fixerId") fixerId: string) {
-    const [u, completedJobs] = await Promise.all([
-      this.prisma.user.findUnique({
-        where: { id: fixerId },
-        select: {
-          id: true,
-          fullName: true,
-          fixerPreferredAvailability: true,
-          fixerAvailabilityUpdatedAt: true,
-          averageRating: true,
-          totalRatings: true,
-          jobsAssigned: {
-            where: { status: "IN_PROGRESS" },
-            select: { id: true },
-            take: 1,
-          },
-          verification: {
-            select: {
-              status: true,
-              selfieImagePath: true,
-              instagram: true,
-              tiktok: true,
-              bio: true,
-              skills: true,
-            },
-          },
-        },
-      }),
-      this.prisma.job.count({
+  /**
+   * JobReview is the rating source of truth.
+   *
+   * User.averageRating / User.totalRatings are cached
+   * aggregates and can become stale for older records.
+   *
+   * Profile responses therefore calculate the current
+   * aggregate directly from JobReview.
+   */
+  private async getFixerRatingAggregate(
+    fixerId: string
+  ) {
+    const aggregate =
+      await this.prisma.jobReview.aggregate({
         where: {
           fixerId,
-          status: "COMPLETED",
         },
-      }),
-    ]);
+        _avg: {
+          rating: true,
+        },
+        _count: {
+          rating: true,
+        },
+      });
 
-    if (!u) throw new NotFoundException("USER_NOT_FOUND");
+    return {
+      average:
+        aggregate._avg.rating ?? 0,
+      count:
+        aggregate._count.rating ?? 0,
+    };
+  }
 
-    const busy = Array.isArray(u.jobsAssigned) && u.jobsAssigned.length > 0;
-    const preferred = u.fixerPreferredAvailability ?? "UNAVAILABLE";
+  @Get("fixers/:fixerId")
+  async getFixerPublic(
+    @Param("fixerId") fixerId: string
+  ) {
+    const [u, completedJobs, rating] =
+      await Promise.all([
+        this.prisma.user.findUnique({
+          where: {
+            id: fixerId,
+          },
+          select: {
+            id: true,
+            fullName: true,
+            fixerPreferredAvailability: true,
+            fixerAvailabilityUpdatedAt: true,
+            jobsAssigned: {
+              where: {
+                status: "IN_PROGRESS",
+              },
+              select: {
+                id: true,
+              },
+              take: 1,
+            },
+            verification: {
+              select: {
+                status: true,
+                selfieImagePath: true,
+                instagram: true,
+                tiktok: true,
+                bio: true,
+                skills: true,
+              },
+            },
+          },
+        }),
 
-    const approvedWithSelfie = hasApprovedSelfie(u.verification);
-    const isVerified = approvedWithSelfie;
-    const avatarPath = approvedWithSelfie
-      ? normalizeStoredUploadPath(u.verification?.selfieImagePath ?? null)
-      : null;
+        this.prisma.job.count({
+          where: {
+            fixerId,
+            status: "COMPLETED",
+          },
+        }),
 
-    const instagramHandle = approvedWithSelfie ? normalizeHandle(u.verification?.instagram) : null;
-    const tiktokHandle = approvedWithSelfie ? normalizeHandle(u.verification?.tiktok) : null;
+        this.getFixerRatingAggregate(
+          fixerId
+        ),
+      ]);
+
+    if (!u) {
+      throw new NotFoundException(
+        "USER_NOT_FOUND"
+      );
+    }
+
+    const busy =
+      Array.isArray(u.jobsAssigned) &&
+      u.jobsAssigned.length > 0;
+
+    const preferred =
+      u.fixerPreferredAvailability ??
+      "UNAVAILABLE";
+
+    const approvedWithSelfie =
+      hasApprovedSelfie(
+        u.verification
+      );
+
+    const isVerified =
+      approvedWithSelfie;
+
+    const avatarPath =
+      approvedWithSelfie
+        ? normalizeStoredUploadPath(
+            u.verification
+              ?.selfieImagePath ?? null
+          )
+        : null;
+
+    const instagramHandle =
+      approvedWithSelfie
+        ? normalizeHandle(
+            u.verification?.instagram
+          )
+        : null;
+
+    const tiktokHandle =
+      approvedWithSelfie
+        ? normalizeHandle(
+            u.verification?.tiktok
+          )
+        : null;
 
     return {
       id: u.id,
       fullName: u.fullName,
       isVerified,
+
       avatarPath,
-      avatarUrl: toPublicFileUrl(avatarPath),
+
+      avatarUrl:
+        toPublicFileUrl(
+          avatarPath
+        ),
+
       availability: {
         preferred,
-        effective: busy ? "BUSY" : preferred,
-        updatedAt: u.fixerAvailabilityUpdatedAt ?? null,
+        effective: busy
+          ? "BUSY"
+          : preferred,
+        updatedAt:
+          u.fixerAvailabilityUpdatedAt ??
+          null,
       },
-      rating: {
-        average: u.averageRating ?? 0,
-        count: u.totalRatings ?? 0,
-      },
+
+      rating,
+
       socials: {
-        instagram: instagramHandle
-          ? { handle: instagramHandle, url: toInstagramUrl(instagramHandle) }
-          : null,
-        tiktok: tiktokHandle
-          ? { handle: tiktokHandle, url: toTiktokUrl(tiktokHandle) }
-          : null,
+        instagram:
+          instagramHandle
+            ? {
+                handle:
+                  instagramHandle,
+                url:
+                  toInstagramUrl(
+                    instagramHandle
+                  ),
+              }
+            : null,
+
+        tiktok:
+          tiktokHandle
+            ? {
+                handle:
+                  tiktokHandle,
+                url:
+                  toTiktokUrl(
+                    tiktokHandle
+                  ),
+              }
+            : null,
       },
+
       profile: {
-        bio: u.verification?.bio ?? null,
-        skills: u.verification?.skills ?? null,
+        bio:
+          u.verification?.bio ??
+          null,
+
+        skills:
+          u.verification?.skills ??
+          null,
       },
+
       stats: {
         completedJobs,
       },
@@ -162,106 +333,151 @@ export class ProfilesController {
   }
 
   @Get("fixers/:fixerId/reviews")
-async getFixerReviews(
-  @Param("fixerId") fixerId: string,
-  @Query("page") pageParam?: string,
-  @Query("limit") limitParam?: string
-) {
-  const fixer = await this.prisma.user.findUnique({
-    where: { id: fixerId },
-    select: {
-      id: true,
-      averageRating: true,
-      totalRatings: true,
-    },
-  });
+  async getFixerReviews(
+    @Param("fixerId") fixerId: string,
+    @Query("page") pageParam?: string,
+    @Query("limit") limitParam?: string
+  ) {
+    const fixer =
+      await this.prisma.user.findUnique({
+        where: {
+          id: fixerId,
+        },
+        select: {
+          id: true,
+        },
+      });
 
-  if (!fixer) {
-    throw new NotFoundException("USER_NOT_FOUND");
-  }
+    if (!fixer) {
+      throw new NotFoundException(
+        "USER_NOT_FOUND"
+      );
+    }
 
-  const page = Math.max(
-    1,
-    Number.parseInt(pageParam ?? "1", 10) || 1
-  );
-
-  const limit = Math.min(
-    50,
-    Math.max(
+    const page = Math.max(
       1,
-      Number.parseInt(limitParam ?? "10", 10) || 10
-    )
-  );
+      Number.parseInt(
+        pageParam ?? "1",
+        10
+      ) || 1
+    );
 
-  const skip = (page - 1) * limit;
+    const limit = Math.min(
+      50,
+      Math.max(
+        1,
+        Number.parseInt(
+          limitParam ?? "10",
+          10
+        ) || 10
+      )
+    );
 
-  const where = {
-    fixerId,
-  };
+    const skip =
+      (page - 1) * limit;
 
-  const [total, reviews] = await Promise.all([
-    this.prisma.jobReview.count({
-      where,
-    }),
+    const where = {
+      fixerId,
+    };
 
-    this.prisma.jobReview.findMany({
-      where,
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        rating: true,
-        comment: true,
-        createdAt: true,
-        client: {
-          select: {
-            fullName: true,
+    const [
+      rating,
+      total,
+      reviews,
+    ] = await Promise.all([
+      this.getFixerRatingAggregate(
+        fixerId
+      ),
+
+      this.prisma.jobReview.count({
+        where,
+      }),
+
+      this.prisma.jobReview.findMany({
+        where,
+
+        orderBy: {
+          createdAt: "desc",
+        },
+
+        skip,
+        take: limit,
+
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+
+          client: {
+            select: {
+              fullName: true,
+            },
           },
         },
+      }),
+    ]);
+
+    const totalPages =
+      Math.ceil(
+        total / limit
+      );
+
+    return {
+      fixerId,
+
+      averageRating:
+        rating.average,
+
+      totalRatings:
+        rating.count,
+
+      reviews:
+        reviews.map((r) => ({
+          id: r.id,
+          rating: r.rating,
+          comment:
+            r.comment ?? null,
+
+          createdAt:
+            r.createdAt,
+
+          client: {
+            displayName:
+              maskClientName(
+                r.client
+                  ?.fullName
+              ),
+          },
+        })),
+
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
       },
-    }),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    fixerId,
-    averageRating: fixer.averageRating ?? 0,
-    totalRatings: fixer.totalRatings ?? 0,
-
-    reviews: reviews.map((r) => ({
-      id: r.id,
-      rating: r.rating,
-      comment: r.comment ?? null,
-      createdAt: r.createdAt,
-      client: {
-        displayName: maskClientName(
-          r.client?.fullName
-        ),
-      },
-    })),
-
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-    },
-  };
-}
+    };
+  }
 
   @Get("clients/:clientId")
-  async getClientPublic(@Param("clientId") clientId: string) {
-    const [u, jobsPosted, completedJobs] = await Promise.all([
+  async getClientPublic(
+    @Param("clientId") clientId: string
+  ) {
+    const [
+      u,
+      jobsPosted,
+      completedJobs,
+    ] = await Promise.all([
       this.prisma.user.findUnique({
-        where: { id: clientId },
+        where: {
+          id: clientId,
+        },
         select: {
           id: true,
           fullName: true,
           createdAt: true,
+
           verification: {
             select: {
               status: true,
@@ -272,12 +488,17 @@ async getFixerReviews(
           },
         },
       }),
+
       this.prisma.job.count({
         where: {
           clientId,
-          status: { not: "DRAFT" },
+
+          status: {
+            not: "DRAFT",
+          },
         },
       }),
+
       this.prisma.job.count({
         where: {
           clientId,
@@ -286,27 +507,59 @@ async getFixerReviews(
       }),
     ]);
 
-    if (!u) throw new NotFoundException("USER_NOT_FOUND");
+    if (!u) {
+      throw new NotFoundException(
+        "USER_NOT_FOUND"
+      );
+    }
 
-    const approvedWithSelfie = hasApprovedSelfie(u.verification);
-    const isVerified = approvedWithSelfie;
-    const avatarPath = approvedWithSelfie
-      ? normalizeStoredUploadPath(u.verification?.selfieImagePath ?? null)
-      : null;
+    const approvedWithSelfie =
+      hasApprovedSelfie(
+        u.verification
+      );
+
+    const isVerified =
+      approvedWithSelfie;
+
+    const avatarPath =
+      approvedWithSelfie
+        ? normalizeStoredUploadPath(
+            u.verification
+              ?.selfieImagePath ??
+              null
+          )
+        : null;
 
     return {
       id: u.id,
       fullName: u.fullName,
       isVerified,
+
       avatarPath,
-      avatarUrl: toPublicFileUrl(avatarPath),
-      memberSince: u.createdAt,
-      location: approvedWithSelfie
-        ? {
-            state: u.verification?.state ?? null,
-            city: u.verification?.city ?? null,
-          }
-        : null,
+
+      avatarUrl:
+        toPublicFileUrl(
+          avatarPath
+        ),
+
+      memberSince:
+        u.createdAt,
+
+      location:
+        approvedWithSelfie
+          ? {
+              state:
+                u.verification
+                  ?.state ??
+                null,
+
+              city:
+                u.verification
+                  ?.city ??
+                null,
+            }
+          : null,
+
       stats: {
         jobsPosted,
         completedJobs,
@@ -315,24 +568,43 @@ async getFixerReviews(
   }
 
   @Get("me")
-  async getMyProfile(@Req() req: any) {
-    const userId = req?.user?.userId ?? req?.user?.id ?? req?.user?.sub;
+  async getMyProfile(
+    @Req() req: any
+  ) {
+    const userId =
+      req?.user?.userId ??
+      req?.user?.id ??
+      req?.user?.sub;
 
-    if (!userId) throw new NotFoundException("USER_NOT_FOUND");
+    if (!userId) {
+      throw new NotFoundException(
+        "USER_NOT_FOUND"
+      );
+    }
 
-    const [u, completedJobs] = await Promise.all([
+    const [
+      u,
+      completedJobs,
+      rating,
+    ] = await Promise.all([
       this.prisma.user.findUnique({
-        where: { id: userId },
+        where: {
+          id: userId,
+        },
+
         select: {
           id: true,
           email: true,
           fullName: true,
           phone: true,
           phoneVerifiedAt: true,
-          averageRating: true,
-          totalRatings: true,
-          fixerPreferredAvailability: true,
-          fixerAvailabilityUpdatedAt: true,
+
+          fixerPreferredAvailability:
+            true,
+
+          fixerAvailabilityUpdatedAt:
+            true,
+
           roles: {
             select: {
               role: {
@@ -343,11 +615,19 @@ async getFixerReviews(
               },
             },
           },
+
           jobsAssigned: {
-            where: { status: "IN_PROGRESS" },
-            select: { id: true },
+            where: {
+              status: "IN_PROGRESS",
+            },
+
+            select: {
+              id: true,
+            },
+
             take: 1,
           },
+
           verification: {
             select: {
               status: true,
@@ -364,66 +644,176 @@ async getFixerReviews(
           },
         },
       }),
+
       this.prisma.job.count({
         where: {
           fixerId: userId,
           status: "COMPLETED",
         },
       }),
+
+      this.getFixerRatingAggregate(
+        userId
+      ),
     ]);
 
-    if (!u) throw new NotFoundException("USER_NOT_FOUND");
+    if (!u) {
+      throw new NotFoundException(
+        "USER_NOT_FOUND"
+      );
+    }
 
-    const busy = Array.isArray(u.jobsAssigned) && u.jobsAssigned.length > 0;
-    const preferred = u.fixerPreferredAvailability ?? "UNAVAILABLE";
+    const busy =
+      Array.isArray(
+        u.jobsAssigned
+      ) &&
+      u.jobsAssigned.length > 0;
 
-    const approvedWithSelfie = hasApprovedSelfie(u.verification);
-    const isVerified = approvedWithSelfie;
-    const avatarPath = approvedWithSelfie
-      ? normalizeStoredUploadPath(u.verification?.selfieImagePath ?? null)
-      : null;
+    const preferred =
+      u.fixerPreferredAvailability ??
+      "UNAVAILABLE";
 
-    const instagramHandle = approvedWithSelfie ? normalizeHandle(u.verification?.instagram) : null;
-    const tiktokHandle = approvedWithSelfie ? normalizeHandle(u.verification?.tiktok) : null;
+    const approvedWithSelfie =
+      hasApprovedSelfie(
+        u.verification
+      );
+
+    const isVerified =
+      approvedWithSelfie;
+
+    const avatarPath =
+      approvedWithSelfie
+        ? normalizeStoredUploadPath(
+            u.verification
+              ?.selfieImagePath ??
+              null
+          )
+        : null;
+
+    const instagramHandle =
+      approvedWithSelfie
+        ? normalizeHandle(
+            u.verification
+              ?.instagram
+          )
+        : null;
+
+    const tiktokHandle =
+      approvedWithSelfie
+        ? normalizeHandle(
+            u.verification
+              ?.tiktok
+          )
+        : null;
 
     return {
       id: u.id,
       email: u.email,
       fullName: u.fullName,
-      phone: u.phone ?? null,
-      phoneVerifiedAt: u.phoneVerifiedAt ?? null,
+
+      phone:
+        u.phone ?? null,
+
+      phoneVerifiedAt:
+        u.phoneVerifiedAt ??
+        null,
+
       isVerified,
+
       avatarPath,
-      avatarUrl: toPublicFileUrl(avatarPath),
-      roles: mapRoleCodes(u.roles),
+
+      avatarUrl:
+        toPublicFileUrl(
+          avatarPath
+        ),
+
+      roles:
+        mapRoleCodes(
+          u.roles
+        ),
+
       verification: {
-        status: u.verification?.status ?? null,
+        status:
+          u.verification
+            ?.status ??
+          null,
       },
+
       availability: {
         preferred,
-        effective: busy ? "BUSY" : preferred,
-        updatedAt: u.fixerAvailabilityUpdatedAt ?? null,
+
+        effective:
+          busy
+            ? "BUSY"
+            : preferred,
+
+        updatedAt:
+          u.fixerAvailabilityUpdatedAt ??
+          null,
       },
-      rating: {
-        average: u.averageRating ?? 0,
-        count: u.totalRatings ?? 0,
-      },
+
+      rating,
+
       socials: {
-        instagram: instagramHandle
-          ? { handle: instagramHandle, url: toInstagramUrl(instagramHandle) }
-          : null,
-        tiktok: tiktokHandle
-          ? { handle: tiktokHandle, url: toTiktokUrl(tiktokHandle) }
-          : null,
+        instagram:
+          instagramHandle
+            ? {
+                handle:
+                  instagramHandle,
+
+                url:
+                  toInstagramUrl(
+                    instagramHandle
+                  ),
+              }
+            : null,
+
+        tiktok:
+          tiktokHandle
+            ? {
+                handle:
+                  tiktokHandle,
+
+                url:
+                  toTiktokUrl(
+                    tiktokHandle
+                  ),
+              }
+            : null,
       },
+
       profile: {
-        bio: u.verification?.bio ?? null,
-        skills: u.verification?.skills ?? null,
-        state: u.verification?.state ?? null,
-        city: u.verification?.city ?? null,
-        lga: u.verification?.lga ?? null,
-        area: u.verification?.addressArea ?? null,
+        bio:
+          u.verification
+            ?.bio ??
+          null,
+
+        skills:
+          u.verification
+            ?.skills ??
+          null,
+
+        state:
+          u.verification
+            ?.state ??
+          null,
+
+        city:
+          u.verification
+            ?.city ??
+          null,
+
+        lga:
+          u.verification
+            ?.lga ??
+          null,
+
+        area:
+          u.verification
+            ?.addressArea ??
+          null,
       },
+
       stats: {
         completedJobs,
       },
