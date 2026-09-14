@@ -20,7 +20,7 @@ export default function HomePage() {
 
             {/* Left – text */}
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+              <p className="text-sm font-bold tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
                 🔧 FixAndEarn
               </p>
               <h1 className="mt-4 text-4xl font-bold tracking-tight text-[#1A2B4A] dark:text-[#E8F0FA] sm:text-5xl lg:text-6xl">
