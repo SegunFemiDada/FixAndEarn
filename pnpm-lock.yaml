@@ -27,6 +27,9 @@ importers:
       '@aws-sdk/client-rekognition':
         specifier: ^3.1131.0
         version: 3.1131.0
+      '@aws-sdk/client-textract':
+        specifier: ^3.1131.0
+        version: 3.1131.0
       '@nestjs/common':
         specifier: ^10.4.22
         version: 10.4.22(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -299,6 +302,10 @@ packages:
 
   '@aws-sdk/client-rekognition@3.1131.0':
     resolution: {integrity: sha512-/OqnFHioNdGq7r67xZUAmlOabyc+2PFRVUTQ8KjCTrkfKtc8yzQu9bmJakigrvUocsK2upbFw3PTJSz8159RSQ==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-textract@3.1131.0':
+    resolution: {integrity: sha512-8mXH/r/pKnIjrDc3s7gzMmk2bZu/b7N9U7gqqvoh59Xo6YmMwQyU3GiczZLd3nRlplSfz6apLsgeEIT/w0UB4A==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.0':
@@ -5296,6 +5303,17 @@ snapshots:
       - chokidar
 
   '@aws-sdk/client-rekognition@3.1131.0':
+    dependencies:
+      '@aws-sdk/core': 3.978.0
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@aws-sdk/types': 3.974.5
+      '@smithy/core': 3.34.1
+      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/node-http-handler': 4.12.1
+      '@smithy/types': 4.18.0
+      tslib: 2.8.1
+
+  '@aws-sdk/client-textract@3.1131.0':
     dependencies:
       '@aws-sdk/core': 3.978.0
       '@aws-sdk/credential-provider-node': 3.972.83
