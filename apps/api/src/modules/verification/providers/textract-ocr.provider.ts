@@ -10,6 +10,11 @@ import {
 
 import { OcrProvider } from "./ocr.provider";
 
+type OcrLine = {
+  text: string;
+  index: number;
+};
+
 @Injectable()
 export class TextractOcrProvider implements OcrProvider {
   private readonly client: TextractClient;
@@ -59,72 +64,148 @@ export class TextractOcrProvider implements OcrProvider {
       );
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-
-    return Buffer.from(arrayBuffer);
+    return Buffer.from(await response.arrayBuffer());
   }
 
-  private normalizeNinCandidate(value: string): string | null {
-    const digits = value.replace(/\D/g, "");
-
-    return digits.length === 11 ? digits : null;
-  }
-
-  private extractCandidates(lines: string[]): string[] {
+  /**
+   * Extract an 11-digit number from one OCR text fragment.
+   *
+   * Examples accepted:
+   * 66412345622
+   * 66412 345622
+   * 66412-345622
+   */
+  private extractElevenDigitCandidates(text: string): string[] {
     const candidates = new Set<string>();
 
-    const addCandidate = (value: string) => {
-      const normalized = this.normalizeNinCandidate(value);
-
-      if (normalized) {
-        candidates.add(normalized);
-      }
-    };
-
     /*
-     * Prefer candidates explicitly associated with NIN wording.
-     * This helps avoid accidentally treating a phone number,
-     * account number, date, etc. as the NIN.
+     * First detect digit groups which may contain OCR-added
+     * spaces or hyphens, but do not allow arbitrary text between
+     * the digits.
      */
-    for (const line of lines) {
-      if (
-        /NIN|NATIONAL\s+IDENTIFICATION(?:\s+NUMBER)?/i.test(
-          line,
-        )
-      ) {
-        const matches = line.match(
-          /(?:\d[\s-]*){11}/g,
-        ) ?? [];
+    const matches =
+      text.match(
+        /(?<!\d)(?:\d[\s-]*){11}(?!\d)/g,
+      ) ?? [];
 
-        for (const match of matches) {
-          addCandidate(match);
-        }
+    for (const match of matches) {
+      const digits = match.replace(/\D/g, "");
 
-        const compact = line.replace(/[^\d]/g, "");
-
-        if (compact.length === 11) {
-          addCandidate(compact);
-        }
+      if (digits.length === 11) {
+        candidates.add(digits);
       }
     }
 
     /*
-     * Fallback: inspect the complete OCR text for an exact
-     * 11-digit candidate.
-     *
-     * We only accept a single unique candidate. Multiple
-     * candidates are deliberately rejected rather than guessed.
+     * Also accept a clean 11-digit number directly.
+     * This keeps the intention obvious and protects against
+     * regex edge cases with normal OCR output.
      */
-    if (candidates.size === 0) {
-      const fullText = lines.join(" ");
+    const plainMatches =
+      text.match(/(?<!\d)\d{11}(?!\d)/g) ?? [];
 
-      const matches =
-        fullText.match(
-          /(?<!\d)(?:\d[\s-]*){11}(?!\d)/g,
-        ) ?? [];
+    for (const match of plainMatches) {
+      candidates.add(match);
+    }
 
-      for (const match of matches) {
-        addCandidate(match);
+    return [...candidates];
+  }
+
+  private isNinLabel(text: string): boolean {
+    const normalized = text
+      .replace(/[^a-zA-Z0-9\s:.-]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+
+    return (
+      /\bNIN\b/.test(normalized) ||
+      /\bNIN\s*(?:NO|NO\.|NUMBER)\b/.test(normalized) ||
+      /\bNATIONAL\s+IDENTIFICATION(?:\s+NUMBER)?\b/.test(
+        normalized,
+      )
+    );
+  }
+
+  /**
+   * Looks for the NIN value on the same OCR line as the label,
+   * then on the next few lines.
+   *
+   * This is important because Textract may return:
+   *
+   *   NIN
+   *   66412345622
+   *
+   * as two separate LINE blocks.
+   */
+  private extractLabelledNin(lines: OcrLine[]): string | null {
+    for (let i = 0; i < lines.length; i += 1) {
+      if (!this.isNinLabel(lines[i].text)) {
+        continue;
+      }
+
+      /*
+       * Priority 1:
+       * Candidate on the same line as "NIN".
+       */
+      const sameLineCandidates =
+        this.extractElevenDigitCandidates(
+          lines[i].text,
+        );
+
+      if (sameLineCandidates.length === 1) {
+        return sameLineCandidates[0];
+      }
+
+      /*
+       * Priority 2:
+       * Candidate on the next few OCR lines.
+       *
+       * We deliberately keep this window small so that a later
+       * phone number elsewhere on the NIN slip is not mistaken
+       * for the NIN.
+       */
+      const nearbyCandidates = new Set<string>();
+
+      for (
+        let offset = 1;
+        offset <= 3 && i + offset < lines.length;
+        offset += 1
+      ) {
+        const candidates =
+          this.extractElevenDigitCandidates(
+            lines[i + offset].text,
+          );
+
+        for (const candidate of candidates) {
+          nearbyCandidates.add(candidate);
+        }
+      }
+
+      if (nearbyCandidates.size === 1) {
+        return [...nearbyCandidates][0];
+      }
+
+      /*
+       * More than one candidate near the NIN label means the OCR
+       * is ambiguous. Do not guess.
+       */
+      if (nearbyCandidates.size > 1) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  private extractFallbackCandidates(lines: OcrLine[]): string[] {
+    const candidates = new Set<string>();
+
+    for (const line of lines) {
+      for (const candidate of this.extractElevenDigitCandidates(
+        line.text,
+      )) {
+        candidates.add(candidate);
       }
     }
 
@@ -150,28 +231,56 @@ export class TextractOcrProvider implements OcrProvider {
       );
     }
 
-    const lines =
+    const lines: OcrLine[] =
       result.Blocks
         ?.filter(
           (block) => block.BlockType === "LINE",
         )
-        .map((block) => block.Text?.trim() ?? "")
-        .filter(Boolean) ?? [];
+        .map((block, index) => ({
+          text: block.Text?.trim() ?? "",
+          index,
+        }))
+        .filter((line) => Boolean(line.text)) ?? [];
 
-    const candidates = this.extractCandidates(lines);
+    if (lines.length === 0) {
+      throw new BadRequestException(
+        "No readable text was detected on the NIN document.",
+      );
+    }
 
-    if (candidates.length === 0) {
+    /*
+     * Primary strategy:
+     * explicitly associate the number with the NIN label.
+     */
+    const labelledNin = this.extractLabelledNin(lines);
+
+    if (labelledNin) {
+      return labelledNin;
+    }
+
+    /*
+     * Fallback:
+     * only use an unlabelled 11-digit candidate when there is
+     * exactly one candidate in the entire document.
+     *
+     * We do NOT choose between multiple 11-digit values because
+     * phone numbers are also 11 digits.
+     */
+    const fallbackCandidates =
+      this.extractFallbackCandidates(lines);
+
+    if (fallbackCandidates.length === 1) {
+      return fallbackCandidates[0];
+    }
+
+    if (fallbackCandidates.length === 0) {
       throw new BadRequestException(
         "NIN could not be detected from the uploaded document. Please upload a clear NIN document.",
       );
     }
 
-    if (candidates.length > 1) {
-      throw new BadRequestException(
-        "Multiple possible NIN numbers were detected. Please upload a clearer NIN document.",
-      );
-    }
-
-    return candidates[0];
+    throw new BadRequestException(
+      "The NIN could not be identified confidently from the uploaded document. Please upload a clearer NIN document.",
+    );
   }
 }
