@@ -89,32 +89,36 @@ model UserRole {
 }
 
 model IdentityVerification {
-  id                String             @id @default(uuid())
-  userId            String             @unique
-  ninHash           String             @unique
-  faceHash          String             @unique
-  rekognitionFaceId String?            @unique
-  ninImagePath      String
-  selfieImagePath   String
-  utilityBillPath   String
-  bio               String
-  skills            String
-  addressHouse      String
-  addressStreet     String
-  addressArea       String
-  nearestBusStop    String
-  lga               String
-  city              String
-  state             String
-  instagram         String?
-  tiktok            String?
-  status            VerificationStatus @default(PENDING)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  reviewReason      String?
-  reviewedAt        DateTime?
-  reviewedByAdminId String?
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String                @id @default(uuid())
+  userId                String                @unique
+  ninHash               String                @unique
+  faceHash              String                @unique
+  rekognitionFaceId     String?               @unique
+  ninImagePath          String
+  selfieImagePath       String
+  utilityBillPath       String
+  bio                   String
+  skills                String
+  addressHouse          String
+  addressStreet         String
+  addressArea           String
+  nearestBusStop        String
+  lga                   String
+  city                  String
+  state                 String
+  instagram             String?
+  tiktok                String?
+  status                VerificationStatus    @default(PENDING)
+  ninVerificationStatus NinVerificationStatus @default(PENDING)
+  ninVerifiedAt         DateTime?
+  ninVerifiedByAdminId  String?
+  ninVerificationNote   String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  reviewReason          String?
+  reviewedAt            DateTime?
+  reviewedByAdminId     String?
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("identity_verifications")
 }
@@ -650,6 +654,12 @@ enum VerificationStatus {
   APPROVED
   REJECTED
   NOT_SUBMITTED
+}
+
+enum NinVerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
 }
 
 enum AvailabilityStatus {

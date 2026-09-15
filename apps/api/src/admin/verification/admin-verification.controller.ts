@@ -9,6 +9,7 @@ import { Public } from "../../common/auth/public.decorator";
 import { AdminVerificationService } from "./admin-verification.service";
 import { ListPendingVerificationsDto } from "./dto/list-pending.dto";
 import { VerificationDecisionDto } from "./dto/verification-decision.dto";
+import { NinVerificationDecisionDto } from "./dto/nin-verification-decision.dto";
 
 @Public()
 @ApiTags("admin-verification")
@@ -41,4 +42,21 @@ export class AdminVerificationController {
       reuploadFields: dto.reuploadFields
     });
   }
+  @AdminRoles(
+  AdminRole.SUPER_ADMIN,
+  AdminRole.VERIFICATION_OFFICER,
+)
+@Post(":id/nin-decision")
+async ninDecision(
+  @Req() req: any,
+  @Param("id") id: string,
+  @Body() dto: NinVerificationDecisionDto,
+) {
+  return this.svc.decideNin({
+    verificationId: id,
+    adminId: req.user.adminId,
+    action: dto.action,
+    note: dto.note,
+  });
+}
 }

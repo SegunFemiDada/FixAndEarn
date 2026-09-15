@@ -296,13 +296,6 @@ if (input.selfiePath) {
       },
     });
 
-    await tx.user.update({
-      where: { id: userId },
-      data: {
-        forceReverify: false,
-      },
-    });
-
     return updatedVerification;
   });
 }
