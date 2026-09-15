@@ -6,7 +6,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
 import { extractApiErrorMessage } from "@/lib/admin/queries";
-import { useVerificationDecision, useVerificationDetail } from "@/lib/admin/verification/queries";
+import {
+  useNinVerificationDecision,
+  useVerificationDecision,
+  useVerificationDetail,
+} from "@/lib/admin/verification/queries";
 import type {
   VerificationDecisionAction,
   VerificationReuploadField,
@@ -14,7 +18,10 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-const REUPLOAD_FIELD_OPTIONS: Array<{ value: VerificationReuploadField; label: string }> = [
+const REUPLOAD_FIELD_OPTIONS: Array<{
+  value: VerificationReuploadField;
+  label: string;
+}> = [
   { value: "ninImage", label: "NIN image" },
   { value: "selfie", label: "Selfie" },
   { value: "utilityBill", label: "Utility bill" },
@@ -73,18 +80,18 @@ function ActionButton({
 
   return (
     <button
-  type="button"
-  disabled={disabled}
-  onClick={() => onClick(action)}
-  className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
-    ${disabled
-      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
-      : styles
+      type="button"
+      disabled={disabled}
+      onClick={() => onClick(action)}
+      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors
+    ${
+      disabled
+        ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-300 dark:border-gray-700"
+        : styles
     }`}
->
-  {label}
-</button>
-
+    >
+      {label}
+    </button>
   );
 }
 
@@ -99,27 +106,30 @@ function DetailField({
 }) {
   return (
     <div>
-      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">{label}</span>
-      <span className={["mt-1 block text-sm text-[#1A2B4A] dark:text-[#E8F0FA]", breakAll ? "break-all" : ""].join(" ")}>
+      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+        {label}
+      </span>
+      <span
+        className={[
+          "mt-1 block text-sm text-[#1A2B4A] dark:text-[#E8F0FA]",
+          breakAll ? "break-all" : "",
+        ].join(" ")}
+      >
         {value?.trim() ? value : "Not available"}
       </span>
     </div>
   );
 }
 
-function ImagePreview({
-  label,
-  path,
-}: {
-  label: string;
-  path: string | null;
-}) {
+function ImagePreview({ label, path }: { label: string; path: string | null }) {
   const src = buildUploadUrl(path);
 
   return (
     <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">{label}</h3>
+        <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+          {label}
+        </h3>
         {src && (
           <a
             href={src}
@@ -144,7 +154,9 @@ function ImagePreview({
           />
         </div>
       ) : (
-        <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No file available.</p>
+        <p className="mt-3 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+          No file available.
+        </p>
       )}
     </div>
   );
@@ -155,13 +167,28 @@ export default function AdminVerificationDetailPage() {
   const router = useRouter();
   const verificationId = typeof params?.id === "string" ? params.id : "";
 
-  const detailQuery = useVerificationDetail(verificationId, Boolean(verificationId));
+  const detailQuery = useVerificationDetail(
+    verificationId,
+    Boolean(verificationId),
+  );
   const decisionMutation = useVerificationDecision(verificationId);
+  const ninDecisionMutation = useNinVerificationDecision(verificationId);
 
   const [reason, setReason] = React.useState("");
-  const [selectedAction, setSelectedAction] = React.useState<VerificationDecisionAction | null>(null);
+  const [selectedAction, setSelectedAction] =
+    React.useState<VerificationDecisionAction | null>(null);
   const [localMessage, setLocalMessage] = React.useState<string | null>(null);
-  const [reuploadFields, setReuploadFields] = React.useState<VerificationReuploadField[]>([]);
+  const [reuploadFields, setReuploadFields] = React.useState<
+    VerificationReuploadField[]
+  >([]);
+  const [ninNote, setNinNote] = React.useState("");
+  const [selectedNinAction, setSelectedNinAction] = React.useState<
+    "VERIFY" | "FAIL" | null
+  >(null);
+
+  const [ninLocalMessage, setNinLocalMessage] = React.useState<string | null>(
+    null,
+  );
 
   const detail = detailQuery.data;
   const canDecide = detail?.status === "PENDING";
@@ -171,7 +198,46 @@ export default function AdminVerificationDetailPage() {
     setReuploadFields((current) =>
       current.includes(field)
         ? current.filter((item) => item !== field)
-        : [...current, field]
+        : [...current, field],
+    );
+  }
+
+  async function handleNinDecision(action: "VERIFY" | "FAIL") {
+    setNinLocalMessage(null);
+
+    const trimmedNote = ninNote.trim();
+
+    if (!trimmedNote) {
+      setSelectedNinAction(action);
+      setNinLocalMessage("A note is required before making an NIN decision.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      action === "VERIFY"
+        ? "Mark this NIN as verified?"
+        : "Mark this NIN verification as failed?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setSelectedNinAction(action);
+
+    ninDecisionMutation.mutate(
+      {
+        action,
+        note: trimmedNote,
+      },
+      {
+        onSuccess: (response) => {
+          setNinLocalMessage(
+            `NIN decision saved successfully. Current status: ${response.status}.`,
+          );
+          setNinNote("");
+        },
+      },
     );
   }
 
@@ -183,7 +249,9 @@ export default function AdminVerificationDetailPage() {
 
     if (requiresReason && !trimmedReason) {
       setSelectedAction(action);
-      setLocalMessage("Reason is required for reject and request reupload actions.");
+      setLocalMessage(
+        "Reason is required for reject and request reupload actions.",
+      );
       return;
     }
 
@@ -198,7 +266,7 @@ export default function AdminVerificationDetailPage() {
         ? "Approve this verification submission?"
         : action === "REJECT"
           ? "Reject this verification submission?"
-          : `Request reupload for: ${reuploadFields.join(", ")}?`
+          : `Request reupload for: ${reuploadFields.join(", ")}?`,
     );
 
     if (!confirmed) return;
@@ -209,15 +277,18 @@ export default function AdminVerificationDetailPage() {
       {
         action,
         reason: trimmedReason || undefined,
-        reuploadFields: action === "REQUEST_REUPLOAD" ? reuploadFields : undefined,
+        reuploadFields:
+          action === "REQUEST_REUPLOAD" ? reuploadFields : undefined,
       },
       {
         onSuccess: (response) => {
-          setLocalMessage(`Decision saved successfully. Current status: ${response.status}.`);
+          setLocalMessage(
+            `Decision saved successfully. Current status: ${response.status}.`,
+          );
           setReason("");
           setReuploadFields([]);
         },
-      }
+      },
     );
   }
 
@@ -226,8 +297,12 @@ export default function AdminVerificationDetailPage() {
       <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">Verification detail</p>
-            <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Verification review</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+              Verification detail
+            </p>
+            <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+              Verification review
+            </h2>
             <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
               Full verification record from the live admin detail endpoint.
             </p>
@@ -235,47 +310,56 @@ export default function AdminVerificationDetailPage() {
 
           <div className="flex gap-2">
             <Link
-  href="/admin/verification"
-  className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+              href="/admin/verification"
+              className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
     border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
->
-  Back to queue
-</Link>
+            >
+              Back to queue
+            </Link>
 
-<button
-  type="button"
-  onClick={() => router.refresh()}
-  className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
+            <button
+              type="button"
+              onClick={() => router.refresh()}
+              className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
     border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900
     dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100`}
->
-  Refresh
-</button>
-
+            >
+              Refresh
+            </button>
           </div>
         </div>
       </section>
 
       {detailQuery.isLoading ? (
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading verification details...</p>
+          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Loading verification details...
+          </p>
         </section>
       ) : detailQuery.isError ? (
         <section className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <h3 className="text-lg font-semibold text-[#D9534F] dark:text-red-300">Failed to load verification</h3>
-          <p className="mt-2 text-sm text-[#D9534F] dark:text-red-300">{extractApiErrorMessage(detailQuery.error)}</p>
+          <h3 className="text-lg font-semibold text-[#D9534F] dark:text-red-300">
+            Failed to load verification
+          </h3>
+          <p className="mt-2 text-sm text-[#D9534F] dark:text-red-300">
+            {extractApiErrorMessage(detailQuery.error)}
+          </p>
         </section>
       ) : !detail ? (
         <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Verification record not found.</p>
+          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Verification record not found.
+          </p>
         </section>
       ) : (
         <section className="grid gap-6 xl:grid-cols-[1.4fr_0.9fr]">
           <div className="space-y-6">
             <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">{detail.user.fullName}</h3>
+                <h3 className="text-xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {detail.user.fullName}
+                </h3>
                 <span
                   className={[
                     "rounded-full px-3 py-1 text-xs font-medium",
@@ -301,15 +385,38 @@ export default function AdminVerificationDetailPage() {
               </div>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <DetailField label="Verification ID" value={detail.id} breakAll />
+                <DetailField
+                  label="Verification ID"
+                  value={detail.id}
+                  breakAll
+                />
                 <DetailField label="User ID" value={detail.user.id} breakAll />
                 <DetailField label="Email" value={detail.user.email} breakAll />
-                <DetailField label="Submitted" value={formatDateTime(detail.createdAt)} />
-                <DetailField label="Updated" value={formatDateTime(detail.updatedAt)} />
-                <DetailField label="User joined" value={formatDateTime(detail.user.createdAt)} />
-                <DetailField label="Reviewed at" value={formatDateTime(detail.reviewedAt)} />
-                <DetailField label="Reviewed by admin ID" value={detail.reviewedByAdminId} breakAll />
-                <DetailField label="Review reason" value={detail.reviewReason} />
+                <DetailField
+                  label="Submitted"
+                  value={formatDateTime(detail.createdAt)}
+                />
+                <DetailField
+                  label="Updated"
+                  value={formatDateTime(detail.updatedAt)}
+                />
+                <DetailField
+                  label="User joined"
+                  value={formatDateTime(detail.user.createdAt)}
+                />
+                <DetailField
+                  label="Reviewed at"
+                  value={formatDateTime(detail.reviewedAt)}
+                />
+                <DetailField
+                  label="Reviewed by admin ID"
+                  value={detail.reviewedByAdminId}
+                  breakAll
+                />
+                <DetailField
+                  label="Review reason"
+                  value={detail.reviewReason}
+                />
               </div>
 
               {detail.reuploadFields?.length ? (
@@ -332,18 +439,25 @@ export default function AdminVerificationDetailPage() {
             </div>
 
             <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Identity and profile details</h3>
+              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                Identity and profile details
+              </h3>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <DetailField label="NIN hash" value={detail.ninHash} breakAll />
-                <DetailField label="Face hash" value={detail.faceHash} breakAll />
+                <DetailField
+                  label="Face hash"
+                  value={detail.faceHash}
+                  breakAll
+                />
                 <DetailField label="Bio" value={detail.bio} />
                 <DetailField label="Instagram" value={detail.instagram} />
                 <DetailField label="TikTok" value={detail.tiktok} />
               </div>
 
               <div className="mt-4">
-                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Skills</span>
+                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Skills
+                </span>
                 {skills.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {skills.map((skill) => (
@@ -356,35 +470,171 @@ export default function AdminVerificationDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No skills provided.</p>
+                  <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                    No skills provided.
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Address details</h3>
+              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                Address details
+              </h3>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <DetailField label="House number" value={detail.addressHouse} />
                 <DetailField label="Street name" value={detail.addressStreet} />
                 <DetailField label="Area" value={detail.addressArea} />
-                <DetailField label="Nearest bus stop" value={detail.nearestBusStop} />
+                <DetailField
+                  label="Nearest bus stop"
+                  value={detail.nearestBusStop}
+                />
                 <DetailField label="LGA" value={detail.lga} />
                 <DetailField label="City" value={detail.city} />
                 <DetailField label="State" value={detail.state} />
               </div>
             </div>
           </div>
+          <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  NIN verification
+                </h3>
+
+                <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Verify the submitted NIN using the official verification
+                  process before approving the applicant.
+                </p>
+              </div>
+
+              <span
+                className={[
+                  "rounded-full px-3 py-1 text-xs font-semibold",
+                  detail.ninVerificationStatus === "VERIFIED"
+                    ? "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
+                    : detail.ninVerificationStatus === "FAILED"
+                      ? "border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 text-[#D9534F] dark:text-red-300"
+                      : "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300",
+                ].join(" ")}
+              >
+                {detail.ninVerificationStatus}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <DetailField
+                label="NIN decision date"
+                value={formatDateTime(detail.ninVerifiedAt)}
+              />
+
+              <DetailField
+                label="Reviewed by admin ID"
+                value={detail.ninVerifiedByAdminId}
+                breakAll
+              />
+            </div>
+
+            {detail.ninVerificationNote ? (
+              <div className="mt-4 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
+                <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Previous NIN verification note
+                </span>
+
+                <p className="mt-2 whitespace-pre-wrap text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {detail.ninVerificationNote}
+                </p>
+              </div>
+            ) : null}
+
+            {canDecide ? (
+              <>
+                <div className="mt-4">
+                  <label
+                    htmlFor="nin-verification-note"
+                    className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+                  >
+                    Officer note
+                  </label>
+
+                  <textarea
+                    id="nin-verification-note"
+                    rows={4}
+                    maxLength={500}
+                    value={ninNote}
+                    onChange={(event) => setNinNote(event.target.value)}
+                    placeholder="Record the outcome of your official NIN verification."
+                    disabled={ninDecisionMutation.isPending}
+                    className="mt-2 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+                  />
+
+                  <p className="mt-2 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                    The note is required for both Verify and Fail decisions.
+                  </p>
+                </div>
+
+                {ninLocalMessage ? (
+                  <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-blue-900/20 p-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    {ninLocalMessage}
+                  </div>
+                ) : null}
+
+                {ninDecisionMutation.isError ? (
+                  <div className="mt-4 rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-3 text-sm text-[#D9534F] dark:text-red-300">
+                    {extractApiErrorMessage(ninDecisionMutation.error)}
+                  </div>
+                ) : null}
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={ninDecisionMutation.isPending}
+                    onClick={() => handleNinDecision("VERIFY")}
+                    className="inline-flex items-center justify-center rounded-lg bg-[#2E7D32] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1B5E20] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-700 dark:hover:bg-green-800"
+                  >
+                    {ninDecisionMutation.isPending &&
+                    selectedNinAction === "VERIFY"
+                      ? "Verifying..."
+                      : "Verify NIN"}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={ninDecisionMutation.isPending}
+                    onClick={() => handleNinDecision("FAIL")}
+                    className="inline-flex items-center justify-center rounded-lg bg-[#D9534F] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C13E3A] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-800"
+                  >
+                    {ninDecisionMutation.isPending &&
+                    selectedNinAction === "FAIL"
+                      ? "Failing..."
+                      : "Fail NIN"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 rounded-xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
+                This verification is no longer pending, so the NIN decision
+                cannot be changed.
+              </div>
+            )}
+          </div>
 
           <div className="space-y-6">
             <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Decision controls</h3>
+              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                Decision controls
+              </h3>
               <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                Approve, reject, or request targeted reupload using the live decision endpoint.
+                Approve, reject, or request targeted reupload using the live
+                decision endpoint.
               </p>
 
               <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                <label htmlFor="verification-reason" className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                <label
+                  htmlFor="verification-reason"
+                  className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]"
+                >
                   Reason
                 </label>
                 <textarea
@@ -397,14 +647,18 @@ export default function AdminVerificationDetailPage() {
                   className="mt-2 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
                 />
                 <p className="mt-2 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Reject and request reupload require a reason. Approve does not.
+                  Reject and request reupload require a reason. Approve does
+                  not.
                 </p>
               </div>
 
               <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                <div className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Reupload fields</div>
+                <div className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  Reupload fields
+                </div>
                 <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Required only for request reupload. Select the exact fields the user must correct.
+                  Required only for request reupload. Select the exact fields
+                  the user must correct.
                 </p>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -443,20 +697,36 @@ export default function AdminVerificationDetailPage() {
 
               {!canDecide && (
                 <div className="mt-4 rounded-2xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
-                  This verification is no longer pending, so no further decision can be submitted.
+                  This verification is no longer pending, so no further decision
+                  can be submitted.
                 </div>
               )}
 
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {canDecide && detail.ninVerificationStatus !== "VERIFIED" && (
+                  <div className="mt-4 rounded-2xl border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 p-3 text-sm text-[#B45309] dark:text-amber-300">
+                    Overall approval is disabled until the NIN has been manually
+                    verified by an authorized Verification Officer.
+                  </div>
+                )}
                 <ActionButton
-                  label={decisionMutation.isPending && selectedAction === "APPROVE" ? "Approving..." : "Approve"}
+                  label={
+                    decisionMutation.isPending && selectedAction === "APPROVE"
+                      ? "Approving..."
+                      : "Approve"
+                  }
                   action="APPROVE"
-                  disabled={!canDecide || decisionMutation.isPending}
+                  disabled={
+                    !canDecide ||
+                    decisionMutation.isPending ||
+                    detail.ninVerificationStatus !== "VERIFIED"
+                  }
                   onClick={handleDecision}
                 />
                 <ActionButton
                   label={
-                    decisionMutation.isPending && selectedAction === "REQUEST_REUPLOAD"
+                    decisionMutation.isPending &&
+                    selectedAction === "REQUEST_REUPLOAD"
                       ? "Submitting..."
                       : "Request reupload"
                   }
@@ -465,7 +735,11 @@ export default function AdminVerificationDetailPage() {
                   onClick={handleDecision}
                 />
                 <ActionButton
-                  label={decisionMutation.isPending && selectedAction === "REJECT" ? "Rejecting..." : "Reject"}
+                  label={
+                    decisionMutation.isPending && selectedAction === "REJECT"
+                      ? "Rejecting..."
+                      : "Reject"
+                  }
                   action="REJECT"
                   disabled={!canDecide || decisionMutation.isPending}
                   onClick={handleDecision}

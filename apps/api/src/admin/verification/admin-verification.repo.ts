@@ -116,11 +116,12 @@ export class AdminVerificationRepo {
         id: args.id,
       },
       data: {
-        ninVerificationStatus: args.status,
-        ninVerifiedAt: new Date(),
-        ninVerifiedByAdminId: args.adminId,
-        ninVerificationNote: args.note,
-      },
+      ninVerificationStatus: args.status,
+      ninVerifiedAt:
+        args.status === "VERIFIED" ? new Date() : null,
+      ninVerifiedByAdminId: args.adminId,
+      ninVerificationNote: args.note,
+    },
     });
   }
 }

@@ -1,5 +1,9 @@
 // Path: apps/web/src/lib/admin/verification/types.ts
-export type VerificationDecisionAction = "APPROVE" | "REJECT" | "REQUEST_REUPLOAD";
+
+export type VerificationDecisionAction =
+  | "APPROVE"
+  | "REJECT"
+  | "REQUEST_REUPLOAD";
 
 export type VerificationReuploadField =
   | "ninImage"
@@ -9,7 +13,12 @@ export type VerificationReuploadField =
   | "skills"
   | "address"
   | "instagram"
-  | "tiktok"
+  | "tiktok";
+
+export type NinVerificationStatus =
+  | "PENDING"
+  | "VERIFIED"
+  | "FAILED";
 
 export type PendingVerificationRow = {
   id: string;
@@ -21,6 +30,10 @@ export type PendingVerificationRow = {
   city: string | null;
   lga: string | null;
   skills: string | null;
+  ninVerificationStatus: NinVerificationStatus;
+  ninVerifiedAt: string | null;
+  ninVerifiedByAdminId: string | null;
+  ninVerificationNote: string | null;
   user: {
     email: string;
     fullName: string;
@@ -49,6 +62,11 @@ export type AdminVerificationDetail = {
 
   ninHash: string;
   faceHash: string;
+
+  ninVerificationStatus: NinVerificationStatus;
+  ninVerifiedAt: string | null;
+  ninVerifiedByAdminId: string | null;
+  ninVerificationNote: string | null;
 
   ninImagePath: string | null;
   selfieImagePath: string | null;
@@ -80,4 +98,18 @@ export type VerificationDecisionPayload = {
 export type VerificationDecisionResponse = {
   ok: true;
   status: "PENDING" | "APPROVED" | "REJECTED";
+};
+
+export type NinVerificationDecisionAction =
+  | "VERIFY"
+  | "FAIL";
+
+export type NinVerificationDecisionPayload = {
+  action: NinVerificationDecisionAction;
+  note: string;
+};
+
+export type NinVerificationDecisionResponse = {
+  ok: true;
+  status: NinVerificationStatus;
 };
