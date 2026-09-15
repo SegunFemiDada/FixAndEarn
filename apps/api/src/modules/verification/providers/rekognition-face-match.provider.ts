@@ -4,7 +4,7 @@ import {
   RekognitionClient,
   SearchFacesByImageCommand,
 } from "@aws-sdk/client-rekognition";
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { BadRequestException, Injectable, InternalServerErrorException } from "@nestjs/common";
 
 import {
   FaceMatchProvider,
@@ -82,11 +82,14 @@ export class RekognitionFaceMatchProvider implements FaceMatchProvider {
   }
 
   async searchExistingFace(
-    selfiePath: string,
-  ): Promise<FaceMatchResult | null> {
-    const imageBytes = await this.downloadImage(selfiePath);
+  selfiePath: string,
+): Promise<FaceMatchResult | null> {
+  const imageBytes = await this.downloadImage(selfiePath);
 
-    const result = await this.client.send(
+  let result;
+
+  try {
+    result = await this.client.send(
       new SearchFacesByImageCommand({
         CollectionId: this.collectionId,
         Image: {
@@ -97,19 +100,33 @@ export class RekognitionFaceMatchProvider implements FaceMatchProvider {
         QualityFilter: "AUTO",
       }),
     );
+  } catch (error) {
+    const errorName =
+      error instanceof Error
+        ? error.name
+        : "";
 
-    const match = result.FaceMatches?.[0];
-
-    if (!match?.Face?.FaceId || match.Similarity == null) {
-      return null;
+    if (errorName === "InvalidParameterException") {
+      throw new BadRequestException(
+        "No detectable face was found in the selfie. Please upload a clear selfie showing one face.",
+      );
     }
 
-    return {
-      faceId: match.Face.FaceId,
-      externalImageId: match.Face.ExternalImageId ?? null,
-      similarity: match.Similarity,
-    };
+    throw error;
   }
+
+  const match = result.FaceMatches?.[0];
+
+  if (!match?.Face?.FaceId || match.Similarity == null) {
+    return null;
+  }
+
+  return {
+    faceId: match.Face.FaceId,
+    externalImageId: match.Face.ExternalImageId ?? null,
+    similarity: match.Similarity,
+  };
+}
 
   async indexApprovedFace(
     selfiePath: string,
