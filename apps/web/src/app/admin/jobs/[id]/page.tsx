@@ -166,9 +166,9 @@ async function handleFlag() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-275 space-y-6">
       {/* Header */}
-      <section className="rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <section className="sticky top-0 z-20 rounded-2xl border border-[#C5D5EE] bg-white/95 p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] backdrop-blur dark:border-[#2D3F55] dark:bg-[#1E2A3A]/95 dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
@@ -284,6 +284,8 @@ async function handleFlag() {
 </div>
         </div>
       </section>
+      <div className="grid grid-cols-[340px_minmax(0,1fr)] items-start gap-6">
+  <aside className="space-y-6">
 
       {/* Job overview */}
       <Section title="Job Overview">
@@ -429,7 +431,7 @@ async function handleFlag() {
           </div>
         </div>
       </Section>
-
+            </aside>
       {/* Applications */}
       <Section title={`Applications (${job.applications.length})`}>
         {job.applications.length === 0 ? (
@@ -964,6 +966,7 @@ async function handleFlag() {
           </div>
         </div>
       </Section>
+      </div>
     </div>
   );
 }

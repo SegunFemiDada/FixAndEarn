@@ -294,7 +294,7 @@ export default function AdminLayout({
         <header className="sticky top-0 z-40 h-18 shrink-0 border-b border-[#C5D5EE] bg-white/95 backdrop-blur dark:border-[#2D3F55] dark:bg-[#172231]/95">
           <div className="flex h-full items-center justify-between gap-6 px-6 xl:px-8">
             <div className="min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+              <div className="text-[11px] font-bold tracking-[0.22em] text-[#5B8FCC] dark:text-[#7AAEE0]">
                 FixAndEarn
               </div>
 

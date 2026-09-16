@@ -231,117 +231,157 @@ export default function AdminJobsPage() {
             No jobs found.
           </div>
         ) : (
-          <div className="mt-4 space-y-4">
-            {items.map((job) => (
-              <article
-                key={job.id}
-                className="rounded-2xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                        {job.skillCategory}
-                      </h3>
+          <div className="mt-4 overflow-hidden rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55]">
+  <div className="overflow-x-auto">
+    <table className="min-w-295 w-full border-collapse text-left">
+      <thead className="sticky top-0 z-10 bg-[#EEF4FC] dark:bg-[#1A2636]">
+        <tr className="border-b border-[#C5D5EE] dark:border-[#2D3F55]">
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Job
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Client
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Fixer
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Status
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Type
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Moderation
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Price
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Activity
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Created
+          </th>
+          <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+            Action
+          </th>
+        </tr>
+      </thead>
 
-                      <span
-                        className={`rounded-full border px-2 py-1 text-xs font-medium ${statusClass(job.status)}`}
-                      >
-                        {job.status}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2 py-1 text-xs font-medium ${
-                          job.moderationStatus === "FLAGGED"
-                            ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200"
-                            : "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
-                        }`}
-                      >
-                        {job.moderationStatus === "FLAGGED"
-                          ? "FLAGGED"
-                          : "CLEAR"}
-                      </span>
-
-                      <span className="rounded-full border border-[#C5D5EE] bg-white px-2 py-1 text-xs font-medium text-[#516786] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#AAB9D0]">
-                        {job.postingType}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 break-all text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      {job.id}
-                    </p>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Client
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {job.client.fullName}
-                        </p>
-                        <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                          {job.client.email}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Fixer
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {job.fixer?.fullName ?? "Not assigned"}
-                        </p>
-                        <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                          {job.fixer?.email ?? "—"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Price
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatFec(
-                            job.lockedPriceMilliFec ?? job.priceMilliFec,
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Created
-                        </p>
-                        <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatDate(job.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap gap-3 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      <span>{job._count.applications} applications</span>
-                      <span>{job._count.conversations} conversations</span>
-                      <span>{job._count.payments} payments</span>
-                    </div>
-                  </div>
-                  {job.moderationStatus === "FLAGGED" &&
-                    job.flagReason && (
-                      <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
-                        <p className="font-semibold">
-                          Moderation reason
-                        </p>
-                        <p className="mt-1">{job.flagReason}</p>
-                      </div>
-                    )}
-
-                  <Link
-                    href={`/admin/jobs/${job.id}`}
-                    className="inline-flex shrink-0 items-center justify-center rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-400 dark:bg-green-500 dark:hover:bg-green-600"
-                  >
-                    Open Investigation
-                  </Link>
+      <tbody className="divide-y divide-[#D9E3F1] dark:divide-[#2D3F55]">
+        {items.map((job) => (
+          <tr
+            key={job.id}
+            className="bg-white transition-colors hover:bg-[#F4F8FF] dark:bg-[#1E2A3A] dark:hover:bg-[#243247]"
+          >
+            <td className="px-4 py-4 align-top">
+              <div className="min-w-47.5">
+                <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {job.skillCategory}
                 </div>
-              </article>
-            ))}
-          </div>
+
+                <div className="mt-1 max-w-55 truncate text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  {job.id}
+                </div>
+              </div>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <div className="min-w-42.5">
+                <div className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {job.client.fullName}
+                </div>
+                <div className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  {job.client.email}
+                </div>
+              </div>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <div className="min-w-42.5">
+                <div className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {job.fixer?.fullName ?? "Not assigned"}
+                </div>
+                <div className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  {job.fixer?.email ?? "—"}
+                </div>
+              </div>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <span
+                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass(job.status)}`}
+              >
+                {job.status}
+              </span>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <span className="inline-flex rounded-full border border-[#C5D5EE] bg-[#F4F8FF] px-2.5 py-1 text-xs font-medium text-[#516786] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#AAB9D0]">
+                {job.postingType}
+              </span>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <div className="min-w-37.5">
+                <span
+                  className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                    job.moderationStatus === "FLAGGED"
+                      ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200"
+                      : "border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
+                  }`}
+                >
+                  {job.moderationStatus === "FLAGGED"
+                    ? "FLAGGED"
+                    : "CLEAR"}
+                </span>
+
+                {job.moderationStatus === "FLAGGED" &&
+                  job.flagReason && (
+                    <p className="mt-2 max-w-55 text-xs leading-5 text-red-700 dark:text-red-300">
+                      {job.flagReason}
+                    </p>
+                  )}
+              </div>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <span className="whitespace-nowrap text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {formatFec(
+                  job.lockedPriceMilliFec ?? job.priceMilliFec,
+                )}
+              </span>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <div className="min-w-37.5 space-y-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                <div>{job._count.applications} applications</div>
+                <div>{job._count.conversations} conversations</div>
+                <div>{job._count.payments} payments</div>
+              </div>
+            </td>
+
+            <td className="px-4 py-4 align-top">
+              <span className="whitespace-nowrap text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {formatDate(job.createdAt)}
+              </span>
+            </td>
+
+            <td className="px-4 py-4 text-right align-top">
+              <Link
+                href={`/admin/jobs/${job.id}`}
+                className="inline-flex items-center justify-center rounded-lg border border-[#B7C9E3] bg-white px-3 py-2 text-sm font-semibold text-[#315F96] transition-colors hover:bg-[#EEF4FC] focus:outline-none focus:ring-2 focus:ring-[#5B8FCC]/30 dark:border-[#3A506B] dark:bg-[#1E2A3A] dark:text-[#8FC1F2] dark:hover:bg-[#243247]"
+              >
+                Open
+              </Link>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
         )}
 
         <div className="mt-6 flex items-center justify-between gap-3">
