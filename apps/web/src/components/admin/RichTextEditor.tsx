@@ -44,7 +44,7 @@ export default function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-  "prose prose-sm dark:prose-invert max-w-none min-h-[200px] rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 focus:outline-none",
+          "prose prose-sm dark:prose-invert max-w-none min-h-[200px] max-h-[15rem] overflow-y-auto rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 focus:outline-none",
       },
     },
   });
