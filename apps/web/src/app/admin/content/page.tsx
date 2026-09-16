@@ -1,3 +1,4 @@
+// Path: apps/web/src/app/admin/content/page.tsx
 "use client";
 
 import * as React from "react";
@@ -23,6 +24,9 @@ const SUBPANEL_CLASS =
 
 const INPUT_CLASS =
   "w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080] dark:focus:border-[#5B8FCC]";
+
+const TEXTAREA_CLASS =
+  "w-full max-h-[15rem] overflow-y-auto rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm leading-6 text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080] dark:focus:border-[#5B8FCC]";
 
 const PRIMARY_BUTTON_CLASS =
   "inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600";
@@ -147,9 +151,7 @@ function SectionHeader({
         ) : null}
       </div>
 
-      {action ? (
-        <div className="shrink-0">{action}</div>
-      ) : null}
+      {action ? <div className="shrink-0">{action}</div> : null}
     </div>
   );
 }
@@ -244,8 +246,8 @@ function TemplateEditor({
               body: event.target.value,
             })
           }
-          rows={5}
-          className={`mt-2 ${INPUT_CLASS} resize-y`}
+          rows={10}
+          className={`mt-2 ${TEXTAREA_CLASS} resize-y`}
           placeholder="Your withdrawal request has been approved."
         />
       </div>
@@ -332,8 +334,8 @@ function FaqItemEditor({
               answer: event.target.value,
             })
           }
-          rows={6}
-          className={`mt-2 ${INPUT_CLASS} resize-y`}
+          rows={10}
+          className={`mt-2 ${TEXTAREA_CLASS} resize-y`}
           placeholder="Complete the verification form, upload the required documents, and wait for admin review."
         />
       </div>
@@ -515,7 +517,6 @@ export default function AdminContentPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
       <section className={PANEL_CLASS}>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
@@ -546,7 +547,6 @@ export default function AdminContentPage() {
         </div>
       </section>
 
-      {/* Loading and error states */}
       {query.isLoading ? (
         <section className={PANEL_CLASS}>
           <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
@@ -565,7 +565,6 @@ export default function AdminContentPage() {
         </section>
       ) : (
         <>
-          {/* Policies */}
           <section className={PANEL_CLASS}>
             <SectionHeader
               eyebrow="Public policies"
@@ -612,7 +611,6 @@ export default function AdminContentPage() {
             </div>
           </section>
 
-          {/* FAQ */}
           <section className={PANEL_CLASS}>
             <SectionHeader
               eyebrow="Public support"
@@ -622,9 +620,7 @@ export default function AdminContentPage() {
                 <div className="inline-flex overflow-hidden rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55]">
                   <button
                     type="button"
-                    onClick={() =>
-                      setFaqMode("structured")
-                    }
+                    onClick={() => setFaqMode("structured")}
                     className={[
                       "px-4 py-2.5 text-sm font-semibold transition",
                       faqMode === "structured"
@@ -713,15 +709,14 @@ export default function AdminContentPage() {
                   onChange={(event) =>
                     setFaqPlainText(event.target.value)
                   }
-                  rows={16}
-                  className={`mt-3 ${INPUT_CLASS} resize-y`}
+                  rows={10}
+                  className={`mt-3 ${TEXTAREA_CLASS} resize-y`}
                   placeholder="Enter plain FAQ content. This will render as normal text instead of accordion items."
                 />
               </div>
             )}
           </section>
 
-          {/* Support */}
           <section className={PANEL_CLASS}>
             <SectionHeader
               eyebrow="Public support"
@@ -738,7 +733,6 @@ export default function AdminContentPage() {
             </div>
           </section>
 
-          {/* Reference data */}
           <section className={PANEL_CLASS}>
             <SectionHeader
               eyebrow="Reference data"
@@ -761,8 +755,8 @@ export default function AdminContentPage() {
                   onChange={(event) =>
                     setSkillsListText(event.target.value)
                   }
-                  rows={18}
-                  className={`mt-4 ${INPUT_CLASS} resize-y`}
+                  rows={10}
+                  className={`mt-4 ${TEXTAREA_CLASS} resize-y`}
                 />
               </div>
 
@@ -780,14 +774,13 @@ export default function AdminContentPage() {
                   onChange={(event) =>
                     setBankListText(event.target.value)
                   }
-                  rows={18}
-                  className={`mt-4 ${INPUT_CLASS} resize-y`}
+                  rows={10}
+                  className={`mt-4 ${TEXTAREA_CLASS} resize-y`}
                 />
               </div>
             </div>
           </section>
 
-          {/* Notification templates */}
           <section className={PANEL_CLASS}>
             <SectionHeader
               eyebrow="System messaging"
@@ -828,7 +821,6 @@ export default function AdminContentPage() {
             )}
           </section>
 
-          {/* Save */}
           <section
             className={`${PANEL_CLASS} sticky bottom-4 z-20`}
           >
