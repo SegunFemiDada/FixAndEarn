@@ -1,4 +1,3 @@
-// Path: apps/web/src/app/admin/content/page.tsx
 "use client";
 
 import * as React from "react";
@@ -15,6 +14,24 @@ type AdminFaqItem = {
   answer: string;
   youtubeUrl: string;
 };
+
+const PANEL_CLASS =
+  "rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.10)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.35)]";
+
+const SUBPANEL_CLASS =
+  "rounded-xl border border-[#C5D5EE] bg-[#F8FAFD] dark:border-[#2D3F55] dark:bg-[#16202E]";
+
+const INPUT_CLASS =
+  "w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080] dark:focus:border-[#5B8FCC]";
+
+const PRIMARY_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600";
+
+const SECONDARY_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] bg-white px-4 py-3 text-sm font-medium text-[#6B7C99] transition hover:bg-[#F4F8FF] hover:text-[#1A2B4A] focus:outline-none focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FA0BC] dark:hover:bg-[#16202E] dark:hover:text-[#E8F0FA]";
+
+const DANGER_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-xl border border-[#F2C0BC] bg-white px-4 py-3 text-sm font-medium text-[#D9534F] transition hover:bg-[#FFF4F3] focus:outline-none focus:ring-2 focus:ring-red-400/20 dark:border-red-700 dark:bg-[#1E2A3A] dark:text-red-300 dark:hover:bg-red-900/20";
 
 function parseMultilineList(value: string) {
   return value
@@ -92,9 +109,61 @@ function serializeFaqItems(items: AdminFaqItem[]) {
     }))
     .filter((item) => item.question && item.answer);
 
-  if (cleaned.length === 0) return "";
+  if (cleaned.length === 0) {
+    return "";
+  }
 
   return JSON.stringify(cleaned, null, 2);
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        {eyebrow ? (
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+            {eyebrow}
+          </p>
+        ) : null}
+
+        <h3 className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+          {title}
+        </h3>
+
+        {description ? (
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
+            {description}
+          </p>
+        ) : null}
+      </div>
+
+      {action ? (
+        <div className="shrink-0">{action}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function FieldLabel({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+      {children}
+    </label>
+  );
 }
 
 function TemplateEditor({
@@ -107,62 +176,98 @@ function TemplateEditor({
   onRemove: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-      <div className="grid gap-4 lg:grid-cols-2">
+    <article className={`${SUBPANEL_CLASS} p-5`}>
+      <div className="flex flex-col gap-3 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Template key</label>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+            Notification template
+          </p>
+
+          <h4 className="mt-1 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            {template.key || "New template"}
+          </h4>
+        </div>
+
+        <button
+          type="button"
+          onClick={onRemove}
+          className={DANGER_BUTTON_CLASS}
+        >
+          Remove template
+        </button>
+      </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <div>
+          <FieldLabel>Template key</FieldLabel>
+
           <input
             type="text"
             value={template.key}
-            onChange={(event) => onChange({ ...template, key: event.target.value })}
-            className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+            onChange={(event) =>
+              onChange({
+                ...template,
+                key: event.target.value,
+              })
+            }
+            className={`mt-2 ${INPUT_CLASS}`}
             placeholder="withdrawal_approved"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Template title</label>
+          <FieldLabel>Template title</FieldLabel>
+
           <input
             type="text"
             value={template.title}
-            onChange={(event) => onChange({ ...template, title: event.target.value })}
-            className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+            onChange={(event) =>
+              onChange({
+                ...template,
+                title: event.target.value,
+              })
+            }
+            className={`mt-2 ${INPUT_CLASS}`}
             placeholder="Withdrawal approved"
           />
         </div>
       </div>
 
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Template body</label>
+      <div className="mt-5">
+        <FieldLabel>Template body</FieldLabel>
+
         <textarea
           value={template.body}
-          onChange={(event) => onChange({ ...template, body: event.target.value })}
-          rows={4}
-          className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+          onChange={(event) =>
+            onChange({
+              ...template,
+              body: event.target.value,
+            })
+          }
+          rows={5}
+          className={`mt-2 ${INPUT_CLASS} resize-y`}
           placeholder="Your withdrawal request has been approved."
         />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <label className="inline-flex items-center gap-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
           <input
             type="checkbox"
             checked={template.isEnabled}
-            onChange={(event) => onChange({ ...template, isEnabled: event.target.checked })}
-            className="rounded border-[#C5D5EE] text-[#5B8FCC] focus:ring-[#5B8FCC]"
+            onChange={(event) =>
+              onChange({
+                ...template,
+                isEnabled: event.target.checked,
+              })
+            }
+            className="rounded border-[#C5D5EE] text-[#5B8FCC] focus:ring-[#5B8FCC] dark:border-[#2D3F55]"
           />
-          Enabled
-        </label>
 
-        <button
-          type="button"
-          onClick={onRemove}
-          className="inline-flex items-center justify-center rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#D9534F] dark:text-red-300 transition hover:bg-[#FFF4F3] dark:hover:bg-red-900/20"
-        >
-          Remove template
-        </button>
+          <span>Enabled</span>
+        </label>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -178,51 +283,82 @@ function FaqItemEditor({
   index: number;
 }) {
   return (
-    <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">FAQ item {index + 1}</h4>
+    <article className={`${SUBPANEL_CLASS} p-5`}>
+      <div className="flex flex-col gap-3 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+            FAQ
+          </p>
+
+          <h4 className="mt-1 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            FAQ item {index + 1}
+          </h4>
+        </div>
+
         <button
           type="button"
           onClick={onRemove}
-          className="inline-flex items-center justify-center rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-white dark:bg-[#1E2A3A] px-3 py-2 text-sm font-medium text-[#D9534F] dark:text-red-300 transition hover:bg-[#FFF4F3] dark:hover:bg-red-900/20"
+          className={DANGER_BUTTON_CLASS}
         >
           Remove
         </button>
       </div>
 
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Question</label>
+      <div className="mt-5">
+        <FieldLabel>Question</FieldLabel>
+
         <input
           type="text"
           value={item.question}
-          onChange={(event) => onChange({ ...item, question: event.target.value })}
-          className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+          onChange={(event) =>
+            onChange({
+              ...item,
+              question: event.target.value,
+            })
+          }
+          className={`mt-2 ${INPUT_CLASS}`}
           placeholder="How do I become verified?"
         />
       </div>
 
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Answer</label>
+      <div className="mt-5">
+        <FieldLabel>Answer</FieldLabel>
+
         <textarea
           value={item.answer}
-          onChange={(event) => onChange({ ...item, answer: event.target.value })}
-          rows={5}
-          className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+          onChange={(event) =>
+            onChange({
+              ...item,
+              answer: event.target.value,
+            })
+          }
+          rows={6}
+          className={`mt-2 ${INPUT_CLASS} resize-y`}
           placeholder="Complete the verification form, upload the required documents, and wait for admin review."
         />
       </div>
 
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">YouTube link (optional)</label>
+      <div className="mt-5">
+        <FieldLabel>YouTube link</FieldLabel>
+
+        <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+          Optional.
+        </p>
+
         <input
           type="url"
           value={item.youtubeUrl}
-          onChange={(event) => onChange({ ...item, youtubeUrl: event.target.value })}
-          className="mt-1 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+          onChange={(event) =>
+            onChange({
+              ...item,
+              youtubeUrl: event.target.value,
+            })
+          }
+          className={`mt-2 ${INPUT_CLASS}`}
           placeholder="https://www.youtube.com/watch?v=..."
         />
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -232,38 +368,63 @@ export default function AdminContentPage() {
 
   const [userAgreement, setUserAgreement] = React.useState("");
   const [privacyPolicy, setPrivacyPolicy] = React.useState("");
-  const [faqMode, setFaqMode] = React.useState<"structured" | "plain">("structured");
+  const [faqMode, setFaqMode] = React.useState<
+    "structured" | "plain"
+  >("structured");
   const [faqItems, setFaqItems] = React.useState<AdminFaqItem[]>([]);
   const [faqPlainText, setFaqPlainText] = React.useState("");
   const [supportContent, setSupportContent] = React.useState("");
   const [skillsListText, setSkillsListText] = React.useState("");
   const [bankListText, setBankListText] = React.useState("");
-  const [templates, setTemplates] = React.useState<AdminNotificationTemplate[]>([]);
-  const [message, setMessage] = React.useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [templates, setTemplates] = React.useState<
+    AdminNotificationTemplate[]
+  >([]);
+  const [message, setMessage] = React.useState<{
+    type: "ok" | "err";
+    text: string;
+  } | null>(null);
 
   React.useEffect(() => {
-    if (!query.data) return;
+    if (!query.data) {
+      return;
+    }
 
     setUserAgreement(query.data.userAgreement ?? "");
     setPrivacyPolicy(query.data.privacyPolicy ?? "");
 
-    const parsedFaq = parseFaqContent(query.data.faqContent ?? "");
+    const parsedFaq = parseFaqContent(
+      query.data.faqContent ?? "",
+    );
+
     setFaqMode(parsedFaq.mode);
     setFaqItems(parsedFaq.items);
     setFaqPlainText(parsedFaq.plainText);
 
     setSupportContent(query.data.supportContent ?? "");
-    setSkillsListText(joinMultilineList(query.data.skillsList ?? []));
-    setBankListText(joinMultilineList(query.data.bankList ?? []));
+    setSkillsListText(
+      joinMultilineList(query.data.skillsList ?? []),
+    );
+    setBankListText(
+      joinMultilineList(query.data.bankList ?? []),
+    );
     setTemplates(query.data.notificationTemplates ?? []);
   }, [query.data]);
 
-  function handleTemplateChange(index: number, next: AdminNotificationTemplate) {
-    setTemplates((current) => current.map((item, i) => (i === index ? next : item)));
+  function handleTemplateChange(
+    index: number,
+    next: AdminNotificationTemplate,
+  ) {
+    setTemplates((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? next : item,
+      ),
+    );
   }
 
   function handleTemplateRemove(index: number) {
-    setTemplates((current) => current.filter((_, i) => i !== index));
+    setTemplates((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
   }
 
   function handleAddTemplate() {
@@ -278,12 +439,21 @@ export default function AdminContentPage() {
     ]);
   }
 
-  function handleFaqItemChange(index: number, next: AdminFaqItem) {
-    setFaqItems((current) => current.map((item, i) => (i === index ? next : item)));
+  function handleFaqItemChange(
+    index: number,
+    next: AdminFaqItem,
+  ) {
+    setFaqItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? next : item,
+      ),
+    );
   }
 
   function handleFaqItemRemove(index: number) {
-    setFaqItems((current) => current.filter((_, i) => i !== index));
+    setFaqItems((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
   }
 
   function handleAddFaqItem() {
@@ -320,153 +490,246 @@ export default function AdminContentPage() {
       },
       {
         onSuccess: (response) => {
-          const parsedFaq = parseFaqContent(response.content.faqContent ?? "");
+          const parsedFaq = parseFaqContent(
+            response.content.faqContent ?? "",
+          );
+
           setFaqMode(parsedFaq.mode);
           setFaqItems(parsedFaq.items);
           setFaqPlainText(parsedFaq.plainText);
-          setMessage({ type: "ok", text: "Content updated successfully." });
+
+          setMessage({
+            type: "ok",
+            text: "Content updated successfully.",
+          });
         },
         onError: (error) => {
-          setMessage({ type: "err", text: extractApiErrorMessage(error) });
+          setMessage({
+            type: "err",
+            text: extractApiErrorMessage(error),
+          });
         },
-      }
+      },
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">Content</p>
-        <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Content management</h2>
-        <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          Manage public-facing policy text, support content, FAQ items, skills, banks, and internal notification templates using live backend persistence only.
-        </p>
+      {/* Page header */}
+      <section className={PANEL_CLASS}>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+              Content
+            </p>
+
+            <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+              Content management
+            </h2>
+
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
+              Manage public-facing policy text, support content,
+              FAQ items, skills, banks, and internal notification
+              templates using live backend persistence only.
+            </p>
+          </div>
+
+          <div className="hidden shrink-0 rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-right dark:border-[#2D3F55] dark:bg-[#16202E] xl:block">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#6B7C99] dark:text-[#8FA0BC]">
+              Publishing model
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+              Manual save
+            </p>
+          </div>
+        </div>
       </section>
 
+      {/* Loading and error states */}
       {query.isLoading ? (
-        <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading content...</p>
+        <section className={PANEL_CLASS}>
+          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Loading content...
+          </p>
         </section>
       ) : query.isError ? (
-        <section className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <h3 className="text-lg font-semibold text-[#D9534F] dark:text-red-300">Failed to load content</h3>
-          <p className="mt-2 text-sm text-[#D9534F] dark:text-red-300">{extractApiErrorMessage(query.error)}</p>
+        <section className="rounded-2xl border border-[#F2C0BC] bg-[#FFF4F3] p-6 dark:border-red-700 dark:bg-red-900/20">
+          <h3 className="text-lg font-semibold text-[#D9534F] dark:text-red-300">
+            Failed to load content
+          </h3>
+
+          <p className="mt-2 text-sm text-[#D9534F] dark:text-red-300">
+            {extractApiErrorMessage(query.error)}
+          </p>
         </section>
       ) : (
         <>
-          <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Terms of Service</h3>
-              <RichTextEditor
-                value={userAgreement}
-                onChange={setUserAgreement}
-                placeholder="Enter the Terms of Service..."
-              />
-            </div>
+          {/* Policies */}
+          <section className={PANEL_CLASS}>
+            <SectionHeader
+              eyebrow="Public policies"
+              title="Terms and privacy"
+              description="Edit the policy content exposed to users."
+            />
 
-            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Privacy policy</h3>
-              <RichTextEditor
-                value={privacyPolicy}
-                onChange={setPrivacyPolicy}
-                placeholder="Enter the Privacy Policy..."
-              />
-            </div>
+            <div className="mt-6 grid gap-6 xl:grid-cols-2">
+              <div className={`${SUBPANEL_CLASS} p-5`}>
+                <div className="mb-4">
+                  <h4 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    Terms of Service
+                  </h4>
 
-            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] xl:col-span-2">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">FAQ content</h3>
-                  <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                    Use structured FAQ items for automatic accordion mode on the public FAQ page. Plain text mode is still available as fallback.
+                  <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Public terms shown to users.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <div className="inline-flex rounded-lg shadow-sm">
-  <button
-    type="button"
-    onClick={() => setFaqMode("structured")}
-    className={`
-      px-4 py-2 font-semibold text-sm rounded-l-lg transition-colors
-      ${faqMode === "structured"
-        ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
-        : "bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"}
-    `}
-  >
-    Structured FAQ
-  </button>
-
-  <button
-    type="button"
-    onClick={() => setFaqMode("plain")}
-    className={`
-      px-4 py-2 font-semibold text-sm rounded-r-lg transition-colors
-      ${faqMode === "plain"
-        ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300"
-        : "bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500"}
-    `}
-  >
-    Plain text
-  </button>
-</div>
-
-                </div>
+                <RichTextEditor
+                  value={userAgreement}
+                  onChange={setUserAgreement}
+                  placeholder="Enter the Terms of Service..."
+                />
               </div>
 
-              {faqMode === "structured" ? (
-                <>
-                  <div className="mt-4 flex justify-end">
-                    <button
-  type="button"
-  onClick={handleAddFaqItem}
-  className="
-    inline-flex items-center justify-center
-    rounded-lg px-4 py-3 font-semibold
-    bg-green-600 text-white
-    hover:bg-green-700 focus:ring-2 focus:ring-green-400
-    transition-colors
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-green-500 dark:text-white
-    dark:hover:bg-green-600 dark:focus:ring-green-300
-  "
->
-  Add FAQ item
-</button>
+              <div className={`${SUBPANEL_CLASS} p-5`}>
+                <div className="mb-4">
+                  <h4 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    Privacy policy
+                  </h4>
 
+                  <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Public privacy policy shown to users.
+                  </p>
+                </div>
+
+                <RichTextEditor
+                  value={privacyPolicy}
+                  onChange={setPrivacyPolicy}
+                  placeholder="Enter the Privacy Policy..."
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* FAQ */}
+          <section className={PANEL_CLASS}>
+            <SectionHeader
+              eyebrow="Public support"
+              title="FAQ content"
+              description="Structured FAQ items enable accordion mode on the public FAQ page. Plain text remains available as a fallback."
+              action={
+                <div className="inline-flex overflow-hidden rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55]">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFaqMode("structured")
+                    }
+                    className={[
+                      "px-4 py-2.5 text-sm font-semibold transition",
+                      faqMode === "structured"
+                        ? "bg-blue-600 text-white dark:bg-blue-500"
+                        : "bg-white text-[#6B7C99] hover:bg-[#F4F8FF] dark:bg-[#1E2A3A] dark:text-[#8FA0BC] dark:hover:bg-[#16202E]",
+                    ].join(" ")}
+                  >
+                    Structured FAQ
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFaqMode("plain")}
+                    className={[
+                      "border-l border-[#C5D5EE] px-4 py-2.5 text-sm font-semibold transition dark:border-[#2D3F55]",
+                      faqMode === "plain"
+                        ? "bg-blue-600 text-white dark:bg-blue-500"
+                        : "bg-white text-[#6B7C99] hover:bg-[#F4F8FF] dark:bg-[#1E2A3A] dark:text-[#8FA0BC] dark:hover:bg-[#16202E]",
+                    ].join(" ")}
+                  >
+                    Plain text
+                  </button>
+                </div>
+              }
+            />
+
+            {faqMode === "structured" ? (
+              <div className="mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                      FAQ items
+                    </p>
+
+                    <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                      Each item requires a question and answer.
+                    </p>
                   </div>
 
-                  {faqItems.length === 0 ? (
-                    <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                      No FAQ items yet. Add a question and answer to enable accordion mode on the public FAQ page.
-                    </div>
-                  ) : (
-                    <div className="mt-4 grid gap-4">
-                      {faqItems.map((item, index) => (
-                        <FaqItemEditor
-                          key={`faq-item-${index}`}
-                          item={item}
-                          index={index}
-                          onChange={(next) => handleFaqItemChange(index, next)}
-                          onRemove={() => handleFaqItemRemove(index)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
+                  <button
+                    type="button"
+                    onClick={handleAddFaqItem}
+                    className={PRIMARY_BUTTON_CLASS}
+                  >
+                    Add FAQ item
+                  </button>
+                </div>
+
+                {faqItems.length === 0 ? (
+                  <div className={`${SUBPANEL_CLASS} mt-4 p-5`}>
+                    <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                      No FAQ items yet. Add a question and answer
+                      to enable accordion mode on the public FAQ
+                      page.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4 grid gap-4">
+                    {faqItems.map((item, index) => (
+                      <FaqItemEditor
+                        key={`faq-item-${index}`}
+                        item={item}
+                        index={index}
+                        onChange={(next) =>
+                          handleFaqItemChange(index, next)
+                        }
+                        onRemove={() =>
+                          handleFaqItemRemove(index)
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-6">
+                <FieldLabel>Plain FAQ content</FieldLabel>
+
+                <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  This will render as normal text instead of
+                  accordion items.
+                </p>
+
                 <textarea
                   value={faqPlainText}
-                  onChange={(event) => setFaqPlainText(event.target.value)}
-                  rows={14}
-                  className="mt-4 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
+                  onChange={(event) =>
+                    setFaqPlainText(event.target.value)
+                  }
+                  rows={16}
+                  className={`mt-3 ${INPUT_CLASS} resize-y`}
                   placeholder="Enter plain FAQ content. This will render as normal text instead of accordion items."
                 />
-              )}
-            </div>
+              </div>
+            )}
+          </section>
 
-            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] xl:col-span-2">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Support content</h3>
+          {/* Support */}
+          <section className={PANEL_CLASS}>
+            <SectionHeader
+              eyebrow="Public support"
+              title="Support content"
+              description="Manage the support content presented to users."
+            />
+
+            <div className="mt-6">
               <RichTextEditor
                 value={supportContent}
                 onChange={setSupportContent}
@@ -475,99 +738,140 @@ export default function AdminContentPage() {
             </div>
           </section>
 
-          <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Skills list</h3>
-              <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">One skill per line.</p>
-              <textarea
-                value={skillsListText}
-                onChange={(event) => setSkillsListText(event.target.value)}
-                rows={16}
-                className="mt-4 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-              />
-            </div>
+          {/* Reference data */}
+          <section className={PANEL_CLASS}>
+            <SectionHeader
+              eyebrow="Reference data"
+              title="Skills and banks"
+              description="Maintain the selectable skills and bank lists used by the application."
+            />
 
-            <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Bank list</h3>
-              <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">One bank per line.</p>
-              <textarea
-                value={bankListText}
-                onChange={(event) => setBankListText(event.target.value)}
-                rows={16}
-                className="mt-4 w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-              />
+            <div className="mt-6 grid gap-6 xl:grid-cols-2">
+              <div className={`${SUBPANEL_CLASS} p-5`}>
+                <h4 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  Skills list
+                </h4>
+
+                <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  One skill per line.
+                </p>
+
+                <textarea
+                  value={skillsListText}
+                  onChange={(event) =>
+                    setSkillsListText(event.target.value)
+                  }
+                  rows={18}
+                  className={`mt-4 ${INPUT_CLASS} resize-y`}
+                />
+              </div>
+
+              <div className={`${SUBPANEL_CLASS} p-5`}>
+                <h4 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  Bank list
+                </h4>
+
+                <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  One bank per line.
+                </p>
+
+                <textarea
+                  value={bankListText}
+                  onChange={(event) =>
+                    setBankListText(event.target.value)
+                  }
+                  rows={18}
+                  className={`mt-4 ${INPUT_CLASS} resize-y`}
+                />
+              </div>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Notification templates</h3>
-                <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                  Manage reusable notification template definitions stored in admin content.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddTemplate}
-                className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-3 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-              >
-                Add template
-              </button>
-            </div>
+          {/* Notification templates */}
+          <section className={PANEL_CLASS}>
+            <SectionHeader
+              eyebrow="System messaging"
+              title="Notification templates"
+              description="Manage reusable notification template definitions stored in admin content."
+              action={
+                <button
+                  type="button"
+                  onClick={handleAddTemplate}
+                  className={SECONDARY_BUTTON_CLASS}
+                >
+                  Add template
+                </button>
+              }
+            />
 
             {templates.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                No notification templates added yet.
+              <div className={`${SUBPANEL_CLASS} mt-6 p-5`}>
+                <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                  No notification templates added yet.
+                </p>
               </div>
             ) : (
-              <div className="mt-4 grid gap-4">
+              <div className="mt-6 grid gap-4">
                 {templates.map((template, index) => (
                   <TemplateEditor
                     key={`${template.key || "template"}-${index}`}
                     template={template}
-                    onChange={(next) => handleTemplateChange(index, next)}
-                    onRemove={() => handleTemplateRemove(index)}
+                    onChange={(next) =>
+                      handleTemplateChange(index, next)
+                    }
+                    onRemove={() =>
+                      handleTemplateRemove(index)
+                    }
                   />
                 ))}
               </div>
             )}
           </section>
 
-          <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            {message && (
-              <div
-                className={[
-                  "rounded-2xl border p-3 text-sm",
-                  message.type === "ok"
-                    ? "border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
-                    : "border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 text-[#D9534F] dark:text-red-300",
-                ].join(" ")}
-              >
-                {message.text}
+          {/* Save */}
+          <section
+            className={`${PANEL_CLASS} sticky bottom-4 z-20`}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+                  Publishing
+                </p>
+
+                <h3 className="mt-1 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  Save content changes
+                </h3>
+
+                <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Changes are persisted together when you save.
+                </p>
               </div>
-            )}
 
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-  type="button"
-  onClick={handleSave}
-  disabled={updateMutation.isPending}
-  className="
-    inline-flex items-center justify-center
-    rounded-lg px-4 py-3 font-semibold
-    bg-blue-600 text-white
-    hover:bg-blue-700 focus:ring-2 focus:ring-blue-400
-    transition-colors shadow-md
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-blue-500 dark:text-white
-    dark:hover:bg-blue-600 dark:focus:ring-blue-300
-  "
->
-  {updateMutation.isPending ? "Saving..." : "Save content"}
-</button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                {message ? (
+                  <div
+                    className={[
+                      "rounded-xl border px-4 py-3 text-sm",
+                      message.type === "ok"
+                        ? "border-[#B8D9B8] bg-[#F0FAF0] text-[#2E7D32] dark:border-green-700 dark:bg-green-900/20 dark:text-green-200"
+                        : "border-[#F2C0BC] bg-[#FFF4F3] text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300",
+                    ].join(" ")}
+                  >
+                    {message.text}
+                  </div>
+                ) : null}
 
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={updateMutation.isPending}
+                  className={PRIMARY_BUTTON_CLASS}
+                >
+                  {updateMutation.isPending
+                    ? "Saving..."
+                    : "Save content"}
+                </button>
+              </div>
             </div>
           </section>
         </>
