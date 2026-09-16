@@ -59,24 +59,6 @@ function badgeClass(
   }
 }
 
-function verificationBadgeClass(
-  status: string | null | undefined,
-) {
-  switch (status) {
-    case "APPROVED":
-      return badgeClass("success");
-
-    case "PENDING":
-      return badgeClass("warning");
-
-    case "REJECTED":
-      return badgeClass("danger");
-
-    default:
-      return badgeClass("neutral");
-  }
-}
-
 function Section({
   title,
   eyebrow,
