@@ -125,11 +125,29 @@ export default function AdminPaymentsPage() {
   const hasPrevious = skip > 0;
   const hasNext = skip + take < total;
 
+  const pageNumber = Math.floor(skip / take) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / take));
+
+  const firstItem = total === 0 ? 0 : skip + 1;
+  const lastItem = Math.min(skip + take, total);
+
   function submitSearch(event: React.FormEvent) {
     event.preventDefault();
 
     setSkip(0);
     setSearchTerm(searchInput.trim());
+  }
+
+  function goToPreviousPage() {
+    if (!hasPrevious) return;
+
+    setSkip(Math.max(0, skip - take));
+  }
+
+  function goToNextPage() {
+    if (!hasNext) return;
+
+    setSkip(skip + take);
   }
 
   return (
@@ -158,7 +176,7 @@ export default function AdminPaymentsPage() {
       <section className="rounded-2xl border border-[#C5D5EE] bg-white p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] sm:p-6">
         <form
           onSubmit={submitSearch}
-          className="grid gap-4 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] lg:grid-cols-[1fr_200px_200px_auto]"
+          className="grid gap-4 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] lg:grid-cols-[minmax(320px,1fr)_200px_200px_auto]"
         >
           <div>
             <label
@@ -264,181 +282,225 @@ export default function AdminPaymentsPage() {
             No payment records found.
           </div>
         ) : (
-          <div className="mt-4 space-y-4">
-            {items.map((payment) => (
-              <article
-                key={payment.id}
-                className="rounded-2xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full border px-2 py-1 text-xs font-medium ${typeClass(
-                          payment.type,
-                        )}`}
+          <>
+            <div className="mt-4 overflow-hidden rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55]">
+              <div className="overflow-x-auto">
+                <table className="min-w-325 w-full border-collapse text-left">
+                  <thead className="sticky top-0 z-10 bg-[#EEF4FC] dark:bg-[#1A2636]">
+                    <tr className="border-b border-[#C5D5EE] dark:border-[#2D3F55]">
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Payment
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Status
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Amount
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Monnify Reference
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Job
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Client
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Fixer
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Fee
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Created
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Paid At
+                      </th>
+
+                      <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[#516786] dark:text-[#AAB9D0]">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-[#D9E3F1] dark:divide-[#2D3F55]">
+                    {items.map((payment) => (
+                      <tr
+                        key={payment.id}
+                        className="bg-white transition-colors hover:bg-[#F4F8FF] dark:bg-[#1E2A3A] dark:hover:bg-[#243247]"
                       >
-                        {payment.type}
-                      </span>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-50">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${typeClass(
+                                payment.type,
+                              )}`}
+                            >
+                              {payment.type}
+                            </span>
 
-                      <span
-                        className={`rounded-full border px-2 py-1 text-xs font-medium ${statusClass(
-                          payment.status as AdminPaymentStatus,
-                        )}`}
-                      >
-                        {payment.status}
-                      </span>
-                    </div>
+                            <div className="mt-2 max-w-55 truncate text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                              {payment.id}
+                            </div>
+                          </div>
+                        </td>
 
-                    <div className="mt-3">
-                      <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                        {formatFec(payment.amountMilliFec)}
-                      </p>
+                        <td className="px-4 py-4 align-top">
+                          <span
+                            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass(
+                              payment.status as AdminPaymentStatus,
+                            )}`}
+                          >
+                            {payment.status}
+                          </span>
+                        </td>
 
-                      <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                        {formatNaira(payment.amountMilliFec)}
-                      </p>
-                    </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-32.5">
+                            <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                              {formatFec(
+                                payment.amountMilliFec,
+                              )}
+                            </div>
 
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Payment ID
-                        </p>
+                            <div className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                              {formatNaira(
+                                payment.amountMilliFec,
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
-                        <p className="mt-1 break-all text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {payment.id}
-                        </p>
-                      </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-55">
+                            <div className="break-all text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                              {payment.paymentReference}
+                            </div>
+                          </div>
+                        </td>
 
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Monnify Reference
-                        </p>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-42.5">
+                            <div className="break-all text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                              {payment.jobId}
+                            </div>
+                          </div>
+                        </td>
 
-                        <p className="mt-1 break-all text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {payment.paymentReference}
-                        </p>
-                      </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-47.5">
+                            <div className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                              {payment.job.client.fullName}
+                            </div>
 
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Job
-                        </p>
+                            <div className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                              {payment.job.client.email}
+                            </div>
+                          </div>
+                        </td>
 
-                        <p className="mt-1 break-all text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {payment.jobId}
-                        </p>
-                      </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-47.5">
+                            <div className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                              {payment.job.fixer?.fullName ??
+                                "Not assigned"}
+                            </div>
 
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Created
-                        </p>
+                            <div className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                              {payment.job.fixer?.email ?? "—"}
+                            </div>
+                          </div>
+                        </td>
 
-                        <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatDate(payment.createdAt)}
-                        </p>
-                      </div>
-                    </div>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-27.5 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                            {formatNaira(
+                              payment.paymentFeeMilliFec,
+                            )}
+                          </div>
+                        </td>
 
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Client
-                        </p>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-40 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                            {formatDate(payment.createdAt)}
+                          </div>
+                        </td>
 
-                        <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {payment.job.client.fullName}
-                        </p>
+                        <td className="px-4 py-4 align-top">
+                          <div className="min-w-40 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                            {formatDate(payment.paidAt)}
+                          </div>
+                        </td>
 
-                        <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                          {payment.job.client.email}
-                        </p>
-                      </div>
+                        <td className="px-4 py-4 text-right align-top">
+                          <Link
+                            href={`/admin/payments/${payment.id}`}
+                            className="inline-flex whitespace-nowrap rounded-lg border border-[#B8CBE5] bg-white px-3 py-2 text-sm font-semibold text-[#315A8A] transition-colors hover:bg-[#EEF4FC] focus:outline-none focus:ring-2 focus:ring-[#5B8FCC]/30 dark:border-[#3B506A] dark:bg-[#16202E] dark:text-[#A9C8EA] dark:hover:bg-[#243247]"
+                          >
+                            View details
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Fixer
-                        </p>
+            <div className="mt-4 flex flex-col gap-3 border-t border-[#C5D5EE] pt-4 dark:border-[#2D3F55] sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                Showing{" "}
+                <span className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {firstItem}
+                </span>{" "}
+                to{" "}
+                <span className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {lastItem}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {total}
+                </span>{" "}
+                payments
+              </p>
 
-                        <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {payment.job.fixer?.fullName ??
-                            "Not assigned"}
-                        </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToPreviousPage}
+                  disabled={!hasPrevious}
+                  className="rounded-lg border border-[#C5D5EE] bg-white px-3 py-2 text-sm font-semibold text-[#315A8A] transition-colors hover:bg-[#EEF4FC] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#3B506A] dark:bg-[#16202E] dark:text-[#A9C8EA] dark:hover:bg-[#243247]"
+                >
+                  Previous
+                </button>
 
-                        <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                          {payment.job.fixer?.email ?? "—"}
-                        </p>
-                      </div>
+                <span className="min-w-24 text-center text-sm font-medium text-[#516786] dark:text-[#AAB9D0]">
+                  Page {pageNumber} of {totalPages}
+                </span>
 
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Payment Fee
-                        </p>
-
-                        <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatNaira(
-                            payment.paymentFeeMilliFec,
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Paid At
-                        </p>
-
-                        <p className="mt-1 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                          {formatDate(payment.paidAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/admin/payments/${payment.id}`}
-                    className="inline-flex shrink-0 items-center justify-center rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-400 dark:bg-green-500 dark:hover:bg-green-600"
-                  >
-                    Open Investigation
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
+                <button
+                  type="button"
+                  onClick={goToNextPage}
+                  disabled={!hasNext}
+                  className="rounded-lg border border-[#C5D5EE] bg-white px-3 py-2 text-sm font-semibold text-[#315A8A] transition-colors hover:bg-[#EEF4FC] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#3B506A] dark:bg-[#16202E] dark:text-[#A9C8EA] dark:hover:bg-[#243247]"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </>
         )}
-
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <span className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-            Showing {items.length} of {total}
-          </span>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setSkip((current) =>
-                  Math.max(0, current - take),
-                )
-              }
-              disabled={!hasPrevious}
-              className="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-            >
-              Previous
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSkip((current) => current + take)
-              }
-              disabled={!hasNext}
-              className="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-700 transition-colors hover:bg-gray-300 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-            >
-              Next
-            </button>
-          </div>
-        </div>
       </section>
     </div>
   );
