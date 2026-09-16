@@ -22,19 +22,19 @@ const RANGE_OPTIONS: Array<{
 ];
 
 const PIE_SEGMENT_COLORS = [
-  "#1f2937",
-  "#374151",
-  "#4b5563",
-  "#6b7280",
-  "#9ca3af",
+  "#2563EB",
+  "#7C3AED",
+  "#0891B2",
+  "#059669",
+  "#D97706",
 ];
 
 const PIE_LEGEND_BG = [
-  "bg-gray-800",
-  "bg-gray-700",
-  "bg-gray-600",
-  "bg-gray-500",
-  "bg-gray-400",
+  "bg-blue-600",
+  "bg-violet-600",
+  "bg-cyan-600",
+  "bg-emerald-600",
+  "bg-amber-600",
 ];
 
 type ChartMode = "bar" | "pie";
@@ -217,7 +217,7 @@ function KpiCard({
 
       <div
         className={cn(
-          "mt-2 break-words text-2xl font-semibold leading-tight",
+          "mt-2 wrap-break-word text-2xl font-semibold leading-tight",
           valueClass
         )}
       >
