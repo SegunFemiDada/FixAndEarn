@@ -218,7 +218,7 @@ function AdminRow({
   return (
     <tr className="border-t border-[#E1E8F2] dark:border-[#2D3F55]">
       <td className="px-4 py-4 align-top">
-        <div className="min-w-[220px]">
+        <div className="min-w-55">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
               {admin.fullName}
@@ -274,7 +274,7 @@ function AdminRow({
       </td>
 
       <td className="px-4 py-4 align-top">
-        <div className="min-w-[270px]">
+        <div className="min-w-67.5">
           <label
             htmlFor={`admin-reason-${admin.id}`}
             className="sr-only"
@@ -680,7 +680,7 @@ export default function AdminManagementPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-[1180px] w-full border-collapse text-left">
+            <table className="min-w-295 w-full border-collapse text-left">
               <thead className="bg-[#F4F8FF] dark:bg-[#16202E]">
                 <tr>
                   <th className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
