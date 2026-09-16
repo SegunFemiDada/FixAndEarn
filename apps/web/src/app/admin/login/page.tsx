@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
         <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[0.85fr_1.15fr]">
           <section className="hidden rounded-3xl border border-[#C5D5EE] bg-[#1A2B4A] p-8 shadow-[0_8px_32px_rgba(26,43,74,0.18)] lg:flex lg:flex-col lg:justify-between dark:border-[#2D3F55] dark:bg-[#16202E] dark:shadow-[0_8px_32px_rgba(0,0,0,0.40)]">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#9FC1EA]">
+              <p className="text-[11px] font-bold tracking-[0.22em] text-[#9FC1EA]">
                 FixAndEarn
               </p>
 
@@ -117,7 +117,7 @@ export default function AdminLoginPage() {
 
           <section className={PANEL_CLASS}>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+              <p className="text-[11px] font-bold tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
                 FixAndEarn Admin
               </p>
 

@@ -15,7 +15,6 @@ import DashboardSystemHealth from "@/components/admin/dashboard/DashboardSystemH
 import DashboardLoading from "@/components/admin/dashboard/DashboardLoading";
 import DashboardError from "@/components/admin/dashboard/DashboardError";
 
-
 export default function AdminDashboardPage() {
   const {
     data,
@@ -26,13 +25,11 @@ export default function AdminDashboardPage() {
     refetch,
   } = useAdminDashboard();
 
-  const loading = isLoading || isFetching;
-
-  if (loading && !data) {
+  if (isLoading && !data) {
     return <DashboardLoading />;
   }
 
-  if (isError || !data) {
+  if (isError && !data) {
     return (
       <DashboardError
         message={
@@ -47,6 +44,10 @@ export default function AdminDashboardPage() {
     );
   }
 
+  if (!data) {
+    return <DashboardLoading />;
+  }
+
   return (
     <div className="space-y-8">
       <DashboardHero
@@ -55,18 +56,18 @@ export default function AdminDashboardPage() {
       />
 
       <DashboardOverview
-      users={data.users}
-      admins={data.admins}
-      verification={data.verification}
-    />
-
-      <DashboardJobs
-        jobs={data.jobs}
+        users={data.users}
+        admins={data.admins}
+        verification={data.verification}
       />
 
-      <DashboardFinance
-        withdrawals={data.withdrawals}
-      />
+      <div className="grid gap-8 2xl:grid-cols-2">
+        <DashboardJobs jobs={data.jobs} />
+
+        <DashboardFinance
+          withdrawals={data.withdrawals}
+        />
+      </div>
 
       <DashboardModeration
         reports={data.reports}
@@ -77,13 +78,22 @@ export default function AdminDashboardPage() {
         admins={data.admins}
       />
 
-      <DashboardRecentActivity
-        activities={data.recentActivity}
-      />
+      <div className="grid gap-8 2xl:grid-cols-[minmax(0,1.65fr)_minmax(360px,1fr)]">
+        <DashboardRecentActivity
+          activities={data.recentActivity}
+        />
 
-      <DashboardSystemHealth
-        system={data.system}
-      />
+        <DashboardSystemHealth
+          system={data.system}
+        />
+      </div>
+
+      {isFetching ? (
+        <div className="flex items-center justify-end gap-2 text-xs text-[#7E8FAE] dark:text-[#8FA0BC]">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#5B8FCC]" />
+          Refreshing dashboard data...
+        </div>
+      ) : null}
     </div>
   );
 }

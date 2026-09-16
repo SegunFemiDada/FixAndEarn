@@ -31,78 +31,128 @@ export default function DashboardModeration({
     disputes.open +
     disputes.resolved;
 
+  const activeModerationWorkload =
+    reports.pending + disputes.open;
+
   return (
     <AdminSection
       title="Moderation"
-      description="Monitor reports submitted by users together with active dispute resolution workload."
+      description="Current reports and dispute workload requiring administrative oversight."
     >
-      <div className="space-y-8">
-        {/* Reports */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AdminStatCard
+          title="Needs Attention"
+          value={activeModerationWorkload.toLocaleString()}
+          subtitle={`${reports.pending.toLocaleString()} reports · ${disputes.open.toLocaleString()} disputes`}
+          accent={
+            activeModerationWorkload > 0
+              ? "amber"
+              : "green"
+          }
+        />
 
-        <div>
-          <h3 className="mb-4 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            Reports
-          </h3>
+        <AdminStatCard
+          title="Pending Reports"
+          value={reports.pending.toLocaleString()}
+          subtitle="Awaiting moderation"
+          accent={reports.pending > 0 ? "amber" : "green"}
+        />
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <AdminStatCard
-              title="Total Reports"
-              value={totalReports.toLocaleString()}
-              subtitle="All submitted reports"
-              accent="blue"
-            />
+        <AdminStatCard
+          title="Open Disputes"
+          value={disputes.open.toLocaleString()}
+          subtitle="Require administrator attention"
+          accent={disputes.open > 0 ? "amber" : "green"}
+        />
 
-            <AdminStatCard
-              title="Pending"
-              value={reports.pending.toLocaleString()}
-              subtitle="Awaiting moderation"
-              accent="amber"
-            />
+        <AdminStatCard
+          title="Total Reports"
+          value={totalReports.toLocaleString()}
+          subtitle="All submitted reports"
+          accent="blue"
+        />
+      </div>
 
-            <AdminStatCard
-              title="Resolved"
-              value={reports.resolved.toLocaleString()}
-              subtitle="Successfully handled"
-              accent="green"
-            />
+      <div className="mt-6 border-t border-[#E4ECF7] pt-6 dark:border-[#2D3F55]">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  Report Outcomes
+                </h3>
 
-            <AdminStatCard
-              title="Dismissed"
-              value={reports.dismissed.toLocaleString()}
-              subtitle="Closed without action"
-              accent="purple"
-            />
+                <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Completed moderation outcomes.
+                </p>
+              </div>
+
+              <span className="text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
+                {totalReports.toLocaleString()} total
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[#E4ECF7] bg-[#FBFDFF] px-4 py-3 dark:border-[#2D3F55] dark:bg-[#16202E]">
+                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Resolved
+                </p>
+
+                <p className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {reports.resolved.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[#E4ECF7] bg-[#FBFDFF] px-4 py-3 dark:border-[#2D3F55] dark:bg-[#16202E]">
+                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Dismissed
+                </p>
+
+                <p className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {reports.dismissed.toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Disputes */}
+          <div>
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  Dispute Outcomes
+                </h3>
 
-        <div className="border-t border-[#E4ECF7] pt-8 dark:border-[#2D3F55]">
-          <h3 className="mb-4 text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-            Job Disputes
-          </h3>
+                <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Current and completed job disputes.
+                </p>
+              </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <AdminStatCard
-              title="Total Disputes"
-              value={totalDisputes.toLocaleString()}
-              subtitle="All recorded disputes"
-              accent="blue"
-            />
+              <span className="text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
+                {totalDisputes.toLocaleString()} total
+              </span>
+            </div>
 
-            <AdminStatCard
-              title="Open"
-              value={disputes.open.toLocaleString()}
-              subtitle="Require administrator attention"
-              accent="amber"
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[#E4ECF7] bg-[#FBFDFF] px-4 py-3 dark:border-[#2D3F55] dark:bg-[#16202E]">
+                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Open
+                </p>
 
-            <AdminStatCard
-              title="Resolved"
-              value={disputes.resolved.toLocaleString()}
-              subtitle="Successfully concluded"
-              accent="green"
-            />
+                <p className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {disputes.open.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-[#E4ECF7] bg-[#FBFDFF] px-4 py-3 dark:border-[#2D3F55] dark:bg-[#16202E]">
+                <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                  Resolved
+                </p>
+
+                <p className="mt-1 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {disputes.resolved.toLocaleString()}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

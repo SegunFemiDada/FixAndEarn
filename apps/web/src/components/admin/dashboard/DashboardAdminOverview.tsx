@@ -16,13 +16,12 @@ type DashboardAdminOverviewProps = {
 export default function DashboardAdminOverview({
   admins,
 }: DashboardAdminOverviewProps) {
-  const healthy =
-    admins.lockedAdmins === 0;
+  const hasLockouts = admins.lockedAdmins > 0;
 
   return (
     <AdminSection
-      title="Administrator Environment"
-      description="Current administrator activity and access health across the platform."
+      title="Security & Administrator Access"
+      description="Current administrator accounts, authenticated sessions, and access exceptions."
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard
@@ -42,74 +41,58 @@ export default function DashboardAdminOverview({
         <AdminStatCard
           title="Locked Accounts"
           value={admins.lockedAdmins.toLocaleString()}
-          subtitle="Administrators currently locked"
-          accent={
-            admins.lockedAdmins > 0
-              ? "red"
-              : "green"
+          subtitle={
+            hasLockouts
+              ? "Administrator accounts requiring review"
+              : "No administrator accounts locked"
           }
+          accent={hasLockouts ? "red" : "green"}
         />
 
         <AdminStatCard
-          title="Environment Status"
-          value={
-            healthy
-              ? "Healthy"
-              : "Attention"
-          }
+          title="Access Status"
+          value={hasLockouts ? "Attention" : "Healthy"}
           subtitle={
-            healthy
-              ? "No locked administrator accounts"
-              : "Review administrator lockouts"
+            hasLockouts
+              ? "Review administrator lockouts"
+              : "No current access exceptions"
           }
-          accent={
-            healthy
-              ? "green"
-              : "amber"
-          }
+          accent={hasLockouts ? "amber" : "green"}
         />
       </div>
 
-      <div className="mt-8 rounded-2xl border border-[#E4ECF7] dark:border-[#2D3F55] bg-[#F8FBFF] dark:bg-[#16202E] p-5">
-        <h3 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-          Operational Summary
-        </h3>
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-6 border-t border-[#E4ECF7] pt-6 dark:border-[#2D3F55]">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
-              Active Administrators
-            </p>
+            <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+              Access Monitoring
+            </h3>
 
-            <p className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              {admins.activeAdmins.toLocaleString()}
+            <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+              Administrator access remains within the current platform security state.
             </p>
           </div>
 
-          <div>
-            <p className="text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
-              Authenticated Sessions
-            </p>
-
-            <p className="mt-2 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              {admins.activeSessions.toLocaleString()}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC]">
-              Locked Accounts
-            </p>
-
-            <p
-              className={`mt-2 text-lg font-semibold ${
-                admins.lockedAdmins > 0
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-emerald-600 dark:text-emerald-400"
+          <div
+            className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+              hasLockouts
+                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                hasLockouts
+                  ? "bg-red-500"
+                  : "bg-emerald-500"
               }`}
-            >
-              {admins.lockedAdmins.toLocaleString()}
-            </p>
+            />
+
+            {hasLockouts
+              ? `${admins.lockedAdmins.toLocaleString()} locked account${
+                  admins.lockedAdmins === 1 ? "" : "s"
+                }`
+              : "No locked accounts"}
           </div>
         </div>
       </div>
