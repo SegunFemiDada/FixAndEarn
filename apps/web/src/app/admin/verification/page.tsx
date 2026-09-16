@@ -6,6 +6,9 @@ import * as React from "react";
 import { extractApiErrorMessage } from "@/lib/admin/queries";
 import { usePendingVerifications } from "@/lib/admin/verification/queries";
 
+const PANEL_CLASS =
+  "rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]";
+
 function formatDateTime(value: string) {
   const date = new Date(value);
 
@@ -17,6 +20,10 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
+function formatLocation(parts: Array<string | null | undefined>) {
+  return parts.filter((part) => part && part.trim()).join(", ");
+}
+
 function formatSkills(skills: string | null) {
   if (!skills?.trim()) return [];
 
@@ -26,8 +33,33 @@ function formatSkills(skills: string | null) {
     .filter(Boolean);
 }
 
-function formatLocation(parts: Array<string | null | undefined>) {
-  return parts.filter((part) => part && part.trim()).join(", ");
+function StatusBadge({
+  children,
+  tone = "neutral",
+}: {
+  children: React.ReactNode;
+  tone?: "neutral" | "warning" | "success" | "danger" | "info";
+}) {
+  const styles = {
+    neutral:
+      "border-[#CBD5E1] bg-[#F8FAFC] text-[#475569] dark:border-[#475569] dark:bg-[#1E293B] dark:text-[#CBD5E1]",
+    warning:
+      "border-[#F5A623] bg-[#FEF8E7] text-[#B45309] dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300",
+    success:
+      "border-[#B8D9B8] bg-[#F0FAF0] text-[#2E7D32] dark:border-green-700 dark:bg-green-900/20 dark:text-green-200",
+    danger:
+      "border-[#F2C0BC] bg-[#FFF4F3] text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300",
+    info:
+      "border-[#BFD5F2] bg-[#F1F6FD] text-[#31557D] dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${styles[tone]}`}
+    >
+      {children}
+    </span>
+  );
 }
 
 export default function AdminVerificationQueuePage() {
@@ -41,19 +73,47 @@ export default function AdminVerificationQueuePage() {
   const hasNext = items.length === take;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">Verification</p>
-        <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Pending verification queue</h2>
-        <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-          Uses the live pending verification endpoint with backend pagination parameters only.
-        </p>
+    <div className="min-w-0 space-y-6">
+      {/* Page header */}
+      <section className={PANEL_CLASS}>
+        <div className="px-6 py-5 xl:px-7 xl:py-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+                Verification
+              </p>
+
+              <h1 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                Pending verification queue
+              </h1>
+
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6B7C99] dark:text-[#8FA0BC]">
+                Review verification submissions awaiting admin action using
+                the live pending verification endpoint.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#D7E2F2] bg-[#F4F8FF] px-4 py-3 dark:border-[#30445C] dark:bg-[#16202E]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                Page size
+              </p>
+
+              <p className="mt-1 text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {take} submissions
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] sm:p-6">
-        <div className="flex flex-col gap-3 border-b border-[#C5D5EE] dark:border-[#2D3F55] pb-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Operational queue */}
+      <section className={PANEL_CLASS}>
+        <div className="flex flex-col gap-4 border-b border-[#D7E2F2] px-6 py-5 dark:border-[#30445C] xl:flex-row xl:items-center xl:justify-between xl:px-7">
           <div>
-            <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Submissions awaiting review</h3>
+            <h2 className="text-base font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+              Submissions awaiting review
+            </h2>
+
             <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
               Ordered by oldest first, matching backend behavior.
             </p>
@@ -61,134 +121,213 @@ export default function AdminVerificationQueuePage() {
 
           <div className="flex items-center gap-2">
             <button
-  type="button"
-  onClick={() => setSkip((current) => Math.max(0, current - take))}
-  disabled={!hasPrevious || query.isLoading}
-  className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
-    ${!hasPrevious || query.isLoading
-      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-700"
-      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-    }`}
->
-  Previous
-</button>
+              type="button"
+              onClick={() =>
+                setSkip((current) => Math.max(0, current - take))
+              }
+              disabled={!hasPrevious || query.isLoading}
+              className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
+                !hasPrevious || query.isLoading
+                  ? "cursor-not-allowed border-gray-300 bg-gray-100 text-gray-400 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              }`}
+            >
+              Previous
+            </button>
 
-<button
-  type="button"
-  onClick={() => setSkip((current) => current + take)}
-  disabled={!hasNext || query.isLoading}
-  className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors
-    ${!hasNext || query.isLoading
-      ? "cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-700"
-      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-    }`}
->
-  Next
-</button>
-
+            <button
+              type="button"
+              onClick={() => setSkip((current) => current + take)}
+              disabled={!hasNext || query.isLoading}
+              className={`inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
+                !hasNext || query.isLoading
+                  ? "cursor-not-allowed border-gray-300 bg-gray-100 text-gray-400 opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              }`}
+            >
+              Next
+            </button>
           </div>
         </div>
 
         {query.isLoading ? (
-          <div className="py-6 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading pending verifications...</div>
+          <div className="px-6 py-10 text-sm text-[#6B7C99] dark:text-[#8FA0BC] xl:px-7">
+            Loading pending verifications...
+          </div>
         ) : query.isError ? (
-          <div className="mt-4 rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300">
-            {extractApiErrorMessage(query.error)}
+          <div className="p-6 xl:p-7">
+            <div className="rounded-xl border border-[#F2C0BC] bg-[#FFF4F3] p-4 text-sm text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">
+              {extractApiErrorMessage(query.error)}
+            </div>
           </div>
         ) : items.length === 0 ? (
-          <div className="py-6 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No pending verification submissions found.</div>
+          <div className="px-6 py-10 text-sm text-[#6B7C99] dark:text-[#8FA0BC] xl:px-7">
+            No pending verification submissions found.
+          </div>
         ) : (
-          <div className="mt-4 grid gap-4">
-            {items.map((item) => {
-              const skills = formatSkills(item.skills);
-              const location = formatLocation([item.lga, item.city, item.state]);
+          <div className="overflow-x-auto">
+            <table className="min-w-295 w-full text-left">
+              <thead className="border-b border-[#D7E2F2] bg-[#F8FAFD] dark:border-[#30445C] dark:bg-[#172334]">
+                <tr>
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    Applicant
+                  </th>
 
-              return (
-                <article key={item.id} className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h4 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">{item.user.fullName}</h4>
-                        <span className="rounded-full border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 px-3 py-1 text-xs font-medium text-[#B45309] dark:text-amber-300">
-                          {item.status}
-                        </span>
-                        <span
-                          className={[
-                            "rounded-full px-3 py-1 text-xs font-medium",
-                            item.user.isActive
-                              ? "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
-                              : "border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 text-[#D9534F] dark:text-red-300",
-                          ].join(" ")}
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    Verification
+                  </th>
+
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    Account
+                  </th>
+
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    NIN
+                  </th>
+
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    Location
+                  </th>
+
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    Submitted
+                  </th>
+
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#64748B] dark:text-[#8EA3BC]">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-[#E2E8F0] dark:divide-[#30445C]">
+                {items.map((item) => {
+                  const location = formatLocation([
+                    item.lga,
+                    item.city,
+                    item.state,
+                  ]);
+
+                  const skills = formatSkills(item.skills);
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className="transition-colors hover:bg-[#F8FAFD] dark:hover:bg-[#172334]"
+                    >
+                      {/* Applicant */}
+                      <td className="px-5 py-4 align-top">
+                        <div className="min-w-55">
+                          <p className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                            {item.user.fullName}
+                          </p>
+
+                          <p className="mt-1 max-w-62.5 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                            {item.user.email}
+                          </p>
+
+                          <p className="mt-1 break-all text-xs text-[#8291A7] dark:text-[#74859C]">
+                            {item.userId}
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* Verification */}
+                      <td className="px-5 py-4 align-top">
+                        <div className="space-y-2">
+                          <StatusBadge tone="warning">
+                            {item.status}
+                          </StatusBadge>
+
+                          <p className="max-w-47.5 break-all text-xs text-[#8291A7] dark:text-[#74859C]">
+                            {item.id}
+                          </p>
+
+                          {skills.length > 0 && (
+                            <p className="text-xs text-[#64748B] dark:text-[#8FA0BC]">
+                              {skills.length} skill
+                              {skills.length === 1 ? "" : "s"} provided
+                            </p>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Account */}
+                      <td className="px-5 py-4 align-top">
+                        <StatusBadge
+                          tone={item.user.isActive ? "success" : "danger"}
                         >
-                          {item.user.isActive ? "Active user" : "Inactive user"}
-                        </span>
-                      </div>
+                          {item.user.isActive ? "Active" : "Inactive"}
+                        </StatusBadge>
+                      </td>
 
-                      <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">{item.user.email}</p>
+                      {/* NIN */}
+                      <td className="px-5 py-4 align-top">
+                        <div className="space-y-2">
+                          <StatusBadge
+                            tone={
+                              item.ninVerificationStatus === "VERIFIED"
+                                ? "success"
+                                : item.ninVerificationStatus === "FAILED"
+                                  ? "danger"
+                                  : "warning"
+                            }
+                          >
+                            {item.ninVerificationStatus}
+                          </StatusBadge>
 
-                      <div className="mt-3 grid gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] sm:grid-cols-2 lg:grid-cols-4">
-                        <div>
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            Verification ID
-                          </span>
-                          <span className="mt-1 block break-all">{item.id}</span>
+                          {item.ninVerificationNote && (
+                            <p className="max-w-55 text-xs leading-5 text-[#64748B] dark:text-[#8FA0BC]">
+                              {item.ninVerificationNote}
+                            </p>
+                          )}
                         </div>
+                      </td>
 
-                        <div>
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            User ID
-                          </span>
-                          <span className="mt-1 block break-all">{item.userId}</span>
-                        </div>
+                      {/* Location */}
+                      <td className="px-5 py-4 align-top">
+                        <p className="max-w-45 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                          {location || "Not available"}
+                        </p>
+                      </td>
 
-                        <div>
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            Submitted
-                          </span>
-                          <span className="mt-1 block">{formatDateTime(item.createdAt)}</span>
-                        </div>
+                      {/* Submitted */}
+                      <td className="px-5 py-4 align-top">
+                        <p className="whitespace-nowrap text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                          {formatDateTime(item.createdAt)}
+                        </p>
 
-                        <div>
-                          <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                            Location
-                          </span>
-                          <span className="mt-1 block">{location || "Not available"}</span>
-                        </div>
-                      </div>
+                        <p className="mt-1 text-xs text-[#8291A7] dark:text-[#74859C]">
+                          Updated {formatDateTime(item.updatedAt)}
+                        </p>
+                      </td>
 
-                      <div className="mt-4">
-                        <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                          Skills
-                        </span>
-                        {skills.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {skills.map((skill) => (
-                              <span
-                                key={`${item.id}-${skill}`}
-                                className="rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-3 py-1 text-xs font-medium text-[#6B7C99] dark:text-[#8FA0BC]"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No skills provided.</p>
-                        )}
-                      </div>
-                    </div>
+                      {/* Action */}
+                      <td className="px-5 py-4 text-right align-top">
+                        <Link
+                          href={`/admin/verification/${item.id}`}
+                          className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] bg-white px-4 py-2 text-sm font-medium text-[#31557D] transition hover:bg-[#F4F8FF] hover:text-[#1A2B4A] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#AFC6E1] dark:hover:bg-[#16202E] dark:hover:text-[#E8F0FA]"
+                        >
+                          Open details
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-                    <div className="flex shrink-0">
-                      <Link
-                        href={`/admin/verification/${item.id}`}
-                        className="inline-flex items-center justify-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#6B7C99] dark:text-[#8FA0BC] transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E] hover:text-[#1A2B4A] dark:hover:text-[#E8F0FA]"
-                      >
-                        Open details
-                      </Link>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+        {/* Pagination footer */}
+        {!query.isLoading && !query.isError && items.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-[#D7E2F2] px-6 py-4 dark:border-[#30445C] sm:flex-row sm:items-center sm:justify-between xl:px-7">
+            <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+              Showing {skip + 1} to {skip + items.length}
+            </p>
+
+            <p className="text-xs text-[#8291A7] dark:text-[#74859C]">
+              Page {Math.floor(skip / take) + 1}
+            </p>
           </div>
         )}
       </section>
