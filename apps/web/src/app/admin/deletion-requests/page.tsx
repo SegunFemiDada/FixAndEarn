@@ -22,9 +22,147 @@ function formatDateTime(value: string) {
   }).format(date);
 }
 
+function StatusBadge() {
+  return (
+    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+      Pending
+    </span>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="rounded-xl border border-[#C5D5EE] bg-white px-6 py-12 text-center shadow-[0_4px_24px_rgba(91,143,204,0.08)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+      <p className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+        No pending deletion requests
+      </p>
+
+      <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        There are currently no account deletion requests waiting for review.
+      </p>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="rounded-xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.08)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+      <div className="animate-pulse space-y-4">
+        <div className="h-4 w-32 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
+
+        <div className="h-10 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
+
+        <div className="h-10 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
+
+        <div className="h-10 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border border-[#F2C0BC] bg-[#FFF4F3] p-4 text-sm text-[#D9534F] shadow-[0_4px_24px_rgba(91,143,204,0.08)] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300 dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+      {message || "Unknown error"}
+    </div>
+  );
+}
+
+function DeletionRequestRow({
+  request,
+  rejectReason,
+  rejectReasonError,
+  isApproving,
+  isRejecting,
+  onRejectReasonChange,
+  onApprove,
+  onReject,
+}: {
+  request: AdminDeletionRequest;
+  rejectReason: string;
+  rejectReasonError?: string;
+  isApproving: boolean;
+  isRejecting: boolean;
+  onRejectReasonChange: (value: string) => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <tr className="border-t border-[#DCE6F4] align-top dark:border-[#2D3F55]">
+      <td className="px-4 py-4">
+        <div className="min-w-0">
+          <p className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            {request.fullName}
+          </p>
+
+          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            {request.email}
+          </p>
+        </div>
+      </td>
+
+      <td className="px-4 py-4">
+        <StatusBadge />
+      </td>
+
+      <td className="px-4 py-4">
+        <p className="max-w-105 text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
+          {request.deletionRequestReason || "No reason provided"}
+        </p>
+      </td>
+
+      <td className="whitespace-nowrap px-4 py-4 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        {formatDateTime(request.deletionRequestedAt)}
+      </td>
+
+      <td className="min-w-85 px-4 py-4">
+        <div className="space-y-2">
+          <input
+            type="text"
+            placeholder="Rejection reason (required)"
+            value={rejectReason}
+            onChange={(event) => onRejectReasonChange(event.target.value)}
+            className="w-full rounded-lg border border-[#C5D5EE] bg-[#F4F8FF] px-3 py-2.5 text-sm text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080] dark:focus:border-[#5B8FCC]"
+          />
+
+          {rejectReasonError && (
+            <p className="text-xs font-medium text-red-600 dark:text-red-300">
+              {rejectReasonError}
+            </p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onApprove}
+              disabled={isApproving}
+              className="inline-flex items-center justify-center rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300"
+            >
+              {isApproving ? "Approving..." : "Approve"}
+            </button>
+
+            <button
+              type="button"
+              onClick={onReject}
+              disabled={isRejecting}
+              className="inline-flex items-center justify-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-300"
+            >
+              {isRejecting ? "Rejecting..." : "Reject"}
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export default function DeletionRequestsPage() {
-  const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
-  const [rejectReasonError, setRejectReasonError] = useState<Record<string, string>>({});
+  const [rejectReason, setRejectReason] = useState<Record<string, string>>(
+    {}
+  );
+  const [rejectReasonError, setRejectReasonError] = useState<
+    Record<string, string>
+  >({});
 
   const {
     data: requests = [],
@@ -38,173 +176,161 @@ export default function DeletionRequestsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
-        <div className="mx-auto max-w-4xl space-y-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Account deletion requests
-            </h1>
-            <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-              Loading requests...
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            <div className="animate-pulse space-y-4">
-              <div className="h-4 w-24 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
-              <div className="h-20 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
-              <div className="h-20 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
-        <div className="mx-auto max-w-4xl space-y-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-              Account deletion requests
-            </h1>
-
-            <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-              Failed to load requests.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            {error.message || "Unknown error"}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-linear-to-br from-[#C8DCF0] to-[#D6E4F7] dark:bg-none dark:bg-[#111827] px-6 py-6">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
             Account deletion requests
           </h1>
 
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-            Review and process user deletion requests.
+            Review and process pending account deletion requests.
           </p>
         </div>
 
-        {requests.length === 0 ? (
-          <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 text-center text-[#6B7C99] dark:text-[#8FA0BC] shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-            No pending deletion requests.
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {requests.map((req: AdminDeletionRequest) => (
-              <div
-                key={req.id}
-                className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {req.fullName}
-                    </h3>
+        <LoadingState />
+      </div>
+    );
+  }
 
-                    <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                      {req.email}
-                    </p>
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Account deletion requests
+          </h1>
 
-                    <p className="mt-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      <strong>Reason:</strong>{" "}
-                      {req.deletionRequestReason || "No reason provided"}
-                    </p>
+          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Review and process pending account deletion requests.
+          </p>
+        </div>
 
-                    <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      Requested: {formatDateTime(req.deletionRequestedAt)}
-                    </p>
-                  </div>
+        <ErrorState message={error.message} />
+      </div>
+    );
+  }
 
-                  <div className="flex shrink-0 gap-2">
-                    <button
-                      onClick={() => approveMutation.mutate(req.id)}
-                      disabled={approveMutation.isPending}
-                      className="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-700 focus:ring-2 focus:ring-green-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300"
-                    >
-                      {approveMutation.isPending
-                        ? "Approving..."
-                        : "Approve"}
-                    </button>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            Account deletion requests
+          </h1>
 
-                    <button
-                      onClick={() => {
-                        const reason = rejectReason[req.id] ?? "";
+          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            Review and process pending account deletion requests.
+          </p>
+        </div>
 
-                        if (!reason.trim()) {
-                          setRejectReasonError((prev) => ({
-                            ...prev,
-                            [req.id]: "Please enter a rejection reason.",
-                          }));
-                          return;
-                        }
+        <div className="shrink-0 rounded-lg border border-[#C5D5EE] bg-white px-3 py-2 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
+          <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+            Pending
+          </p>
 
-                        setRejectReasonError((prev) => {
-                          const next = { ...prev };
-                          delete next[req.id];
+          <p className="mt-0.5 text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+            {requests.length}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/15">
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+          Review carefully before approving
+        </p>
+
+        <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+          Approving a request authorizes the existing account deletion
+          workflow. Rejecting a request requires a reason.
+        </p>
+      </div>
+
+      {requests.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-[#C5D5EE] bg-white shadow-[0_4px_24px_rgba(91,143,204,0.08)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-275 border-collapse text-left">
+              <thead className="sticky top-0 z-10 bg-[#F4F8FF] dark:bg-[#16202E]">
+                <tr>
+                  <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                    User
+                  </th>
+
+                  <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Status
+                  </th>
+
+                  <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Reason
+                  </th>
+
+                  <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Requested
+                  </th>
+
+                  <th className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+                    Review
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {requests.map((request) => (
+                  <DeletionRequestRow
+                    key={request.id}
+                    request={request}
+                    rejectReason={rejectReason[request.id] ?? ""}
+                    rejectReasonError={rejectReasonError[request.id]}
+                    isApproving={approveMutation.isPending}
+                    isRejecting={rejectMutation.isPending}
+                    onRejectReasonChange={(value) => {
+                      setRejectReason((previous) => ({
+                        ...previous,
+                        [request.id]: value,
+                      }));
+
+                      if (value.trim()) {
+                        setRejectReasonError((previous) => {
+                          const next = { ...previous };
+                          delete next[request.id];
                           return next;
                         });
+                      }
+                    }}
+                    onApprove={() => {
+                      approveMutation.mutate(request.id);
+                    }}
+                    onReject={() => {
+                      const reason = rejectReason[request.id] ?? "";
 
-                        rejectMutation.mutate({
-                          id: req.id,
-                          reason,
-                        });
-                      }}
-                      disabled={rejectMutation.isPending}
-                      className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-red-700 focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-300"
-                    >
-                      {rejectMutation.isPending
-                        ? "Rejecting..."
-                        : "Reject"}
-                    </button>
-                  </div>
-                </div>
+                      if (!reason.trim()) {
+                        setRejectReasonError((previous) => ({
+                          ...previous,
+                          [request.id]:
+                            "Please enter a rejection reason.",
+                        }));
+                        return;
+                      }
 
-                <div className="mt-3">
-                  <input
-                    type="text"
-                    placeholder="Rejection reason (required for reject)"
-                    value={rejectReason[req.id] ?? ""}
-                    onChange={(e) => {
-                    const value = e.target.value;
-
-                    setRejectReason((prev) => ({
-                      ...prev,
-                      [req.id]: value,
-                    }));
-
-                    if (value.trim()) {
-                      setRejectReasonError((prev) => {
-                        const next = { ...prev };
-                        delete next[req.id];
+                      setRejectReasonError((previous) => {
+                        const next = { ...previous };
+                        delete next[request.id];
                         return next;
                       });
-                    }
-                  }}
-                    className="w-full rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] px-4 py-3 text-sm text-[#1A2B4A] outline-none transition placeholder:text-[#9BAEC8] focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20 dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA] dark:placeholder:text-[#4A6080] dark:focus:border-[#5B8FCC]"
+
+                      rejectMutation.mutate({
+                        id: request.id,
+                        reason,
+                      });
+                    }}
                   />
-                  {rejectReasonError[req.id] && (
-                  <p className="mt-1 text-sm text-red-600 dark:text-red-300">
-                    {rejectReasonError[req.id]}
-                  </p>
-                )}
-                </div>
-              </div>
-            ))}
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
