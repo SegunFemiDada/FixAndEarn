@@ -83,18 +83,28 @@ function typeClass(type: AdminPaymentType) {
 
 function Section({
   title,
+  description,
   children,
 }: {
   title: string;
+  description?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-2xl border border-[#C5D5EE] bg-white p-5 shadow-[0_4px_24px_rgba(91,143,204,0.08)] dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
-      <h2 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-        {title}
-      </h2>
+      <div>
+        <h2 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+          {title}
+        </h2>
 
-      <div className="mt-4">{children}</div>
+        {description ? (
+          <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+            {description}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -109,7 +119,7 @@ function Field({
   mono?: boolean;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
         {label}
       </p>
@@ -153,11 +163,15 @@ export default function AdminPaymentDetailPage() {
   if (query.isLoading) {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl border border-[#C5D5EE] bg-white p-6 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
-          <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        <section className="rounded-2xl border border-[#C5D5EE] bg-white p-6 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
+            Payment Investigation
+          </p>
+
+          <p className="mt-2 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
             Loading payment investigation...
           </p>
-        </div>
+        </section>
       </div>
     );
   }
@@ -200,7 +214,7 @@ export default function AdminPaymentDetailPage() {
       </div>
 
       <section className="rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">
               Payment Investigation
@@ -215,9 +229,9 @@ export default function AdminPaymentDetailPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${typeClass(
+              className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${typeClass(
                 payment.type as AdminPaymentType,
               )}`}
             >
@@ -225,7 +239,7 @@ export default function AdminPaymentDetailPage() {
             </span>
 
             <span
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${statusClass(
+              className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${statusClass(
                 payment.status as AdminPaymentStatus,
               )}`}
             >
@@ -234,9 +248,9 @@ export default function AdminPaymentDetailPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
           <div className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
-            <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
               Amount
             </p>
 
@@ -250,7 +264,7 @@ export default function AdminPaymentDetailPage() {
           </div>
 
           <div className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
-            <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
               Payment Fee
             </p>
 
@@ -260,7 +274,17 @@ export default function AdminPaymentDetailPage() {
           </div>
 
           <div className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
-            <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+              Created
+            </p>
+
+            <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+              {formatDate(payment.createdAt)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
+            <p className="text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
               Paid At
             </p>
 
@@ -268,21 +292,14 @@ export default function AdminPaymentDetailPage() {
               {formatDate(payment.paidAt)}
             </p>
           </div>
-
-          <div className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
-            <p className="text-xs uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-              Expires At
-            </p>
-
-            <p className="mt-1 text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-              {formatDate(payment.expiresAt)}
-            </p>
-          </div>
         </div>
       </section>
 
-      <Section title="Payment Details">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <Section
+        title="Payment Details"
+        description="Core payment identity, state, amount, references, and timing."
+      >
+        <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
           <Field
             label="Payment ID"
             value={payment.id}
@@ -360,11 +377,19 @@ export default function AdminPaymentDetailPage() {
             label="Paid At"
             value={formatDate(payment.paidAt)}
           />
+
+          <Field
+            label="Expires At"
+            value={formatDate(payment.expiresAt)}
+          />
         </div>
       </Section>
 
-      <Section title="Related Job">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <Section
+        title="Related Job"
+        description="The job associated with this payment."
+      >
+        <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
           <Field
             label="Job ID"
             value={
@@ -403,11 +428,6 @@ export default function AdminPaymentDetailPage() {
           />
 
           <Field
-            label="Created At"
-            value={formatDate(payment.job.createdAt)}
-          />
-
-          <Field
             label="Price"
             value={
               <>
@@ -430,11 +450,19 @@ export default function AdminPaymentDetailPage() {
                 : "—"
             }
           />
+
+          <Field
+            label="Created At"
+            value={formatDate(payment.job.createdAt)}
+          />
         </div>
       </Section>
 
-      <Section title="Client">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <Section
+        title="Client"
+        description="Client associated with the related job."
+      >
+        <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
           <Field
             label="Name"
             value={payment.job.client.fullName}
@@ -467,9 +495,12 @@ export default function AdminPaymentDetailPage() {
         </div>
       </Section>
 
-      <Section title="Fixer">
+      <Section
+        title="Fixer"
+        description="Fixer associated with the related job, if assigned."
+      >
         {payment.job.fixer ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
             <Field
               label="Name"
               value={payment.job.fixer.fullName}
@@ -507,8 +538,11 @@ export default function AdminPaymentDetailPage() {
         )}
       </Section>
 
-      <Section title="Payment Context">
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <Section
+        title="Payment Context"
+        description="Job completion and payment timing context."
+      >
+        <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
           <Field
             label="Selected Conversation"
             value={
@@ -548,9 +582,12 @@ export default function AdminPaymentDetailPage() {
         </div>
       </Section>
 
-      <Section title="Completion">
+      <Section
+        title="Completion"
+        description="Completion request associated with the job and payment."
+      >
         {payment.completionRequest ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
             <Field
               label="Completion Request ID"
               value={payment.completionRequest.id}
@@ -607,9 +644,12 @@ export default function AdminPaymentDetailPage() {
         )}
       </Section>
 
-      <Section title="Dispute">
+      <Section
+        title="Dispute"
+        description="Dispute information associated with this payment or job."
+      >
         {payment.dispute ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
             <Field
               label="Dispute ID"
               value={payment.dispute.id}
@@ -666,9 +706,12 @@ export default function AdminPaymentDetailPage() {
         )}
       </Section>
 
-      <Section title="Earnings">
+      <Section
+        title="Earnings"
+        description="Fixer earnings generated in relation to this payment."
+      >
         {payment.earnings ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
             <Field
               label="Earnings ID"
               value={payment.earnings.id}
@@ -734,9 +777,12 @@ export default function AdminPaymentDetailPage() {
         )}
       </Section>
 
-      <Section title="Platform Revenue">
+      <Section
+        title="Platform Revenue"
+        description="Platform revenue record associated with this payment."
+      >
         {payment.PlatformRevenue ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
             <Field
               label="Revenue Record ID"
               value={payment.PlatformRevenue.id}
@@ -776,7 +822,10 @@ export default function AdminPaymentDetailPage() {
         )}
       </Section>
 
-      <Section title="Related Conversations">
+      <Section
+        title="Related Conversations"
+        description="Conversations and negotiation state connected to the payment/job."
+      >
         {payment.conversations?.length ? (
           <div className="space-y-4">
             {payment.conversations.map((conversation) => (
@@ -784,8 +833,8 @@ export default function AdminPaymentDetailPage() {
                 key={conversation.id}
                 className="rounded-xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]"
               >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
+                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0">
                     <p className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                       {conversation.fixer.fullName}
                     </p>
@@ -795,12 +844,12 @@ export default function AdminPaymentDetailPage() {
                     </p>
                   </div>
 
-                  <span className="rounded-full border border-[#C5D5EE] bg-white px-2 py-1 text-xs font-medium text-[#516786] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#AAB9D0]">
+                  <span className="inline-flex w-fit rounded-full border border-[#C5D5EE] bg-white px-2.5 py-1 text-xs font-medium text-[#516786] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#AAB9D0]">
                     {conversation.status}
                   </span>
                 </div>
 
-                <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-4 grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
                   <Field
                     label="Active"
                     value={
@@ -812,16 +861,12 @@ export default function AdminPaymentDetailPage() {
 
                   <Field
                     label="Messages"
-                    value={
-                      conversation._count.messages
-                    }
+                    value={conversation._count.messages}
                   />
 
                   <Field
                     label="Agreements"
-                    value={
-                      conversation._count.agreements
-                    }
+                    value={conversation._count.agreements}
                   />
 
                   <Field
@@ -833,12 +878,12 @@ export default function AdminPaymentDetailPage() {
                 </div>
 
                 {conversation.negotiation ? (
-                  <div className="mt-4 rounded-xl border border-[#C5D5EE] bg-white p-4 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
+                  <div className="mt-5 rounded-xl border border-[#C5D5EE] bg-white p-4 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
                     <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
                       Negotiation
                     </p>
 
-                    <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="mt-4 grid gap-x-6 gap-y-5 md:grid-cols-2 xl:grid-cols-4">
                       <Field
                         label="Status"
                         value={
@@ -940,11 +985,11 @@ export default function AdminPaymentDetailPage() {
           Investigation Only
         </h2>
 
-        <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-          This payment record is being displayed for
-          investigation and reconciliation. No payment custody,
-          manual client refund, fixer payout, or payment mutation
-          action is performed from this screen.
+        <p className="mt-2 text-sm leading-6 text-amber-700 dark:text-amber-300">
+          This payment record is displayed for investigation and
+          reconciliation. No payment custody, manual client refund,
+          fixer payout, or payment mutation action is performed from
+          this screen.
         </p>
       </section>
     </div>
