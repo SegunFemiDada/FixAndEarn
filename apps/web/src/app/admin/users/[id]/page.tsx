@@ -13,6 +13,7 @@ import {
   useAdminUpdateUser,
 } from "@/lib/admin/users/queries";
 import { formatFecFromMilli } from "@/lib/wallet/ui";
+import UserInvestigationPanel from "@/components/admin/UserInvestigationPanel";
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return "Not available";
@@ -1218,6 +1219,7 @@ export default function AdminUserDetailPage() {
           </Section>
         </aside>
       </div>
+      <UserInvestigationPanel userId={detail.id} />
 
       {/* Edit modal */}
       {editModalOpen && (
