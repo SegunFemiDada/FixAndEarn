@@ -96,6 +96,168 @@ function badgeColor(action: string) {
   };
 }
 
+function PaginatedActivityList({
+  activities,
+}: {
+  activities: Activity[];
+}) {
+  const pageSize = 10;
+  const [page, setPage] = React.useState(1);
+
+  const pageCount = Math.max(1, Math.ceil(activities.length / pageSize));
+
+  React.useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, pageCount));
+  }, [pageCount]);
+
+  const startIndex = (page - 1) * pageSize;
+  const visibleActivities = activities.slice(
+    startIndex,
+    startIndex + pageSize,
+  );
+
+  const startItem = activities.length === 0 ? 0 : startIndex + 1;
+  const endItem = Math.min(startIndex + pageSize, activities.length);
+
+  const pageNumbers = React.useMemo(() => {
+    if (pageCount <= 5) {
+      return Array.from({ length: pageCount }, (_, index) => index + 1);
+    }
+
+    const pages: Array<number | "ellipsis"> = [1];
+
+    if (page > 3) {
+      pages.push("ellipsis");
+    }
+
+    const rangeStart = Math.max(2, page - 1);
+    const rangeEnd = Math.min(pageCount - 1, page + 1);
+
+    for (let value = rangeStart; value <= rangeEnd; value += 1) {
+      pages.push(value);
+    }
+
+    if (page < pageCount - 2) {
+      pages.push("ellipsis");
+    }
+
+    pages.push(pageCount);
+
+    return pages;
+  }, [page, pageCount]);
+
+  if (activities.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="divide-y divide-[#E4ECF7] dark:divide-[#2D3F55]">
+        {visibleActivities.map((activity) => {
+          const badge = badgeColor(activity.action);
+
+          return (
+            <div
+              key={activity.id}
+              className="grid grid-cols-[minmax(0,1.8fr)_minmax(12rem,1fr)_auto_auto] items-center gap-6 px-5 py-4 transition hover:bg-[#F8FBFF] dark:hover:bg-[#1B2838]"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {activity.action}
+                </p>
+
+                <p className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+                  {activity.description}
+                </p>
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                  {activity.actor.fullName}
+                </p>
+
+                <p className="mt-1 truncate text-xs text-[#7E8FAE] dark:text-[#8FA0BC]">
+                  {activity.actor.role}
+                </p>
+              </div>
+
+              <span
+                className={[
+                  "rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap",
+                  badge.background,
+                  badge.text,
+                ].join(" ")}
+              >
+                {activity.action}
+              </span>
+
+              <span className="whitespace-nowrap text-xs text-[#7E8FAE] dark:text-[#8FA0BC]">
+                {formatDate(activity.createdAt)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {activities.length > pageSize ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E4ECF7] px-5 py-3 dark:border-[#2D3F55]">
+          <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+            Showing {startItem}&ndash;{endItem} of {activities.length}
+          </p>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+              disabled={page === 1}
+              className="rounded-lg border border-[#D7E2F1] px-3 py-1.5 text-xs font-medium text-[#4A5F7D] transition hover:bg-[#F8FBFF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#334961] dark:text-[#B7C5D9] dark:hover:bg-[#1B2838]"
+            >
+              Previous
+            </button>
+
+            {pageNumbers.map((pageNumber, index) =>
+              pageNumber === "ellipsis" ? (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="px-2 text-xs text-[#7E8FAE] dark:text-[#8FA0BC]"
+                >
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={pageNumber}
+                  type="button"
+                  onClick={() => setPage(pageNumber)}
+                  aria-current={page === pageNumber ? "page" : undefined}
+                  className={[
+                    "min-w-8 rounded-lg px-2 py-1.5 text-xs font-medium transition",
+                    page === pageNumber
+                      ? "bg-[#1A2B4A] text-white dark:bg-[#8EC5FF] dark:text-[#142235]"
+                      : "text-[#4A5F7D] hover:bg-[#F1F6FC] dark:text-[#B7C5D9] dark:hover:bg-[#1B2838]",
+                  ].join(" ")}
+                >
+                  {pageNumber}
+                </button>
+              ),
+            )}
+
+            <button
+              type="button"
+              onClick={() =>
+                setPage((currentPage) => Math.min(pageCount, currentPage + 1))
+              }
+              disabled={page === pageCount}
+              className="rounded-lg border border-[#D7E2F1] px-3 py-1.5 text-xs font-medium text-[#4A5F7D] transition hover:bg-[#F8FBFF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#334961] dark:text-[#B7C5D9] dark:hover:bg-[#1B2838]"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export default function DashboardRecentActivity({
   activities,
 }: DashboardRecentActivityProps) {
@@ -126,52 +288,7 @@ export default function DashboardRecentActivity({
             <span>Time</span>
           </div>
 
-          <div className="divide-y divide-[#E4ECF7] dark:divide-[#2D3F55]">
-            {activities.map((activity) => {
-              const badge = badgeColor(activity.action);
-
-              return (
-                <div
-                  key={activity.id}
-                  className="grid grid-cols-[minmax(0,1.8fr)_minmax(12rem,1fr)_auto_auto] items-center gap-6 px-5 py-4 transition hover:bg-[#F8FBFF] dark:hover:bg-[#1B2838]"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {activity.action}
-                    </p>
-
-                    <p className="mt-1 truncate text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                      {activity.description}
-                    </p>
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {activity.actor.fullName}
-                    </p>
-
-                    <p className="mt-1 truncate text-xs text-[#7E8FAE] dark:text-[#8FA0BC]">
-                      {activity.actor.role}
-                    </p>
-                  </div>
-
-                  <span
-                    className={[
-                      "rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap",
-                      badge.background,
-                      badge.text,
-                    ].join(" ")}
-                  >
-                    {activity.action}
-                  </span>
-
-                  <span className="whitespace-nowrap text-xs text-[#7E8FAE] dark:text-[#8FA0BC]">
-                    {formatDate(activity.createdAt)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          <PaginatedActivityList activities={activities} />
         </div>
       )}
     </AdminSection>
