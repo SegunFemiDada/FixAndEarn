@@ -212,6 +212,121 @@ function renderDisputeEvidence(
   }
 }
 
+function PaginatedList<T>({
+  items,
+  emptyText,
+  renderItem,
+  pageSize = 10,
+}: {
+  items: T[];
+  emptyText: string;
+  renderItem: (item: T, index: number) => React.ReactNode;
+  pageSize?: number;
+}) {
+  const [page, setPage] = React.useState(1);
+
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+
+  React.useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, pageCount));
+  }, [pageCount]);
+
+  if (items.length === 0) {
+    return <EmptyState text={emptyText} />;
+  }
+
+  const startIndex = (page - 1) * pageSize;
+  const visibleItems = items.slice(startIndex, startIndex + pageSize);
+  const endIndex = Math.min(startIndex + visibleItems.length, items.length);
+
+  const pageNumbers =
+    pageCount <= 5
+      ? Array.from({ length: pageCount }, (_, index) => index + 1)
+      : Array.from(
+          new Set([
+            1,
+            Math.max(1, page - 1),
+            page,
+            Math.min(pageCount, page + 1),
+            pageCount,
+          ]),
+        ).values();
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-3">
+        {visibleItems.map((item, index) =>
+          renderItem(item, startIndex + index),
+        )}
+      </div>
+
+      {items.length > pageSize && (
+        <div className="flex flex-col gap-3 border-t border-[#D9E3F1] pt-3 dark:border-[#2D3F55] sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+            Showing {startIndex + 1}–{endIndex} of {items.length}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+              disabled={page === 1}
+              className="rounded-lg border border-[#C5D5EE] bg-white px-3 py-2 text-xs font-semibold text-[#315F96] transition-colors hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2] dark:hover:bg-[#243247]"
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
+
+            {Array.from(pageNumbers).map((pageNumber, index, numbers) => {
+              const previousPageNumber = numbers[index - 1];
+
+              return (
+                <React.Fragment key={pageNumber}>
+                  {previousPageNumber !== undefined &&
+                    pageNumber - previousPageNumber > 1 && (
+                      <span className="px-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                        …
+                      </span>
+                    )}
+
+                  <button
+                    type="button"
+                    onClick={() => setPage(pageNumber)}
+                    aria-current={page === pageNumber ? "page" : undefined}
+                    className={[
+                      "min-w-9 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors",
+                      page === pageNumber
+                        ? "border-[#315F96] bg-[#315F96] text-white dark:border-[#5B8FCC] dark:bg-[#5B8FCC] dark:text-white"
+                        : "border-[#C5D5EE] bg-white text-[#315F96] hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2] dark:hover:bg-[#243247]",
+                    ].join(" ")}
+                    aria-label={`Go to page ${pageNumber}`}
+                  >
+                    {pageNumber}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() =>
+                setPage((currentPage) =>
+                  Math.min(pageCount, currentPage + 1),
+                )
+              }
+              disabled={page === pageCount}
+              className="rounded-lg border border-[#C5D5EE] bg-white px-3 py-2 text-xs font-semibold text-[#315F96] transition-colors hover:bg-[#F4F8FF] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2] dark:hover:bg-[#243247]"
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function UserInvestigationPanel({
   userId,
 }: {
@@ -559,7 +674,11 @@ export default function UserInvestigationPanel({
                 <EmptyState text="No deposits found." />
               ) : (
                 <div className="divide-y divide-[#E2E8F0] rounded-lg border border-[#D9E3F1] dark:divide-[#2D3F55] dark:border-[#2D3F55]">
-                  {user.deposits.map((deposit) => (
+                  <PaginatedList
+                  items={user.deposits}
+                  emptyText="No deposits found."
+                  renderItem={(deposit) => (
+
                     <div
                       key={deposit.id}
                       className="flex items-center justify-between gap-4 px-4 py-3"
@@ -590,7 +709,8 @@ export default function UserInvestigationPanel({
                         {deposit.status ?? "UNKNOWN"}
                       </StatusBadge>
                     </div>
-                  ))}
+                    )}
+                  />
                 </div>
               )}
             </div>
@@ -606,7 +726,11 @@ export default function UserInvestigationPanel({
                 <EmptyState text="No withdrawals found." />
               ) : (
                 <div className="divide-y divide-[#E2E8F0] rounded-lg border border-[#D9E3F1] dark:divide-[#2D3F55] dark:border-[#2D3F55]">
-                  {user.withdrawals.map((withdrawal) => (
+                  <PaginatedList
+                  items={user.withdrawals}
+                  emptyText="No withdrawals found."
+                  renderItem={(withdrawal) => (
+
                     <div
                       key={withdrawal.id}
                       className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
@@ -643,7 +767,8 @@ export default function UserInvestigationPanel({
                         {withdrawal.status ?? "UNKNOWN"}
                       </StatusBadge>
                     </div>
-                  ))}
+                    )}
+                  />
                 </div>
               )}
             </div>
@@ -664,7 +789,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="This user has not posted any jobs in the returned history." />
         ) : (
           <div className="space-y-3">
-            {jobsPosted.map((job) => (
+            <PaginatedList
+            items={jobsPosted}
+            emptyText="This user has not posted any jobs in the returned history."
+            renderItem={(job) => (
+
               <div
                 key={job.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -709,8 +838,8 @@ export default function UserInvestigationPanel({
                       job.state,
                     ]
                       .filter(Boolean)
-                      .join(", ")}
-                  />
+              .join(", ")}
+            />
 
                   <DetailField
                     label="LGA"
@@ -733,7 +862,8 @@ export default function UserInvestigationPanel({
                   />
                 </div>
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
@@ -751,7 +881,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="This user has no assigned jobs in the returned history." />
         ) : (
           <div className="space-y-3">
-            {jobsAssigned.map((job) => (
+            <PaginatedList
+            items={jobsAssigned}
+            emptyText="This user has no assigned jobs in the returned history."
+            renderItem={(job) => (
+
               <div
                 key={job.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -776,8 +910,8 @@ export default function UserInvestigationPanel({
                   <DetailField
                     label="Client ID"
                     value={job.clientId}
-                    breakAll
-                  />
+              breakAll
+            />
 
                   <DetailField
                     label="Location"
@@ -806,7 +940,8 @@ export default function UserInvestigationPanel({
                   />
                 </div>
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
@@ -824,7 +959,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="This user has no applications in the returned history." />
         ) : (
           <div className="space-y-3">
-            {applications.map((application) => (
+            <PaginatedList
+            items={applications}
+            emptyText="This user has no applications in the returned history."
+            renderItem={(application) => (
+
               <div
                 key={application.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -861,8 +1000,8 @@ export default function UserInvestigationPanel({
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <DetailField
                     label="Job status"
-                    value={application.job.status}
-                  />
+              value={application.job.status}
+            />
 
                   <DetailField
                     label="Location"
@@ -895,7 +1034,8 @@ export default function UserInvestigationPanel({
                   </div>
                 )}
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
@@ -913,7 +1053,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="No conversations found for this user." />
         ) : (
           <div className="space-y-3">
-            {conversations.map((conversation) => (
+            <PaginatedList
+            items={conversations}
+            emptyText="No conversations found for this user."
+            renderItem={(conversation) => (
+
               <div
                 key={conversation.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -952,8 +1096,8 @@ export default function UserInvestigationPanel({
                   <DetailField
                     label="Job ID"
                     value={conversation.jobId}
-                    breakAll
-                  />
+              breakAll
+            />
 
                   <DetailField
                     label="Messages"
@@ -977,7 +1121,8 @@ export default function UserInvestigationPanel({
                   />
                 </div>
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
@@ -995,7 +1140,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="No reports were found in the returned investigation history." />
         ) : (
           <div className="space-y-3">
-            {reports.map((report) => (
+            <PaginatedList
+            items={reports}
+            emptyText="No reports were found in the returned investigation history."
+            renderItem={(report) => (
+
               <div
                 key={report.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -1027,8 +1176,8 @@ export default function UserInvestigationPanel({
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <DetailField
                     label="Target type"
-                    value={report.targetType}
-                  />
+              value={report.targetType}
+            />
 
                   <DetailField
                     label="Target ID"
@@ -1063,7 +1212,8 @@ export default function UserInvestigationPanel({
                   </p>
                 )}
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
@@ -1081,7 +1231,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="No disputes were found in the returned investigation history." />
         ) : (
           <div className="space-y-3">
-            {disputes.map((dispute) => (
+            <PaginatedList
+            items={disputes}
+            emptyText="No disputes were found in the returned investigation history."
+            renderItem={(dispute) => (
+
               <div
                 key={dispute.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -1112,8 +1266,8 @@ export default function UserInvestigationPanel({
                   <DetailField
                     label="Job ID"
                     value={dispute.jobId}
-                    breakAll
-                  />
+              breakAll
+            />
 
                   <DetailField
                     label="Opened by"
@@ -1147,7 +1301,8 @@ export default function UserInvestigationPanel({
                   </div>
                 )}
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
@@ -1165,7 +1320,11 @@ export default function UserInvestigationPanel({
           <EmptyState text="No user-specific admin audit entries were found." />
         ) : (
           <div className="space-y-3">
-            {auditLogs.map((log) => (
+            <PaginatedList
+            items={auditLogs}
+            emptyText="No user-specific admin audit entries were found."
+            renderItem={(log) => (
+
               <div
                 key={log.id}
                 className="rounded-lg border border-[#D9E3F1] p-4 dark:border-[#2D3F55]"
@@ -1206,8 +1365,8 @@ export default function UserInvestigationPanel({
                   <DetailField
                     label="Admin ID"
                     value={log.actorAdminId}
-                    breakAll
-                  />
+              breakAll
+            />
 
                   <DetailField
                     label="IP address"
@@ -1216,7 +1375,8 @@ export default function UserInvestigationPanel({
                   />
                 </div>
               </div>
-            ))}
+    )}
+  />
           </div>
         )}
       </Section>
