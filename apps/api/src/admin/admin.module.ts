@@ -1,5 +1,5 @@
 //path: apps/api/src/admin/admin.module.ts
-import { Module, } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { PassportModule } from "@nestjs/passport";
@@ -16,6 +16,9 @@ import { AdminVerificationRepo } from "./verification/admin-verification.repo";
 import { AdminFinanceController } from "./finance/admin-finance.controller";
 import { AdminFinanceService } from "./finance/admin-finance.service";
 import { AdminFinanceRepo } from "./finance/admin-finance.repo";
+import { AdminLedgerController } from "./finance/admin-ledger.controller";
+import { AdminLedgerService } from "./finance/admin-ledger.service";
+import { AdminLedgerRepo } from "./finance/admin-ledger.repo";
 import { AdminUsersController } from "./users/admin-users.controller";
 import { AdminUsersService } from "./users/admin-users.service";
 import { AdminUsersRepo } from "./users/admin-users.repo";
@@ -87,6 +90,7 @@ import { VerificationModule } from "../modules/verification/verification.module"
     AdminController,
     AdminVerificationController,
     AdminFinanceController,
+    AdminLedgerController,
     AdminUsersController,
     AdminExportsController,
     AdminDisputesController,
@@ -112,6 +116,8 @@ import { VerificationModule } from "../modules/verification/verification.module"
     AdminVerificationService,
     AdminFinanceRepo,
     AdminFinanceService,
+    AdminLedgerRepo,
+    AdminLedgerService,
     AdminUsersRepo,
     AdminUsersService,
     AdminExportsRepo,
@@ -139,6 +145,6 @@ import { VerificationModule } from "../modules/verification/verification.module"
     AdminPaymentsRepo,
     AdminPaymentsService,
   ],
-  exports: [AdminService, AdminAuditService, AdminFinanceService], 
+  exports: [AdminService, AdminAuditService, AdminFinanceService],
 })
 export class AdminModule {}
