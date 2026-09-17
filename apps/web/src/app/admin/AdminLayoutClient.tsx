@@ -60,6 +60,12 @@ const navItems: AdminNavItem[] = [
       "Investigate job payments and Monnify references",
   },
   {
+    href: "/admin/finance/ledger",
+    label: "Ledger Investigation",
+    description:
+      "Investigate user and platform wallet ledger activity",
+  },
+  {
     href: "/admin/disputes",
     label: "Dispute Management",
     description: "Resolve platform disputes",
