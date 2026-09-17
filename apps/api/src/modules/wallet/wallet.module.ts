@@ -1,5 +1,4 @@
-//path: apps/api/src/modules/wallet/wallet.module.ts
-import { Module, } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { WalletService } from "./wallet.service";
 import { LedgerService } from "./ledger.service";
 import { WalletController } from "./wallet.controller";
@@ -9,9 +8,15 @@ import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PlatformWalletService } from "./platform-wallet.service";
 import { EarningsModule } from "../earnings/earnings.module";
+import { PlatformConfigModule } from "../../common/platform-config/platform-config.module";
 
 @Module({
-  imports: [ AuthModule, NotificationsModule, EarningsModule],
+  imports: [
+    AuthModule,
+    NotificationsModule,
+    EarningsModule,
+    PlatformConfigModule,
+  ],
   providers: [
     WalletService,
     LedgerService,

@@ -1,4 +1,3 @@
-//path: apps/api/src/modules/job-payments/job-payments.module.ts
 import { Module, forwardRef } from "@nestjs/common";
 import { PrismaModule } from "../../infra/prisma/prisma.module";
 import { PaymentsModule } from "../payments/payments.module";
@@ -9,26 +8,26 @@ import { JobPaymentProcessorService } from "./job-payment-processor.service";
 import { ChatModule } from "../../chat/chat.module";
 import { FinalPaymentExpirationService } from "./final-payment-expiration.service";
 import { JobsModule } from "../jobs/jobs.module";
+import { PlatformConfigModule } from "../../common/platform-config/platform-config.module";
 
 @Module({
   imports: [
-  PrismaModule,
-  NotificationsModule,
-  forwardRef(() => PaymentsModule),
-  forwardRef(() => ChatModule),
-  forwardRef(() => JobsModule),
-
-],
+    PrismaModule,
+    NotificationsModule,
+    forwardRef(() => PaymentsModule),
+    forwardRef(() => ChatModule),
+    forwardRef(() => JobsModule),
+    PlatformConfigModule,
+  ],
   controllers: [JobPaymentsController],
   providers: [
-  JobPaymentsService,
-  JobPaymentProcessorService,
-  FinalPaymentExpirationService,
-],
-
-exports: [
-  JobPaymentsService,
-  JobPaymentProcessorService,
-],
+    JobPaymentsService,
+    JobPaymentProcessorService,
+    FinalPaymentExpirationService,
+  ],
+  exports: [
+    JobPaymentsService,
+    JobPaymentProcessorService,
+  ],
 })
 export class JobPaymentsModule {}

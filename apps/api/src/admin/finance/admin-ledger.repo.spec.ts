@@ -16,7 +16,12 @@ describe("AdminLedgerRepo", () => {
       imports: [
         ConfigModule.forRoot({
           isGlobal: true,
-          envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
+          envFilePath: [
+            ".env",
+            ".env.local",
+            "../../.env",
+            "../../.env.local",
+          ],
         }),
         PrismaModule,
       ],
@@ -31,31 +36,39 @@ describe("AdminLedgerRepo", () => {
     await prisma.$disconnect();
   });
 
-  it("lists user ledger entries with pagination metadata", async () => {
-    const result = await repo.list({
-      scope: "USER",
-      skip: 0,
-      take: 1,
-    });
+  it(
+    "lists user ledger entries with pagination metadata",
+    async () => {
+      const result = await repo.list({
+        scope: "USER",
+        skip: 0,
+        take: 1,
+      });
 
-    expect(result.scope).toBe("USER");
-    expect(result.skip).toBe(0);
-    expect(result.take).toBe(1);
-    expect(result.total).toBeGreaterThanOrEqual(0);
-    expect(Array.isArray(result.items)).toBe(true);
-  });
+      expect(result.scope).toBe("USER");
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(1);
+      expect(result.total).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(result.items)).toBe(true);
+    },
+    15000,
+  );
 
-  it("lists platform ledger entries with pagination metadata", async () => {
-    const result = await repo.list({
-      scope: "PLATFORM",
-      skip: 0,
-      take: 1,
-    });
+  it(
+    "lists platform ledger entries with pagination metadata",
+    async () => {
+      const result = await repo.list({
+        scope: "PLATFORM",
+        skip: 0,
+        take: 1,
+      });
 
-    expect(result.scope).toBe("PLATFORM");
-    expect(result.skip).toBe(0);
-    expect(result.take).toBe(1);
-    expect(result.total).toBeGreaterThanOrEqual(0);
-    expect(Array.isArray(result.items)).toBe(true);
-  });
+      expect(result.scope).toBe("PLATFORM");
+      expect(result.skip).toBe(0);
+      expect(result.take).toBe(1);
+      expect(result.total).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(result.items)).toBe(true);
+    },
+    15000,
+  );
 });

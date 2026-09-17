@@ -4,6 +4,7 @@ describe("JobPaymentsService", () => {
   let service: JobPaymentsService;
   let prisma: any;
   let paymentProvider: any;
+  let platformConfig: any;
 
   beforeEach(() => {
     prisma = {
@@ -11,12 +12,12 @@ describe("JobPaymentsService", () => {
         findUnique: jest.fn(),
       },
       jobPayment: {
-  findMany: jest.fn(),
-  findUnique: jest.fn(),
-  update: jest.fn(),
-  updateMany: jest.fn(),
-  upsert: jest.fn(),
-},
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn(),
+        upsert: jest.fn(),
+      },
       user: {
         findUnique: jest.fn(),
       },
@@ -32,11 +33,16 @@ describe("JobPaymentsService", () => {
       }),
     };
 
+    platformConfig = {
+      getJobPostingFeeMilliFec: jest.fn().mockResolvedValue(1000),
+    };
+
     service = new JobPaymentsService(
       paymentProvider,
       prisma,
       {} as any,
       {} as any,
+      platformConfig,
     );
   });
 
@@ -54,19 +60,66 @@ describe("JobPaymentsService", () => {
         jobId: "job-1",
         clientId: "client-1",
       }),
-    ).rejects.toThrow(
-      "PAYMENT_ALREADY_PENDING",
+    ).rejects.toThrow("PAYMENT_ALREADY_PENDING");
+
+    expect(prisma.jobPayment.upsert).not.toHaveBeenCalled();
+    expect(
+      paymentProvider.initializeTransaction,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("uses the configured platform setting for the POSTING payment fee", async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      email: "client@example.com",
+    });
+
+    prisma.jobPayment.findUnique.mockResolvedValue(null);
+    prisma.jobPayment.upsert.mockResolvedValue({
+      id: "posting-payment",
+    });
+
+    platformConfig.getJobPostingFeeMilliFec.mockResolvedValue(1500);
+
+    const result = await service.createPostingPayment({
+      jobId: "job-1",
+      clientId: "client-1",
+    });
+
+    expect(
+      platformConfig.getJobPostingFeeMilliFec,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(prisma.jobPayment.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          amountMilliFec: 1500,
+        }),
+        create: expect.objectContaining({
+          amountMilliFec: 1500,
+        }),
+      }),
     );
 
     expect(
-      prisma.jobPayment.upsert
-    ).not.toHaveBeenCalled();
+      paymentProvider.initializeTransaction,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountKobo: 150000,
+        reference: expect.any(String),
+        metadata: expect.objectContaining({
+          paymentType: "POSTING",
+          jobId: "job-1",
+        }),
+      }),
+    );
 
-    expect(
-      paymentProvider.initializeTransaction
-    ).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      authorizationUrl: "https://checkout.example.com/pay",
+      reference: "ref-123",
+    });
   });
-    it("rejects creating another URGENT payment while one is pending", async () => {
+
+  it("rejects creating another URGENT payment while one is pending", async () => {
     prisma.user.findUnique.mockResolvedValue({
       email: "client@example.com",
     });
@@ -85,18 +138,14 @@ describe("JobPaymentsService", () => {
         clientId: "client-1",
         fixerId: "fixer-1",
       }),
-    ).rejects.toThrow(
-      "PAYMENT_ALREADY_PENDING",
-    );
+    ).rejects.toThrow("PAYMENT_ALREADY_PENDING");
 
+    expect(prisma.jobPayment.upsert).not.toHaveBeenCalled();
     expect(
-      prisma.jobPayment.upsert
-    ).not.toHaveBeenCalled();
-
-    expect(
-      paymentProvider.initializeTransaction
+      paymentProvider.initializeTransaction,
     ).not.toHaveBeenCalled();
   });
+
   it("rejects a stale concurrent payment retry", async () => {
     prisma.job.findUnique.mockResolvedValue({
       id: "job-1",
@@ -130,12 +179,10 @@ describe("JobPaymentsService", () => {
         jobId: "job-1",
         clientId: "client-1",
       }),
-    ).rejects.toThrow(
-      "PAYMENT_RETRY_ALREADY_IN_PROGRESS",
-    );
+    ).rejects.toThrow("PAYMENT_RETRY_ALREADY_IN_PROGRESS");
 
     expect(
-      prisma.jobPayment.updateMany
+      prisma.jobPayment.updateMany,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -147,7 +194,7 @@ describe("JobPaymentsService", () => {
     );
 
     expect(
-      paymentProvider.initializeTransaction
+      paymentProvider.initializeTransaction,
     ).not.toHaveBeenCalled();
   });
 
@@ -183,7 +230,7 @@ describe("JobPaymentsService", () => {
       email: "client@example.com",
     });
 
-    prisma.jobPayment.updateMany.mockResolvedValue({count: 1});
+    prisma.jobPayment.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.continuePayment({
       jobId: "job-1",
@@ -191,23 +238,25 @@ describe("JobPaymentsService", () => {
     });
 
     expect(
-  prisma.jobPayment.updateMany
-).toHaveBeenCalledWith(
-  expect.objectContaining({
-    where: {
-      id: "urgent-payment",
-      status: "PENDING",
-      paymentReference: "old-reference",
-    },
-    data: expect.objectContaining({
-      paymentReference: expect.any(String),
-      status: "PENDING",
-      paidAt: null,
-    }),
-  }),
-);
+      prisma.jobPayment.updateMany,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: "urgent-payment",
+          status: "PENDING",
+          paymentReference: "old-reference",
+        },
+        data: expect.objectContaining({
+          paymentReference: expect.any(String),
+          status: "PENDING",
+          paidAt: null,
+        }),
+      }),
+    );
 
-    expect(paymentProvider.initializeTransaction).toHaveBeenCalledWith(
+    expect(
+      paymentProvider.initializeTransaction,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         amountKobo: 200000,
         reference: expect.any(String),
@@ -225,6 +274,7 @@ describe("JobPaymentsService", () => {
       reference: "ref-123",
     });
   });
+
   it("rejects creating another FINAL payment while one is still pending", async () => {
     prisma.user.findUnique.mockResolvedValue({
       email: "client@example.com",
@@ -248,9 +298,7 @@ describe("JobPaymentsService", () => {
 
     prisma.jobPayment.findUnique.mockResolvedValue({
       status: "PENDING",
-      expiresAt: new Date(
-        Date.now() + 30 * 60 * 1000,
-      ),
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       paymentReference: "existing-final-reference",
     });
 
@@ -260,16 +308,11 @@ describe("JobPaymentsService", () => {
         clientId: "client-1",
         conversationId: "conversation-1",
       }),
-    ).rejects.toThrow(
-      "FINAL_PAYMENT_ALREADY_PENDING",
-    );
+    ).rejects.toThrow("FINAL_PAYMENT_ALREADY_PENDING");
 
+    expect(prisma.jobPayment.upsert).not.toHaveBeenCalled();
     expect(
-      prisma.jobPayment.upsert
-    ).not.toHaveBeenCalled();
-
-    expect(
-      paymentProvider.initializeTransaction
+      paymentProvider.initializeTransaction,
     ).not.toHaveBeenCalled();
   });
 

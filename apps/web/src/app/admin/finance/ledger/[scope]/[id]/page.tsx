@@ -75,7 +75,7 @@ function Field({
       <span className="block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6B7C99] dark:text-[#8FA0BC]">
         {label}
       </span>
-      <span className="mt-1 block break-words text-sm leading-5 text-[#1A2B4A] dark:text-[#E8F0FA]">
+      <span className="mt-1 block wrap-break-word text-sm leading-5 text-[#1A2B4A] dark:text-[#E8F0FA]">
         {value ?? "Not available"}
       </span>
     </div>
@@ -106,7 +106,7 @@ function MetadataFields({
 
   if (!isRecord(value)) {
     return (
-      <p className="break-words text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+      <p className="wrap-break-word text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
         {Array.isArray(value) ? value.join(", ") : String(value)}
       </p>
     );
@@ -132,11 +132,11 @@ function MetadataFields({
             {isRecord(item) ? (
               <MetadataFields value={item} depth={depth + 1} />
             ) : Array.isArray(item) ? (
-              <p className="break-words text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+              <p className="wrap-break-word text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
                 {item.length ? item.map(String).join(", ") : "None"}
               </p>
             ) : (
-              <p className="break-words text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+              <p className="wrap-break-word text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
                 {item === null ? "Not available" : String(item)}
               </p>
             )}

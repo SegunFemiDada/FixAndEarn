@@ -1,4 +1,3 @@
-//path: apps/api/src/modules/job-payments/job-payments.service.ts
 import {
   BadRequestException,
   ConflictException,
@@ -6,594 +5,665 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { PrismaService, } from "../../infra/prisma/prisma.service";
+import { PrismaService } from "../../infra/prisma/prisma.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PAYMENT_PROVIDER } from "../payments/payments.constants";
 import * as crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import { JobPaymentProcessorService } from "./job-payment-processor.service";
 import { FINAL_PAYMENT_EXPIRATION_MINUTES } from "./job-payment.constants";
+import { PlatformConfigService } from "../../common/platform-config/platform-config.service";
 
 @Injectable()
 export class JobPaymentsService {
   constructor(
-  @Inject(PAYMENT_PROVIDER)
-  private readonly paymentProvider: any,
-
-  private readonly prisma: PrismaService,
-  private readonly notifications: NotificationsService,
-  private readonly processor: JobPaymentProcessorService,
-) {}
+    @Inject(PAYMENT_PROVIDER)
+    private readonly paymentProvider: any,
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+    private readonly processor: JobPaymentProcessorService,
+    private readonly platformConfig: PlatformConfigService,
+  ) {}
 
   async createPostingPayment(args: {
-  jobId: string;
-  clientId: string;
-}) {
-  const user = await this.prisma.user.findUnique({
-    where: {
-      id: args.clientId,
-    },
-    select: {
-      email: true,
-    },
-  });
+    jobId: string;
+    clientId: string;
+  }) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: args.clientId,
+      },
+      select: {
+        email: true,
+      },
+    });
 
-  if (!user) {
-    throw new Error("CLIENT_NOT_FOUND");
-  }
+    if (!user) {
+      throw new Error("CLIENT_NOT_FOUND");
+    }
 
-  const existingPayment = await this.prisma.jobPayment.findUnique({
-  where: {
-    jobId_type: {
-      jobId: args.jobId,
-      type: "POSTING",
-    },
-  },
-  select: {
-    status: true,
-  },
-});
+    const existingPayment = await this.prisma.jobPayment.findUnique({
+      where: {
+        jobId_type: {
+          jobId: args.jobId,
+          type: "POSTING",
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
 
-if (existingPayment?.status === "SUCCESS") {
-  throw new ConflictException(
-    "PAYMENT_ALREADY_COMPLETED",
-  );
-}
+    if (existingPayment?.status === "SUCCESS") {
+      throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+    }
 
-if (existingPayment?.status === "PENDING") {
-  throw new ConflictException(
-    "PAYMENT_ALREADY_PENDING",
-  );
-}
+    if (existingPayment?.status === "PENDING") {
+      throw new ConflictException("PAYMENT_ALREADY_PENDING");
+    }
 
-const paymentReference = crypto.randomUUID();
+    const paymentReference = crypto.randomUUID();
+    const postingFeeMilliFec =
+      await this.platformConfig.getJobPostingFeeMilliFec();
 
-await this.prisma.jobPayment.upsert({
-    where: {
-      jobId_type: {
+    await this.prisma.jobPayment.upsert({
+      where: {
+        jobId_type: {
+          jobId: args.jobId,
+          type: "POSTING",
+        },
+      },
+      update: {
+        paymentReference,
+        amountMilliFec: postingFeeMilliFec,
+        paymentFeeMilliFec: 0,
+        status: "PENDING",
+        fixerId: null,
+        conversationId: null,
+        lockedPriceMilliFec: null,
+        paidAt: null,
+      },
+      create: {
         jobId: args.jobId,
         type: "POSTING",
+        paymentReference,
+        amountMilliFec: postingFeeMilliFec,
+        paymentFeeMilliFec: 0,
+        status: "PENDING",
       },
-    },
-    update: {
-      paymentReference,
-      amountMilliFec: 1000,
-      paymentFeeMilliFec: 0,
-      status: "PENDING",
-      fixerId: null,
-      conversationId: null,
-      lockedPriceMilliFec: null,
-      paidAt: null,
-    },
-    create: {
-      jobId: args.jobId,
-      type: "POSTING",
-      paymentReference,
-      amountMilliFec: 1000,
-      paymentFeeMilliFec: 0,
-      status: "PENDING",
-    },
-  });
+    });
 
-  return this.initializeGatewayPayment({
-    email: user.email,
-    amountMilliFec: 1000,
-    reference: paymentReference,
-    metadata: {
-    paymentType: "POSTING",
-    jobId: args.jobId,
-    redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`  },
-  });
-}
+    return this.initializeGatewayPayment({
+      email: user.email,
+      amountMilliFec: postingFeeMilliFec,
+      reference: paymentReference,
+      metadata: {
+        paymentType: "POSTING",
+        jobId: args.jobId,
+        redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
+      },
+    });
+  }
 
-async createUrgentHirePayment(
-  args: {
+  async createUrgentHirePayment(
+    args: {
+      jobId: string;
+      clientId: string;
+      fixerId: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx ?? this.prisma;
+
+    const user = await db.user.findUnique({
+      where: {
+        id: args.clientId,
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("CLIENT_NOT_FOUND");
+    }
+
+    const job = await db.job.findUnique({
+      where: {
+        id: args.jobId,
+      },
+      select: {
+        clientId: true,
+      },
+    });
+
+    if (!job) {
+      throw new Error("JOB_NOT_FOUND");
+    }
+
+    if (job.clientId !== args.clientId) {
+      throw new Error("NOT_JOB_OWNER");
+    }
+
+    const existingPayment = await db.jobPayment.findUnique({
+      where: {
+        jobId_type: {
+          jobId: args.jobId,
+          type: "URGENT",
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    if (existingPayment?.status === "SUCCESS") {
+      throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+    }
+
+    if (existingPayment?.status === "PENDING") {
+      throw new ConflictException("PAYMENT_ALREADY_PENDING");
+    }
+
+    const paymentReference = crypto.randomUUID();
+
+    const conversation = await db.conversation.upsert({
+      where: {
+        jobId_fixerId: {
+          jobId: args.jobId,
+          fixerId: args.fixerId,
+        },
+      },
+      update: {},
+      create: {
+        jobId: args.jobId,
+        fixerId: args.fixerId,
+        active: false,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await db.jobPayment.upsert({
+      where: {
+        jobId_type: {
+          jobId: args.jobId,
+          type: "URGENT",
+        },
+      },
+      update: {
+        paymentReference,
+        amountMilliFec: 2000,
+        paymentFeeMilliFec: 0,
+        fixerId: args.fixerId,
+        conversationId: conversation.id,
+        lockedPriceMilliFec: null,
+        status: "PENDING",
+        paidAt: null,
+      },
+      create: {
+        jobId: args.jobId,
+        type: "URGENT",
+        paymentReference,
+        amountMilliFec: 2000,
+        paymentFeeMilliFec: 0,
+        fixerId: args.fixerId,
+        conversationId: conversation.id,
+        status: "PENDING",
+      },
+    });
+
+    return this.initializeGatewayPayment({
+      email: user.email,
+      amountMilliFec: 2000,
+      reference: paymentReference,
+      metadata: {
+        paymentType: "URGENT",
+        jobId: args.jobId,
+        fixerId: args.fixerId,
+        redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
+      },
+    });
+  }
+
+  async continuePayment(args: {
     jobId: string;
     clientId: string;
-    fixerId: string;
-  },
-  tx?: Prisma.TransactionClient,
-) {
-  const db = tx ?? this.prisma;
+  }) {
+    const job = await this.prisma.job.findUnique({
+      where: {
+        id: args.jobId,
+      },
+      select: {
+        id: true,
+        clientId: true,
+        status: true,
+        postingType: true,
+      },
+    });
 
-  const user = await db.user.findUnique({
-    where: {
-      id: args.clientId,
-    },
-    select: {
-      email: true,
-    },
-  });
+    if (!job) {
+      throw new Error("JOB_NOT_FOUND");
+    }
 
-  if (!user) {
-    throw new Error("CLIENT_NOT_FOUND");
+    if (job.clientId !== args.clientId) {
+      throw new Error("NOT_JOB_OWNER");
+    }
+
+    if (job.status !== "DRAFT") {
+      throw new Error("ONLY_DRAFT_JOBS_CAN_CONTINUE_PAYMENT");
+    }
+
+    const payments = await this.prisma.jobPayment.findMany({
+      where: {
+        jobId: args.jobId,
+      },
+    });
+
+    const expectedPaymentType =
+      job.postingType === "URGENT" ? "URGENT" : "POSTING";
+
+    const payment = payments.find(
+      (p) =>
+        p.type === expectedPaymentType &&
+        p.status === "PENDING",
+    );
+
+    if (!payment) {
+      throw new Error("NO_PENDING_PAYMENT_FOUND");
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: args.clientId,
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("CLIENT_NOT_FOUND");
+    }
+
+    const newReference = crypto.randomUUID();
+
+    const updatedPayment =
+      await this.prisma.jobPayment.updateMany({
+        where: {
+          id: payment.id,
+          status: "PENDING",
+          paymentReference: payment.paymentReference,
+        },
+        data: {
+          paymentReference: newReference,
+          status: "PENDING",
+          paidAt: null,
+        },
+      });
+
+    if (updatedPayment.count !== 1) {
+      throw new ConflictException(
+        "PAYMENT_RETRY_ALREADY_IN_PROGRESS",
+      );
+    }
+
+    return this.initializeGatewayPayment({
+      email: user.email,
+      amountMilliFec: payment.amountMilliFec,
+      reference: newReference,
+      metadata: {
+        paymentType: payment.type,
+        jobId: job.id,
+        conversationId: payment.conversationId ?? undefined,
+        fixerId: payment.fixerId ?? undefined,
+        redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
+      },
+    });
   }
-
-  const job = await db.job.findUnique({
-    where: {
-      id: args.jobId,
-    },
-    select: {
-      clientId: true,
-    },
-  });
-
-  if (!job) {
-    throw new Error("JOB_NOT_FOUND");
-  }
-
-  if (job.clientId !== args.clientId) {
-    throw new Error("NOT_JOB_OWNER");
-  }
-
-  const existingPayment = await db.jobPayment.findUnique({
-  where: {
-    jobId_type: {
-      jobId: args.jobId,
-      type: "URGENT",
-    },
-  },
-  select: {
-    status: true,
-  },
-});
-
-if (existingPayment?.status === "SUCCESS") {
-  throw new ConflictException(
-    "PAYMENT_ALREADY_COMPLETED",
-  );
-}
-
-if (existingPayment?.status === "PENDING") {
-  throw new ConflictException(
-    "PAYMENT_ALREADY_PENDING",
-  );
-}
-
-const paymentReference = crypto.randomUUID();
-
-const conversation = await db.conversation.upsert({
-  where: {
-    jobId_fixerId: {
-      jobId: args.jobId,
-      fixerId: args.fixerId,
-    },
-  },
-  update: {},
-  create: {
-    jobId: args.jobId,
-    fixerId: args.fixerId,
-    active: false,
-  },
-  select: {
-    id: true,
-  },
-});
-
-await db.jobPayment.upsert({
-  where: {
-    jobId_type: {
-      jobId: args.jobId,
-      type: "URGENT",
-    },
-  },
-  update: {
-    paymentReference,
-    amountMilliFec: 2000,
-    paymentFeeMilliFec: 0,
-    fixerId: args.fixerId,
-    conversationId: conversation.id,
-    lockedPriceMilliFec: null,
-    status: "PENDING",
-    paidAt: null,
-  },
-  create: {
-    jobId: args.jobId,
-    type: "URGENT",
-    paymentReference,
-    amountMilliFec: 2000,
-    paymentFeeMilliFec: 0,
-    fixerId: args.fixerId,
-    conversationId: conversation.id,
-    status: "PENDING",
-  },
-});
-
-  return this.initializeGatewayPayment({
-    email: user.email,
-    amountMilliFec: 2000,
-    reference: paymentReference,
-    metadata: {
-      paymentType: "URGENT",
-      jobId: args.jobId,
-      fixerId: args.fixerId,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
-
-    },
-  });
-}
-async continuePayment(args: {
-  jobId: string;
-  clientId: string;
-}) {
-  const job = await this.prisma.job.findUnique({
-    where: {
-      id: args.jobId,
-    },
-    select: {
-      id: true,
-      clientId: true,
-      status: true,
-      postingType: true,
-    },
-  });
-
-  if (!job) {
-    throw new Error("JOB_NOT_FOUND");
-  }
-
-  if (job.clientId !== args.clientId) {
-    throw new Error("NOT_JOB_OWNER");
-  }
-
-  if (job.status !== "DRAFT") {
-    throw new Error("ONLY_DRAFT_JOBS_CAN_CONTINUE_PAYMENT");
-  }
-
-  const payments = await this.prisma.jobPayment.findMany({
-    where: {
-      jobId: args.jobId,
-    },
-  });
-
-  const expectedPaymentType =
-    job.postingType === "URGENT" ? "URGENT" : "POSTING";
-
-  const payment = payments.find(
-    (p) =>
-      p.type === expectedPaymentType &&
-      p.status === "PENDING",
-  );
-
-  if (!payment) {
-    throw new Error("NO_PENDING_PAYMENT_FOUND");
-  }
-
-  const user = await this.prisma.user.findUnique({
-    where: {
-      id: args.clientId,
-    },
-    select: {
-      email: true,
-    },
-  });
-
-  if (!user) {
-    throw new Error("CLIENT_NOT_FOUND");
-  }
-
-  const newReference = crypto.randomUUID();
-
-const updatedPayment =
-  await this.prisma.jobPayment.updateMany({
-    where: {
-      id: payment.id,
-      status: "PENDING",
-      paymentReference:
-        payment.paymentReference,
-    },
-    data: {
-      paymentReference: newReference,
-      status: "PENDING",
-      paidAt: null,
-    },
-  });
-
-if (updatedPayment.count !== 1) {
-  throw new ConflictException(
-    "PAYMENT_RETRY_ALREADY_IN_PROGRESS",
-  );
-}
-
-  return this.initializeGatewayPayment({
-    email: user.email,
-    amountMilliFec: payment.amountMilliFec,
-    reference: newReference,
-    metadata: {
-      paymentType: payment.type,
-      jobId: job.id,
-      conversationId: payment.conversationId ?? undefined,
-      fixerId: payment.fixerId ?? undefined,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
-    },
-  });
-}
-
 
   async createFinalPayment(
-  args: {
-    jobId: string;
+    args: {
+      jobId: string;
+      clientId: string;
+      conversationId: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = tx ?? this.prisma;
+    const user = await db.user.findUnique({
+      where: {
+        id: args.clientId,
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error("CLIENT_NOT_FOUND");
+    }
+
+    const job = await db.job.findUnique({
+      where: {
+        id: args.jobId,
+      },
+      select: {
+        clientId: true,
+        status: true,
+      },
+    });
+
+    if (!job) {
+      throw new Error("JOB_NOT_FOUND");
+    }
+
+    if (job.clientId !== args.clientId) {
+      throw new Error("NOT_JOB_OWNER");
+    }
+
+    if (job.status !== "OPEN") {
+      throw new ConflictException(
+        "FINAL_PAYMENT_NOT_AVAILABLE_FOR_JOB_STATUS",
+      );
+    }
+
+    const negotiation = await db.negotiation.findUnique({
+      where: {
+        conversationId: args.conversationId,
+      },
+      select: {
+        status: true,
+        lockedPriceMilliFec: true,
+        conversation: {
+          select: {
+            id: true,
+            jobId: true,
+            fixerId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!negotiation) {
+      throw new Error("NEGOTIATION_NOT_FOUND");
+    }
+
+    if (negotiation.conversation.jobId !== args.jobId) {
+      throw new ConflictException(
+        "CONVERSATION_DOES_NOT_BELONG_TO_JOB",
+      );
+    }
+
+    if (negotiation.conversation.status !== "OPEN") {
+      throw new ConflictException(
+        "FINAL_PAYMENT_NOT_AVAILABLE_FOR_CLOSED_CONVERSATION",
+      );
+    }
+
+    if (negotiation.status !== "AGREED") {
+      throw new Error("PRICE_NOT_AGREED");
+    }
+
+    if (!negotiation.lockedPriceMilliFec) {
+      throw new Error("LOCKED_PRICE_MISSING");
+    }
+
+    const existingPayment =
+      await db.jobPayment.findUnique({
+        where: {
+          jobId_type: {
+            jobId: args.jobId,
+            type: "FINAL",
+          },
+        },
+        select: {
+          status: true,
+          expiresAt: true,
+          paymentReference: true,
+        },
+      });
+
+    if (existingPayment?.status === "SUCCESS") {
+      throw new ConflictException("PAYMENT_ALREADY_COMPLETED");
+    }
+
+    if (
+      existingPayment?.status === "PENDING" &&
+      existingPayment.expiresAt &&
+      existingPayment.expiresAt.getTime() > Date.now()
+    ) {
+      throw new ConflictException("FINAL_PAYMENT_ALREADY_PENDING");
+    }
+
+    const paymentReference = crypto.randomUUID();
+
+    const expiresAt = new Date(
+      Date.now() + FINAL_PAYMENT_EXPIRATION_MINUTES * 60 * 1000,
+    );
+
+    await db.jobPayment.upsert({
+      where: {
+        jobId_type: {
+          jobId: args.jobId,
+          type: "FINAL",
+        },
+      },
+      update: {
+        paymentReference,
+        fixerId: negotiation.conversation.fixerId,
+        conversationId: args.conversationId,
+        lockedPriceMilliFec:
+          negotiation.lockedPriceMilliFec,
+        amountMilliFec:
+          negotiation.lockedPriceMilliFec,
+        paymentFeeMilliFec: 0,
+        status: "PENDING",
+        paidAt: null,
+        expiresAt,
+      },
+      create: {
+        jobId: args.jobId,
+        type: "FINAL",
+        paymentReference,
+        fixerId: negotiation.conversation.fixerId,
+        conversationId: args.conversationId,
+        lockedPriceMilliFec:
+          negotiation.lockedPriceMilliFec,
+        amountMilliFec:
+          negotiation.lockedPriceMilliFec,
+        paymentFeeMilliFec: 0,
+        status: "PENDING",
+        paidAt: null,
+        expiresAt,
+      },
+    });
+
+    return this.initializeGatewayPayment({
+      email: user.email,
+      amountMilliFec:
+        negotiation.lockedPriceMilliFec,
+      reference: paymentReference,
+      metadata: {
+        paymentType: "FINAL",
+        jobId: args.jobId,
+        conversationId: args.conversationId,
+        redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
+      },
+    });
+  }
+
+  async verifyPaymentFromReturn(args: {
+    paymentReference: string;
     clientId: string;
-    conversationId: string;
-  },
-  tx?: Prisma.TransactionClient,
-) 
+  }) {
+    const paymentReference = args.paymentReference.trim();
 
-{
-  const db = tx ?? this.prisma;
-  const user = await db.user.findUnique({
-    where: {
-      id: args.clientId,
-    },
-    select: {
-      email: true,
-    },
-  });
+    if (!paymentReference) {
+      throw new BadRequestException("PAYMENT_REFERENCE_REQUIRED");
+    }
 
-  if (!user) {
-    throw new Error("CLIENT_NOT_FOUND");
-  }
-
-  const job = await db.job.findUnique({
-    where: {
-      id: args.jobId,
-    },
-    select: {
-      clientId: true,
-      status: true,
-    },
-  });
-
-  if (!job) {
-    throw new Error("JOB_NOT_FOUND");
-  }
-
-  if (job.clientId !== args.clientId) {
-    throw new Error("NOT_JOB_OWNER");
-  }
-  if (job.status !== "OPEN") {
-  throw new ConflictException(
-    "FINAL_PAYMENT_NOT_AVAILABLE_FOR_JOB_STATUS",
-  );
-}
-
-  const negotiation = await db.negotiation.findUnique({
-  where: {
-    conversationId: args.conversationId,
-  },
-  select: {
-    status: true,
-    lockedPriceMilliFec: true,
-    conversation: {
+    const jobPayment = await this.prisma.jobPayment.findUnique({
+      where: {
+        paymentReference,
+      },
       select: {
         id: true,
         jobId: true,
-        fixerId: true,
+        type: true,
         status: true,
-      },
-    },
-  },
-});
-
-  if (!negotiation) {
-    throw new Error("NEGOTIATION_NOT_FOUND");
-  }
-  if (negotiation.conversation.jobId !== args.jobId) {
-  throw new ConflictException(
-    "CONVERSATION_DOES_NOT_BELONG_TO_JOB",
-  );
-}
-
-if (negotiation.conversation.status !== "OPEN") {
-  throw new ConflictException(
-    "FINAL_PAYMENT_NOT_AVAILABLE_FOR_CLOSED_CONVERSATION",
-  );
-}
-
-  if (negotiation.status !== "AGREED") {
-    throw new Error("PRICE_NOT_AGREED");
-  }
-
-  if (!negotiation.lockedPriceMilliFec) {
-    throw new Error("LOCKED_PRICE_MISSING");
-  }
-
-  const existingPayment =
-  await db.jobPayment.findUnique({
-    where: {
-      jobId_type: {
-        jobId: args.jobId,
-        type: "FINAL",
-      },
-    },
-    select: {
-      status: true,
-      expiresAt: true,
-      paymentReference: true,
-    },
-  });
-
-if (existingPayment?.status === "SUCCESS") {
-  throw new ConflictException(
-    "PAYMENT_ALREADY_COMPLETED",
-  );
-}
-
-if (
-  existingPayment?.status === "PENDING" &&
-  existingPayment.expiresAt &&
-  existingPayment.expiresAt.getTime() > Date.now()
-) {
-  throw new ConflictException(
-    "FINAL_PAYMENT_ALREADY_PENDING",
-  );
-}
-
-const paymentReference = crypto.randomUUID();
-
-const expiresAt = new Date(
-  Date.now() + FINAL_PAYMENT_EXPIRATION_MINUTES * 60 * 1000,
-);
-
-await db.jobPayment.upsert({
-    where: {
-      jobId_type: {
-        jobId: args.jobId,
-        type: "FINAL",
-      },
-    },
-    update: {
-      paymentReference,
-      fixerId: negotiation.conversation.fixerId,
-      conversationId: args.conversationId,
-      lockedPriceMilliFec:
-        negotiation.lockedPriceMilliFec,
-      amountMilliFec:
-        negotiation.lockedPriceMilliFec,
-      paymentFeeMilliFec: 0,
-      status: "PENDING",
-      paidAt: null,
-      expiresAt,
-    },
-    create: {
-      jobId: args.jobId,
-      type: "FINAL",
-      paymentReference,
-      fixerId: negotiation.conversation.fixerId,
-      conversationId: args.conversationId,
-      lockedPriceMilliFec:
-        negotiation.lockedPriceMilliFec,
-      amountMilliFec:
-        negotiation.lockedPriceMilliFec,
-      paymentFeeMilliFec: 0,
-      status: "PENDING",
-      paidAt: null,
-      expiresAt,
-    },
-  });
-
-  return this.initializeGatewayPayment({
-    email: user.email,
-    amountMilliFec:
-      negotiation.lockedPriceMilliFec,
-    reference: paymentReference,
-    metadata: {
-      paymentType: "FINAL",
-      jobId: args.jobId,
-      conversationId: args.conversationId,
-      redirectUrl: `${process.env.FRONTEND_URL}/app/payment/return`,
-    },
-  });
-}
-
-async verifyPaymentFromReturn(args: {
-  paymentReference: string;
-  clientId: string;
-}) {
-  const paymentReference = args.paymentReference.trim();
-
-  if (!paymentReference) {
-    throw new BadRequestException("PAYMENT_REFERENCE_REQUIRED");
-  }
-
-  const jobPayment = await this.prisma.jobPayment.findUnique({
-    where: {
-      paymentReference,
-    },
-    select: {
-      id: true,
-      jobId: true,
-      type: true,
-      status: true,
-      amountMilliFec: true,
-      paymentReference: true,
-      job: {
-        select: {
-          clientId: true,
+        amountMilliFec: true,
+        paymentReference: true,
+        job: {
+          select: {
+            clientId: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!jobPayment || jobPayment.job.clientId !== args.clientId) {
-    throw new NotFoundException("PAYMENT_NOT_FOUND");
-  }
+    if (!jobPayment || jobPayment.job.clientId !== args.clientId) {
+      throw new NotFoundException("PAYMENT_NOT_FOUND");
+    }
 
-  if (jobPayment.status === "SUCCESS") {
+    if (jobPayment.status === "SUCCESS") {
+      return {
+        paid: true,
+        status: "SUCCESS",
+        type: jobPayment.type,
+        jobId: jobPayment.jobId,
+      };
+    }
+
+    const verifiedTransaction =
+      await this.paymentProvider.verifyTransaction(
+        paymentReference,
+      );
+
+    if (
+      verifiedTransaction.paymentReference !==
+      paymentReference
+    ) {
+      throw new BadRequestException(
+        "PAYMENT_REFERENCE_MISMATCH",
+      );
+    }
+
+    if (verifiedTransaction.currency !== "NGN") {
+      throw new BadRequestException(
+        "INVALID_PAYMENT_CURRENCY",
+      );
+    }
+
+    if (
+      verifiedTransaction.amountPaid !==
+      jobPayment.amountMilliFec
+    ) {
+      throw new BadRequestException(
+        "PAYMENT_AMOUNT_MISMATCH",
+      );
+    }
+
+    if (verifiedTransaction.paymentStatus !== "PAID") {
+      return {
+        paid: false,
+        status: verifiedTransaction.paymentStatus,
+        type: jobPayment.type,
+        jobId: jobPayment.jobId,
+      };
+    }
+
+    await this.processor.handleSuccessfulPayment(
+      jobPayment.id,
+    );
+
+    const updatedPayment =
+      await this.prisma.jobPayment.findUnique({
+        where: {
+          id: jobPayment.id,
+        },
+        select: {
+          status: true,
+          type: true,
+          jobId: true,
+        },
+      });
+
     return {
-      paid: true,
-      status: "SUCCESS",
-      type: jobPayment.type,
-      jobId: jobPayment.jobId,
+      paid: updatedPayment?.status === "SUCCESS",
+      status: updatedPayment?.status ?? null,
+      type: updatedPayment?.type ?? jobPayment.type,
+      jobId: updatedPayment?.jobId ?? jobPayment.jobId,
     };
   }
 
-  const verifiedTransaction =
-    await this.paymentProvider.verifyTransaction(
-      paymentReference,
-    );
-
-  if (
-    verifiedTransaction.paymentReference !==
-    paymentReference
-  ) {
-    throw new BadRequestException(
-      "PAYMENT_REFERENCE_MISMATCH",
-    );
+  async handleSuccessfulPayment(jobPaymentId: string) {
+    return this.processor.handleSuccessfulPayment(jobPaymentId);
   }
 
-  if (verifiedTransaction.currency !== "NGN") {
-    throw new BadRequestException(
-      "INVALID_PAYMENT_CURRENCY",
-    );
+  async handleFailedPayment(jobPaymentId: string) {
+    return this.processor.handleFailedPayment(jobPaymentId);
   }
 
-  if (
-    verifiedTransaction.amountPaid !==
-    jobPayment.amountMilliFec
-  ) {
-    throw new BadRequestException(
-      "PAYMENT_AMOUNT_MISMATCH",
-    );
-  }
-
-  if (verifiedTransaction.paymentStatus !== "PAID") {
-    return {
-      paid: false,
-      status: verifiedTransaction.paymentStatus,
-      type: jobPayment.type,
-      jobId: jobPayment.jobId,
-    };
-  }
-
-  await this.processor.handleSuccessfulPayment(
-    jobPayment.id,
-  );
-
-  const updatedPayment =
-    await this.prisma.jobPayment.findUnique({
+  async getJobPayments(jobId: string) {
+    const payments = await this.prisma.jobPayment.findMany({
       where: {
-        id: jobPayment.id,
+        jobId,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        amountMilliFec: true,
+        paymentReference: true,
+        expiresAt: true,
+        paidAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      posting:
+        payments.find((p) => p.type === "POSTING") ?? null,
+      urgent:
+        payments.find((p) => p.type === "URGENT") ?? null,
+      final:
+        payments.find((p) => p.type === "FINAL") ?? null,
+    };
+  }
+
+  async initializeGatewayPayment(args: {
+    email: string;
+    amountMilliFec: number;
+    reference: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    const amountKobo = args.amountMilliFec * 100;
+
+    return this.paymentProvider.initializeTransaction({
+      email: args.email,
+      amountKobo,
+      reference: args.reference,
+      metadata: args.metadata ?? {},
+    });
+  }
+
+  async getPaymentStatus(jobId: string) {
+    const payment = await this.prisma.jobPayment.findFirst({
+      where: {
+        jobId,
+        type: {
+          in: ["POSTING", "URGENT", "FINAL"],
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
       select: {
         status: true,
@@ -602,93 +672,11 @@ async verifyPaymentFromReturn(args: {
       },
     });
 
-  return {
-    paid: updatedPayment?.status === "SUCCESS",
-    status: updatedPayment?.status ?? null,
-    type: updatedPayment?.type ?? jobPayment.type,
-    jobId: updatedPayment?.jobId ?? jobPayment.jobId,
-  };
-}
-
-  async handleSuccessfulPayment(jobPaymentId: string) {
-  return this.processor.handleSuccessfulPayment(jobPaymentId);
-}
-
-async handleFailedPayment(jobPaymentId: string) {
-  return this.processor.handleFailedPayment(jobPaymentId);
-}
-
-  async getJobPayments(jobId: string) {
-  const payments = await this.prisma.jobPayment.findMany({
-    where: {
+    return {
+      paid: payment?.status === "SUCCESS",
+      status: payment?.status ?? null,
+      type: payment?.type ?? null,
       jobId,
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-    select: {
-      id: true,
-      type: true,
-      status: true,
-      amountMilliFec: true,
-      paymentReference: true,
-      expiresAt: true,
-      paidAt: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return {
-    posting:
-      payments.find((p) => p.type === "POSTING") ?? null,
-
-    urgent:
-      payments.find((p) => p.type === "URGENT") ?? null,
-
-    final:
-      payments.find((p) => p.type === "FINAL") ?? null,
-  };
-}
-
-async initializeGatewayPayment(args: {
-  email: string;
-  amountMilliFec: number;
-  reference: string;
-  metadata?: Record<string, unknown>;
-}) {
-  const amountKobo = args.amountMilliFec * 100;
-
-  return this.paymentProvider.initializeTransaction({
-    email: args.email,
-    amountKobo,
-    reference: args.reference,
-    metadata: args.metadata ?? {},
-  });
-}
-  async getPaymentStatus(jobId: string) {
-  const payment = await this.prisma.jobPayment.findFirst({
-    where: {
-      jobId,
-      type: {
-        in: ["POSTING", "URGENT", "FINAL"],
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    select: {
-      status: true,
-      type: true,
-      jobId: true,
-    },
-  });
-
-  return {
-    paid: payment?.status === "SUCCESS",
-    status: payment?.status ?? null,
-    type: payment?.type ?? null,
-    jobId,
-  };
-}
+    };
+  }
 }

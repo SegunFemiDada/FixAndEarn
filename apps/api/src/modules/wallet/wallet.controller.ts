@@ -1,4 +1,3 @@
-//path: apps/api/src/modules/wallet/wallet.controller.ts
 "use client";
 
 import {
@@ -29,6 +28,7 @@ import * as argon2 from "argon2";
 import { SetWithdrawalPinDto } from "./dto/set-withdrawal-pin.dto";
 import { VerifyWithdrawalPinDto } from "./dto/verify-withdrawal-pin.dto";
 import { EarningsService } from "../earnings/earnings.service";
+import { PlatformConfigService } from "../../common/platform-config/platform-config.service";
 
 @ApiTags("wallet")
 @ApiBearerAuth()
@@ -41,13 +41,16 @@ export class WalletController {
     private readonly ledgerService: LedgerService,
     private readonly notifications: NotificationsService,
     private readonly earningsService: EarningsService,
+    private readonly platformConfig: PlatformConfigService,
   ) {}
 
   // ==========================
   // Helpers
   // ==========================
 
-  private async getUserRoleCodes(userId: string): Promise<Array<"CLIENT" | "FIXER">> {
+  private async getUserRoleCodes(
+    userId: string,
+  ): Promise<Array<"CLIENT" | "FIXER">> {
     const rows = await this.prisma.userRole.findMany({
       where: { userId },
       select: { role: { select: { code: true } } },
@@ -55,21 +58,36 @@ export class WalletController {
 
     return rows
       .map((r) => r.role.code)
-      .filter((code): code is "CLIENT" | "FIXER" => code === "CLIENT" || code === "FIXER");
+      .filter(
+        (
+          code,
+        ): code is "CLIENT" | "FIXER" =>
+          code === "CLIENT" || code === "FIXER",
+      );
   }
 
-  private async resolveBalanceRole(userId: string, requestedRole?: string): Promise<WalletRole> {
+  private async resolveBalanceRole(
+    userId: string,
+    requestedRole?: string,
+  ): Promise<WalletRole> {
     const roles = await this.getUserRoleCodes(userId);
 
     if (requestedRole) {
       const normalized = requestedRole.trim().toUpperCase();
+
       if (normalized !== "CLIENT" && normalized !== "FIXER") {
         throw new BadRequestException("INVALID_WALLET_ROLE");
       }
+
       if (!roles.includes(normalized as any)) {
-        throw new BadRequestException("ROLE_NOT_ASSIGNED_TO_USER");
+        throw new BadRequestException(
+          "ROLE_NOT_ASSIGNED_TO_USER",
+        );
       }
-      return normalized === "FIXER" ? WalletRole.FIXER : WalletRole.CLIENT;
+
+      return normalized === "FIXER"
+        ? WalletRole.FIXER
+        : WalletRole.CLIENT;
     }
 
     return roles.length === 1 && roles[0] === "FIXER"
@@ -82,74 +100,87 @@ export class WalletController {
   // ==========================
 
   @Get("balance")
-async balance(
-  @CurrentUser() user: { userId: string },
-  @Query("role") role?: string,
-) {
-  const walletRole = await this.resolveBalanceRole(user.userId, role);
-
-  // Client balance still comes from wallet
-  if (walletRole === WalletRole.CLIENT) {
-    const wallet = await this.walletService.getOrCreateWallet(
+  async balance(
+    @CurrentUser() user: { userId: string },
+    @Query("role") role?: string,
+  ) {
+    const walletRole = await this.resolveBalanceRole(
       user.userId,
-      WalletRole.CLIENT,
+      role,
     );
 
+    // Client balance still comes from wallet
+    if (walletRole === WalletRole.CLIENT) {
+      const wallet =
+        await this.walletService.getOrCreateWallet(
+          user.userId,
+          WalletRole.CLIENT,
+        );
+
+      return {
+        role: WalletRole.CLIENT,
+        balanceMilliFec: wallet.balanceMilliFec,
+        balanceFec: wallet.balanceMilliFec / 1000,
+      };
+    }
+
+    // Fixer balance comes from earnings
+    const aggregate =
+      await this.prisma.fixerEarning.aggregate({
+        where: {
+          fixerId: user.userId,
+          status: {
+            in: [
+              "AVAILABLE",
+              "PARTIALLY_WITHDRAWN",
+            ],
+          },
+        },
+        _sum: {
+          availableMilliFec: true,
+        },
+      });
+
+    const balance =
+      aggregate._sum.availableMilliFec ?? 0;
+
     return {
-      role: WalletRole.CLIENT,
-      balanceMilliFec: wallet.balanceMilliFec,
-      balanceFec: wallet.balanceMilliFec / 1000,
+      role: WalletRole.FIXER,
+      balanceMilliFec: balance,
+      balanceFec: balance / 1000,
     };
   }
 
-  // Fixer balance comes from earnings
-  const aggregate = await this.prisma.fixerEarning.aggregate({
-    where: {
-      fixerId: user.userId,
-      status: {
-        in: ["AVAILABLE", "PARTIALLY_WITHDRAWN"],
-      },
-    },
-    _sum: {
-      availableMilliFec: true,
-    },
-  });
-
-  const balance = aggregate._sum.availableMilliFec ?? 0;
-
-  return {
-    role: WalletRole.FIXER,
-    balanceMilliFec: balance,
-    balanceFec: balance / 1000,
-  };
-}
-
   @Get("withdrawable-balance")
-@Roles("FIXER")
-async withdrawableBalance(@CurrentUser() user: { userId: string }) {
-  const aggregate = await this.prisma.fixerEarning.aggregate({
-    where: {
-      fixerId: user.userId,
-      status: {
-  in: [
-    "AVAILABLE",
-    "PARTIALLY_WITHDRAWN",
-  ],
-},
-    },
-    _sum: {
-      availableMilliFec: true,
-    },
-  });
+  @Roles("FIXER")
+  async withdrawableBalance(
+    @CurrentUser() user: { userId: string },
+  ) {
+    const aggregate =
+      await this.prisma.fixerEarning.aggregate({
+        where: {
+          fixerId: user.userId,
+          status: {
+            in: [
+              "AVAILABLE",
+              "PARTIALLY_WITHDRAWN",
+            ],
+          },
+        },
+        _sum: {
+          availableMilliFec: true,
+        },
+      });
 
-  const available = aggregate._sum.availableMilliFec ?? 0;
+    const available =
+      aggregate._sum.availableMilliFec ?? 0;
 
-  return {
-    role: WalletRole.FIXER,
-    withdrawableBalanceMilliFec: available,
-    withdrawableBalanceFec: available / 1000,
-  };
-}
+    return {
+      role: WalletRole.FIXER,
+      withdrawableBalanceMilliFec: available,
+      withdrawableBalanceFec: available / 1000,
+    };
+  }
 
   // ==========================
   // Deposit
@@ -158,11 +189,9 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
   @Post("deposits/initiate")
   @Roles("CLIENT")
   async initiateDeposit() {
-    
     throw new BadRequestException(
-  "CLIENT_WALLET_DEPOSITS_DISABLED",
-);
-    
+      "CLIENT_WALLET_DEPOSITS_DISABLED",
+    );
   }
 
   // ==========================
@@ -173,9 +202,8 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
   @Post("deposits/webhook-simulate")
   async webhookSimulate() {
     throw new BadRequestException(
-  "CLIENT_WALLET_DEPOSITS_DISABLED",
-);
-    
+      "CLIENT_WALLET_DEPOSITS_DISABLED",
+    );
   }
 
   // ==========================
@@ -184,10 +212,13 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
 
   @Get("bank-details")
   @Roles("FIXER")
-  async getBankDetails(@CurrentUser() user: { userId: string }): Promise<BankDetailsResponse> {
-    const bank = await this.prisma.bankDetails.findUnique({
-      where: { userId: user.userId },
-    });
+  async getBankDetails(
+    @CurrentUser() user: { userId: string },
+  ): Promise<BankDetailsResponse> {
+    const bank =
+      await this.prisma.bankDetails.findUnique({
+        where: { userId: user.userId },
+      });
 
     if (!bank) {
       return {
@@ -204,43 +235,46 @@ async withdrawableBalance(@CurrentUser() user: { userId: string }) {
       bankName: bank.bankName,
       accountName: bank.accountName,
       accountNumber: bank.accountNumber,
-      updatedAt: bank.updatedAt?.toISOString() ?? null,
+      updatedAt:
+        bank.updatedAt?.toISOString() ?? null,
     };
   }
 
-@Post("bank-details")
-@Roles("FIXER")
-async saveBankDetails(
-  @CurrentUser() user: { userId: string },
-  @Body() dto: SaveBankDetailsDto,
-) {
-  const finalBankCode = dto.bankCode ?? "000000";
+  @Post("bank-details")
+  @Roles("FIXER")
+  async saveBankDetails(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: SaveBankDetailsDto,
+  ) {
+    const finalBankCode =
+      dto.bankCode ?? "000000";
 
-  const record = await this.prisma.bankDetails.upsert({
-    where: { userId: user.userId },
-    update: {
-      bankName: dto.bankName,
-      accountName: dto.accountName,
-      accountNumber: dto.accountNumber,
-      bankCode: finalBankCode,
-    },
-    create: {
-      userId: user.userId,
-      bankName: dto.bankName,
-      accountName: dto.accountName,
-      accountNumber: dto.accountNumber,
-      bankCode: finalBankCode,
-    },
-  });
+    const record =
+      await this.prisma.bankDetails.upsert({
+        where: { userId: user.userId },
+        update: {
+          bankName: dto.bankName,
+          accountName: dto.accountName,
+          accountNumber: dto.accountNumber,
+          bankCode: finalBankCode,
+        },
+        create: {
+          userId: user.userId,
+          bankName: dto.bankName,
+          accountName: dto.accountName,
+          accountNumber: dto.accountNumber,
+          bankCode: finalBankCode,
+        },
+      });
 
-  return {
-    ok: true,
-    bankName: record.bankName,
-    accountName: record.accountName,
-    accountNumber: record.accountNumber,
-    hasBankDetails: true,
-  };
-}
+    return {
+      ok: true,
+      bankName: record.bankName,
+      accountName: record.accountName,
+      accountNumber: record.accountNumber,
+      hasBankDetails: true,
+    };
+  }
 
   // ==========================
   // History
@@ -250,169 +284,305 @@ async saveBankDetails(
   @Roles("CLIENT")
   async depositHistory(): Promise<WalletHistoryResponse> {
     throw new BadRequestException(
-  "CLIENT_WALLET_DEPOSITS_DISABLED",
-);
-    
+      "CLIENT_WALLET_DEPOSITS_DISABLED",
+    );
   }
 
   @Get("withdrawals/history")
-@Roles("FIXER")
-async withdrawalHistory(
-  @CurrentUser() user: { userId: string },
-  @Query("skip") skipParam?: string,
-  @Query("take") takeParam?: string,
-) {
-  const parsedSkip = Number.parseInt(skipParam ?? "0", 10);
-  const parsedTake = Number.parseInt(takeParam ?? "10", 10);
+  @Roles("FIXER")
+  async withdrawalHistory(
+    @CurrentUser() user: { userId: string },
+    @Query("skip") skipParam?: string,
+    @Query("take") takeParam?: string,
+  ) {
+    const parsedSkip = Number.parseInt(
+      skipParam ?? "0",
+      10,
+    );
+    const parsedTake = Number.parseInt(
+      takeParam ?? "10",
+      10,
+    );
 
-  const skip =
-    Number.isFinite(parsedSkip) && parsedSkip >= 0
-      ? parsedSkip
-      : 0;
+    const skip =
+      Number.isFinite(parsedSkip) &&
+      parsedSkip >= 0
+        ? parsedSkip
+        : 0;
 
-  const take =
-    Number.isFinite(parsedTake) &&
-    parsedTake > 0 &&
-    parsedTake <= 50
-      ? parsedTake
-      : 10;
+    const take =
+      Number.isFinite(parsedTake) &&
+      parsedTake > 0 &&
+      parsedTake <= 50
+        ? parsedTake
+        : 10;
 
-  const where = {
-    userId: user.userId,
-  };
+    const where = {
+      userId: user.userId,
+    };
 
-  const [items, total] = await this.prisma.$transaction([
-    this.prisma.withdrawalRequest.findMany({
-      where,
-      orderBy: [
-        { createdAt: "desc" },
-        { id: "desc" },
-      ],
+    const [items, total] =
+      await this.prisma.$transaction([
+        this.prisma.withdrawalRequest.findMany({
+          where,
+          orderBy: [
+            { createdAt: "desc" },
+            { id: "desc" },
+          ],
+          skip,
+          take,
+        }),
+
+        this.prisma.withdrawalRequest.count({
+          where,
+        }),
+      ]);
+
+    return {
+      items,
+      total,
       skip,
       take,
-    }),
-
-    this.prisma.withdrawalRequest.count({
-      where,
-    }),
-  ]);
-
-  return {
-    items,
-    total,
-    skip,
-    take,
-  };
-}
-@Post("set-withdrawal-pin")
-@Roles("FIXER")
-async setWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: SetWithdrawalPinDto) {
-  const userRecord = await this.prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { withdrawalPinHash: true },
-  });
-  if (!userRecord) throw new BadRequestException("USER_NOT_FOUND");
-
-  const hasCurrent = !!userRecord.withdrawalPinHash;
-
-  if (hasCurrent) {
-    // Require current pin to change
-    if (!dto.currentPin) throw new BadRequestException("CURRENT_PIN_REQUIRED");
-    const isValid = await argon2.verify(userRecord.withdrawalPinHash!, dto.currentPin);
-    if (!isValid) throw new BadRequestException("INVALID_CURRENT_PIN");
+    };
   }
 
-  const newHash = await argon2.hash(dto.newPin);
-  await this.prisma.user.update({
-    where: { id: user.userId },
-    data: { withdrawalPinHash: newHash },
-  });
+  @Post("set-withdrawal-pin")
+  @Roles("FIXER")
+  async setWithdrawalPin(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: SetWithdrawalPinDto,
+  ) {
+    const userRecord =
+      await this.prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { withdrawalPinHash: true },
+      });
 
-  return { ok: true, message: hasCurrent ? "PIN updated" : "PIN set" };
-}
-@Get("withdrawal-pin-status")
-@Roles("FIXER")
-async withdrawalPinStatus(@CurrentUser() user: { userId: string }) {
-  const userRecord = await this.prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { withdrawalPinHash: true },
-  });
-  return { hasPin: !!userRecord?.withdrawalPinHash };
-}
+    if (!userRecord) {
+      throw new BadRequestException(
+        "USER_NOT_FOUND",
+      );
+    }
 
-@Post("verify-withdrawal-pin")
-@Throttle({ default: { limit: 5, ttl: 60_000 } })
-@Roles("FIXER")
-async verifyWithdrawalPin(@CurrentUser() user: { userId: string }, @Body() dto: VerifyWithdrawalPinDto) {
-  const userRecord = await this.prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { withdrawalPinHash: true },
-  });
-  if (!userRecord) throw new BadRequestException("USER_NOT_FOUND");
-  if (!userRecord.withdrawalPinHash) throw new BadRequestException("PIN_NOT_SET");
+    const hasCurrent =
+      !!userRecord.withdrawalPinHash;
 
-  const isValid = await argon2.verify(userRecord.withdrawalPinHash!, dto.pin);
-  if (!isValid) throw new BadRequestException("INVALID_PIN");
+    if (hasCurrent) {
+      if (!dto.currentPin) {
+        throw new BadRequestException(
+          "CURRENT_PIN_REQUIRED",
+        );
+      }
 
-  return { ok: true };
-}
+      const isValid = await argon2.verify(
+        userRecord.withdrawalPinHash!,
+        dto.currentPin,
+      );
+
+      if (!isValid) {
+        throw new BadRequestException(
+          "INVALID_CURRENT_PIN",
+        );
+      }
+    }
+
+    const newHash = await argon2.hash(
+      dto.newPin,
+    );
+
+    await this.prisma.user.update({
+      where: { id: user.userId },
+      data: { withdrawalPinHash: newHash },
+    });
+
+    return {
+      ok: true,
+      message: hasCurrent
+        ? "PIN updated"
+        : "PIN set",
+    };
+  }
+
+  @Get("withdrawal-pin-status")
+  @Roles("FIXER")
+  async withdrawalPinStatus(
+    @CurrentUser() user: { userId: string },
+  ) {
+    const userRecord =
+      await this.prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { withdrawalPinHash: true },
+      });
+
+    return {
+      hasPin: !!userRecord?.withdrawalPinHash,
+    };
+  }
+
+  @Post("verify-withdrawal-pin")
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60_000,
+    },
+  })
+  @Roles("FIXER")
+  async verifyWithdrawalPin(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: VerifyWithdrawalPinDto,
+  ) {
+    const userRecord =
+      await this.prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { withdrawalPinHash: true },
+      });
+
+    if (!userRecord) {
+      throw new BadRequestException(
+        "USER_NOT_FOUND",
+      );
+    }
+
+    if (!userRecord.withdrawalPinHash) {
+      throw new BadRequestException(
+        "PIN_NOT_SET",
+      );
+    }
+
+    const isValid = await argon2.verify(
+      userRecord.withdrawalPinHash!,
+      dto.pin,
+    );
+
+    if (!isValid) {
+      throw new BadRequestException(
+        "INVALID_PIN",
+      );
+    }
+
+    return { ok: true };
+  }
 
   // ==========================
   // Withdrawals
   // ==========================
 
   @Post("withdrawals/request")
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60_000,
+    },
+  })
   @Roles("FIXER")
-  async requestWithdrawal(@CurrentUser() user: { userId: string }, @Body() dto: WithdrawRequestDto) {
+  async requestWithdrawal(
+    @CurrentUser() user: { userId: string },
+    @Body() dto: WithdrawRequestDto,
+  ) {
+    const bank =
+      await this.prisma.bankDetails.findUnique({
+        where: { userId: user.userId },
+      });
 
-    const bank = await this.prisma.bankDetails.findUnique({
-      where: { userId: user.userId },
+    if (!bank) {
+      throw new BadRequestException(
+        "BANK_DETAILS_REQUIRED",
+      );
+    }
+
+    const userRecord =
+      await this.prisma.user.findUnique({
+        where: { id: user.userId },
+        select: { withdrawalPinHash: true },
+      });
+
+    if (!userRecord?.withdrawalPinHash) {
+      throw new BadRequestException(
+        "WITHDRAWAL PIN REQUIRED",
+      );
+    }
+
+    const pinValid = await argon2.verify(
+      userRecord.withdrawalPinHash,
+      dto.pin,
+    );
+
+    if (!pinValid) {
+      throw new BadRequestException(
+        "INCORRECT PIN",
+      );
+    }
+
+    const withdrawalConfig =
+      await this.platformConfig.getWithdrawalConfig();
+
+    if (
+      !withdrawalConfig.allowedRoles.includes(
+        "FIXER",
+      )
+    ) {
+      throw new BadRequestException(
+        "WITHDRAWAL_ROLE_NOT_ALLOWED",
+      );
+    }
+
+    if (
+      dto.amountMilliFec <
+      withdrawalConfig.minMilliFec
+    ) {
+      throw new BadRequestException(
+        "WITHDRAWAL_AMOUNT_BELOW_MINIMUM",
+      );
+    }
+
+    if (
+      dto.amountMilliFec >
+      withdrawalConfig.maxMilliFec
+    ) {
+      throw new BadRequestException(
+        "WITHDRAWAL_AMOUNT_ABOVE_MAXIMUM",
+      );
+    }
+
+    const req =
+      await this.prisma.$transaction(
+        async (tx) => {
+          const req =
+            await tx.withdrawalRequest.create({
+              data: {
+                userId: user.userId,
+                amountMilliFec:
+                  dto.amountMilliFec,
+                status: "PENDING",
+              },
+            });
+
+          await this.earningsService.reserveForWithdrawal(
+            tx,
+            user.userId,
+            req.id,
+            dto.amountMilliFec,
+          );
+
+          return req;
+        },
+      );
+
+    await this.notifications.create({
+      userId: user.userId,
+      type: NotificationType.WITHDRAWAL_REQUESTED,
+      title: "Withdrawal requested",
+      body: `Withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC submitted.`,
+      idempotencyKey: `notif:withdraw:${req.id}`,
+      data: {
+        withdrawalId: req.id,
+      },
     });
 
-    if (!bank) throw new BadRequestException("BANK_DETAILS_REQUIRED");
-    const userRecord = await this.prisma.user.findUnique({
-    where: { id: user.userId },
-    select: { withdrawalPinHash: true },
-  });
-  if (!userRecord?.withdrawalPinHash) throw new BadRequestException("WITHDRAWAL PIN REQUIRED");
-  const pinValid = await argon2.verify(userRecord.withdrawalPinHash, dto.pin);
-  if (!pinValid) throw new BadRequestException("INCORRECT PIN");
-
-  const req = await this.prisma.$transaction(async (tx) => {
-  const req = await tx.withdrawalRequest.create({
-    data: {
-      userId: user.userId,
-      amountMilliFec: dto.amountMilliFec,
-      status: "PENDING",
-    },
-  });
-
-  await this.earningsService.reserveForWithdrawal(
-    tx,
-    user.userId,
-    req.id,
-    dto.amountMilliFec,
-  );
-
-  return req;
-});
-
-await this.notifications.create({
-  userId: user.userId,
-  type: NotificationType.WITHDRAWAL_REQUESTED,
-  title: "Withdrawal requested",
-  body: `Withdrawal request for ${(dto.amountMilliFec / 1000).toFixed(2)} FEC submitted.`,
-  idempotencyKey: `notif:withdraw:${req.id}`,
-  data: {
-    withdrawalId: req.id,
-  },
-});
-
-return {
-  ok: true,
-  requestId: req.id,
-  status: req.status,
-};
+    return {
+      ok: true,
+      requestId: req.id,
+      status: req.status,
+    };
   }
 }
