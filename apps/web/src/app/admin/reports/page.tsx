@@ -1,4 +1,3 @@
-//path: apps/web/src/app/admin/reports/page.tsx
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,7 +19,7 @@ export default function AdminReportsPage() {
 
   const { data: reports, isLoading, isError, error } = useQuery({
     queryKey: ["admin", "reports"],
-    queryFn: () => adminApi.get("/admin/reports").then(res => res.data),
+    queryFn: () => adminApi.get("/admin/reports").then((res) => res.data),
   });
 
   const resolveMutation = useMutation({
@@ -46,7 +45,7 @@ export default function AdminReportsPage() {
           <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">User Reports</h1>
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Loading reports...</p>
         </div>
-        <div className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
           <div className="animate-pulse space-y-4">
             <div className="h-4 w-24 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
             <div className="h-20 rounded bg-[#EAF0FB] dark:bg-[#16202E]" />
@@ -63,7 +62,7 @@ export default function AdminReportsPage() {
           <h1 className="text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">User Reports</h1>
           <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Failed to load reports.</p>
         </div>
-        <div className="rounded-2xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-4 text-sm text-[#D9534F] dark:text-red-300 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <div className="rounded-2xl border border-[#F2C0BC] bg-[#FFF4F3] p-4 text-sm text-[#D9534F] dark:border-red-700 dark:bg-red-900/20 dark:text-red-300">
           {error?.message || "Unknown error"}
         </div>
       </div>
@@ -74,7 +73,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <section className="rounded-2xl border border-[#C5D5EE] bg-white p-6 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#5B8FCC] dark:text-[#7AAEE0]">Reports</p>
         <h2 className="mt-1 text-2xl font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">User reports</h2>
         <p className="mt-2 max-w-3xl text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
@@ -82,8 +81,8 @@ export default function AdminReportsPage() {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] sm:p-6">
-        <div className="flex flex-col gap-3 border-b border-[#C5D5EE] dark:border-[#2D3F55] pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-2xl border border-[#C5D5EE] bg-white p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#1E2A3A] sm:p-6">
+        <div className="flex flex-col gap-3 border-b border-[#C5D5EE] pb-4 dark:border-[#2D3F55] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-lg font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Report queue</h3>
             <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
@@ -97,67 +96,52 @@ export default function AdminReportsPage() {
         ) : (
           <div className="mt-4 grid gap-4">
             {reports.map((report: any) => (
-              <article key={report.id} className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+              <article
+                key={report.id}
+                className="rounded-2xl border border-[#C5D5EE] bg-[#F4F8FF] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:border-[#2D3F55] dark:bg-[#16202E] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+              >
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#EAF0FB] dark:bg-[#16202E] px-3 py-1 text-xs font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">
+                      <span className="rounded-full border border-[#C5D5EE] bg-[#EAF0FB] px-3 py-1 text-xs font-medium text-[#1A2B4A] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#E8F0FA]">
                         {report.id.slice(0, 8)}
                       </span>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                          report.status === "PENDING"
-                            ? "border border-[#F5A623] dark:border-amber-700 bg-[#FEF8E7] dark:bg-amber-900/20 text-[#B45309] dark:text-amber-300"
-                            : report.status === "RESOLVED"
-                            ? "border border-[#B8D9B8] dark:border-green-700 bg-[#F0FAF0] dark:bg-green-900/20 text-[#2E7D32] dark:text-green-200"
-                            : "border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] text-[#6B7C99] dark:text-[#8FA0BC]"
-                        }`}
-                      >
+                      <span className="inline-flex rounded-full border border-[#C5D5EE] px-2 py-1 text-xs font-medium text-[#6B7C99] dark:border-[#2D3F55] dark:text-[#8FA0BC]">
                         {report.status}
                       </span>
                     </div>
-                    <div className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
-                      {formatDateTime(report.createdAt)}
-                    </div>
+                    <div className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">{formatDateTime(report.createdAt)}</div>
                   </div>
 
                   <div className="grid gap-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] sm:grid-cols-2 lg:grid-cols-4">
                     <div>
-                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                        Reporter
-                      </span>
+                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Reporter</span>
                       <span className="mt-1 block break-all">{report.reporter?.email || report.reporterId}</span>
                     </div>
 
                     <div>
-                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                        Target Type
-                      </span>
+                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Target Type</span>
                       <span className="mt-1 block">{report.targetType}</span>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                        Target ID
-                      </span>
-                      <div className="mt-1 flex items-center gap-2">
-                        <code className="break-all text-xs bg-white dark:bg-[#1E2A3A] border border-[#C5D5EE] dark:border-[#2D3F55] px-2 py-1 rounded text-[#1A2B4A] dark:text-[#E8F0FA]">
+                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Target ID</span>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <code className="break-all rounded border border-[#C5D5EE] bg-white px-2 py-1 text-xs text-[#1A2B4A] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#E8F0FA]">
                           {report.targetId}
                         </code>
                         <button
                           onClick={() => handleCopy(report.targetId, `target-${report.id}`)}
-                          className="text-xs text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline"
+                          className="text-xs text-[#5B8FCC] hover:underline dark:text-[#7AAEE0]"
                         >
                           {copiedId === `target-${report.id}` ? "Copied!" : "Copy"}
                         </button>
-                    
-                    
                         {report.targetType === "CHAT_MESSAGE" && report.jobId && report.fixerId && (
                           <Link
                             href={`/app/jobs/${report.jobId}/chats/${report.fixerId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-[#5B8FCC] dark:text-[#7AAEE0] hover:underline flex items-center gap-1"
+                            className="text-xs text-[#5B8FCC] hover:underline dark:text-[#7AAEE0]"
                           >
                             View Chat →
                           </Link>
@@ -166,56 +150,44 @@ export default function AdminReportsPage() {
                     </div>
 
                     <div>
-                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                        Reason
-                      </span>
+                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Reason</span>
                       <span className="mt-1 block">{report.reason}</span>
                     </div>
 
                     <div className="sm:col-span-2">
-                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                        Description
-                      </span>
+                      <span className="block text-xs font-medium uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">Description</span>
                       <p className="mt-1 text-sm">{report.description || "—"}</p>
                     </div>
                   </div>
 
-                  {report.status === "PENDING" && (
-                    <div className="mt-4 flex gap-3">
-                     <button
-  onClick={() => resolveMutation.mutate(report.id)}
-  disabled={resolveMutation.isPending}
-  className="
-    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
-    bg-green-600 text-white
-    hover:bg-green-700 focus:ring-2 focus:ring-green-400
-    transition-colors
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-green-500 dark:text-white
-    dark:hover:bg-green-600 dark:focus:ring-green-300
-  "
->
-  {resolveMutation.isPending ? "Resolving..." : "Resolve"}
-</button>
+                  <div className="flex flex-wrap items-center gap-3 border-t border-[#D9E3F1] pt-4 dark:border-[#2D3F55]">
+                    <Link
+                      href={`/admin/reports/${report.id}`}
+                      className="inline-flex items-center justify-center rounded-lg bg-[#315F96] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#284F7D] dark:bg-[#5B8FCC] dark:hover:bg-[#4B7FBA]"
+                    >
+                      Investigate
+                    </Link>
 
-<button
-  onClick={() => dismissMutation.mutate(report.id)}
-  disabled={dismissMutation.isPending}
-  className="
-    inline-flex items-center justify-center rounded-lg px-4 py-3 font-semibold
-    bg-red-600 text-white
-    hover:bg-red-700 focus:ring-2 focus:ring-red-400
-    transition-colors
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-red-500 dark:text-white
-    dark:hover:bg-red-600 dark:focus:ring-red-300
-  "
->
-  {dismissMutation.isPending ? "Dismissing..." : "Dismiss"}
-</button>
+                    {report.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => resolveMutation.mutate(report.id)}
+                          disabled={resolveMutation.isPending || dismissMutation.isPending}
+                          className="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-500 dark:hover:bg-green-600"
+                        >
+                          {resolveMutation.isPending ? "Resolving..." : "Resolve"}
+                        </button>
 
-                    </div>
-                  )}
+                        <button
+                          onClick={() => dismissMutation.mutate(report.id)}
+                          disabled={resolveMutation.isPending || dismissMutation.isPending}
+                          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
+                        >
+                          {dismissMutation.isPending ? "Dismissing..." : "Dismiss"}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </article>
             ))}
