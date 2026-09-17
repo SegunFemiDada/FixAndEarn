@@ -150,6 +150,68 @@ function getVerificationVariant(
   }
 }
 
+function renderDisputeEvidence(
+  evidence: unknown,
+): React.ReactNode {
+  if (!evidence) {
+    return null;
+  }
+
+  if (typeof evidence === "string") {
+    return (
+      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
+        {evidence}
+      </p>
+    );
+  }
+
+  if (
+    typeof evidence === "object" &&
+    evidence !== null &&
+    "imagePath" in evidence &&
+    typeof evidence.imagePath === "string" &&
+    evidence.imagePath.trim()
+  ) {
+    const imagePath = evidence.imagePath.trim();
+
+    return (
+      <div className="mt-3 space-y-3">
+        <div className="overflow-hidden rounded-lg border border-[#D9E3F1] bg-[#F8FAFD] dark:border-[#2D3F55] dark:bg-[#16202E]">
+          <img
+            src={imagePath}
+            alt="Dispute evidence"
+            className="max-h-[420px] w-full object-contain"
+            loading="lazy"
+          />
+        </div>
+
+        <a
+          href={imagePath}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center rounded-lg border border-[#C5D5EE] bg-white px-3 py-2 text-xs font-semibold text-[#315F96] transition-colors hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2] dark:hover:bg-[#243247]"
+        >
+          Open evidence
+        </a>
+      </div>
+    );
+  }
+
+  try {
+    return (
+      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-[#F8FAFD] p-3 text-xs leading-5 text-[#1A2B4A] dark:bg-[#16202E] dark:text-[#E8F0FA]">
+        {JSON.stringify(evidence, null, 2)}
+      </pre>
+    );
+  } catch {
+    return (
+      <p className="mt-1 text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
+        Evidence could not be displayed.
+      </p>
+    );
+  }
+}
+
 export default function UserInvestigationPanel({
   userId,
 }: {
@@ -1079,9 +1141,9 @@ export default function UserInvestigationPanel({
                       Evidence
                     </p>
 
-                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[#1A2B4A] dark:text-[#E8F0FA]">
-                      {dispute.evidence}
-                    </p>
+                    {renderDisputeEvidence(
+                      dispute.evidence,
+                    )}
                   </div>
                 )}
               </div>
