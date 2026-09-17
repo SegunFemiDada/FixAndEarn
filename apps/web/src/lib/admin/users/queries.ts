@@ -1,12 +1,18 @@
 // Path: apps/web/src/lib/admin/users/queries.ts
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
 import {
   approveAdminDeletion,
   forceReverifyAdminUser,
   getAdminDeletionRequests,
   getAdminUserById,
+  getAdminUserInvestigation,
   rejectAdminDeletion,
   searchAdminUsers,
   setAdminUserNotes,
@@ -20,16 +26,18 @@ import type {
   AdminUserActionPayload,
   AdminUserActionResponse,
   AdminUserDetail,
+  AdminUserInvestigation,
   AdminUserListItem,
   DeletionRequestStatus,
   SearchUsersParams,
 } from "@/lib/admin/users/types";
+
 import { updateAdminUser } from "./api";
 import { invalidateSidebarNotifications } from "@/lib/admin/sidebar-notifications/invalidate";
 
-
 export const adminUsersQueryKeys = {
   all: ["admin", "users"] as const,
+
   list: (params: SearchUsersParams) =>
     [
       ...adminUsersQueryKeys.all,
@@ -40,35 +48,51 @@ export const adminUsersQueryKeys = {
       params.skip ?? 0,
       params.take ?? 20,
     ] as const,
-  detail: (id: string) => [...adminUsersQueryKeys.all, "detail", id] as const,
-  deletionRequests: (status?: DeletionRequestStatus) =>
-  [
-    ...adminUsersQueryKeys.all,
-    "deletion-requests",
-    status ?? "ALL",
-  ] as const,
+
+  detail: (id: string) =>
+    [...adminUsersQueryKeys.all, "detail", id] as const,
+
+  investigation: (id: string) =>
+    [...adminUsersQueryKeys.all, "investigation", id] as const,
+
+  deletionRequests: (
+    status?: DeletionRequestStatus
+  ) =>
+    [
+      ...adminUsersQueryKeys.all,
+      "deletion-requests",
+      status ?? "ALL",
+    ] as const,
 };
 
-export function useAdminUsersList(params: SearchUsersParams, enabled = true) {
+export function useAdminUsersList(
+  params: SearchUsersParams,
+  enabled = true
+) {
   return useQuery<AdminUserListItem[], Error>({
     queryKey: adminUsersQueryKeys.list(params),
     queryFn: () => searchAdminUsers(params),
     enabled,
   });
 }
+
 export function useAdminDeletionRequests(
   status?: DeletionRequestStatus,
   enabled = true
 ) {
   return useQuery<AdminDeletionRequest[], Error>({
-    queryKey: adminUsersQueryKeys.deletionRequests(status),
+    queryKey:
+      adminUsersQueryKeys.deletionRequests(status),
     queryFn: () => getAdminDeletionRequests(status),
     enabled,
     retry: false,
   });
 }
 
-export function useAdminUserDetail(id: string, enabled = true) {
+export function useAdminUserDetail(
+  id: string,
+  enabled = true
+) {
   return useQuery<AdminUserDetail, Error>({
     queryKey: adminUsersQueryKeys.detail(id),
     queryFn: () => getAdminUserById(id),
@@ -77,13 +101,34 @@ export function useAdminUserDetail(id: string, enabled = true) {
   });
 }
 
+export function useAdminUserInvestigation(
+  id: string,
+  enabled = true
+) {
+  return useQuery<AdminUserInvestigation, Error>({
+    queryKey:
+      adminUsersQueryKeys.investigation(id),
+    queryFn: () => getAdminUserInvestigation(id),
+    enabled: enabled && Boolean(id),
+    retry: false,
+  });
+}
+
 export function useAdminSuspendUser(id: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<AdminUserActionResponse, Error, AdminUserActionPayload>({
-    mutationFn: (payload) => suspendAdminUser(id, payload),
+  return useMutation<
+    AdminUserActionResponse,
+    Error,
+    AdminUserActionPayload
+  >({
+    mutationFn: (payload) =>
+      suspendAdminUser(id, payload),
+
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminUsersQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: adminUsersQueryKeys.all,
+      });
     },
   });
 }
@@ -91,21 +136,39 @@ export function useAdminSuspendUser(id: string) {
 export function useAdminUnsuspendUser(id: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<AdminUserActionResponse, Error, AdminUserActionPayload>({
-    mutationFn: (payload) => unsuspendAdminUser(id, payload),
+  return useMutation<
+    AdminUserActionResponse,
+    Error,
+    AdminUserActionPayload
+  >({
+    mutationFn: (payload) =>
+      unsuspendAdminUser(id, payload),
+
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminUsersQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: adminUsersQueryKeys.all,
+      });
     },
   });
 }
 
-export function useAdminForceReverifyUser(id: string) {
+export function useAdminForceReverifyUser(
+  id: string
+) {
   const queryClient = useQueryClient();
 
-  return useMutation<AdminUserActionResponse, Error, AdminUserActionPayload>({
-    mutationFn: (payload) => forceReverifyAdminUser(id, payload),
+  return useMutation<
+    AdminUserActionResponse,
+    Error,
+    AdminUserActionPayload
+  >({
+    mutationFn: (payload) =>
+      forceReverifyAdminUser(id, payload),
+
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminUsersQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: adminUsersQueryKeys.all,
+      });
     },
   });
 }
@@ -113,23 +176,41 @@ export function useAdminForceReverifyUser(id: string) {
 export function useAdminSetUserNotes(id: string) {
   const queryClient = useQueryClient();
 
-  return useMutation<AdminUserActionResponse, Error, AdminUserActionPayload>({
-    mutationFn: (payload) => setAdminUserNotes(id, payload),
+  return useMutation<
+    AdminUserActionResponse,
+    Error,
+    AdminUserActionPayload
+  >({
+    mutationFn: (payload) =>
+      setAdminUserNotes(id, payload),
+
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: adminUsersQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: adminUsersQueryKeys.all,
+      });
     },
   });
 }
+
 export function useAdminUpdateUser(id: string) {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: (data: any) => updateAdminUser(id, data),
+    mutationFn: (data: any) =>
+      updateAdminUser(id, data),
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminUsersQueryKeys.all });
-      queryClient.invalidateQueries({ queryKey: adminUsersQueryKeys.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: adminUsersQueryKeys.all,
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: adminUsersQueryKeys.detail(id),
+      });
     },
   });
 }
+
 export function useAdminApproveDeletion() {
   const queryClient = useQueryClient();
 
@@ -138,14 +219,17 @@ export function useAdminApproveDeletion() {
     Error,
     string
   >({
-    mutationFn: (id) => approveAdminDeletion(id),
+    mutationFn: (id) =>
+      approveAdminDeletion(id),
 
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: adminUsersQueryKeys.all,
         }),
-        invalidateSidebarNotifications(queryClient),
+        invalidateSidebarNotifications(
+          queryClient
+        ),
       ]);
     },
   });
@@ -170,7 +254,9 @@ export function useAdminRejectDeletion() {
         queryClient.invalidateQueries({
           queryKey: adminUsersQueryKeys.all,
         }),
-        invalidateSidebarNotifications(queryClient),
+        invalidateSidebarNotifications(
+          queryClient
+        ),
       ]);
     },
   });
