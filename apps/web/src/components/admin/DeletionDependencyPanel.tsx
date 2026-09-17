@@ -14,6 +14,81 @@ function formatDateTime(value: string | null | undefined) {
   }).format(date);
 }
 
+function humanizeKey(key: string) {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatValue(key: string, value: unknown): string {
+  if (value === null || value === undefined) return "Not available";
+
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+
+  if (typeof value === "number") {
+    if (key.toLowerCase().includes("millifec")) {
+      return formatFecFromMilli(value);
+    }
+    return value.toLocaleString("en-NG");
+  }
+
+  if (typeof value === "string") {
+    if (key.toLowerCase().endsWith("at") || key.toLowerCase().includes("date")) {
+      return formatDateTime(value);
+    }
+    return value;
+  }
+
+  return String(value);
+}
+
+function RecordValue({
+  value,
+  fieldKey,
+  nested = false,
+}: {
+  value: unknown;
+  fieldKey?: string;
+  nested?: boolean;
+}) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span>None</span>;
+
+    return (
+      <div className={nested ? "space-y-2" : "space-y-3"}>
+        {value.map((item, index) => (
+          <div key={`${fieldKey ?? "item"}-${index}`} className={nested ? "pl-3" : "border-l-2 border-[#DCE6F4] pl-3 dark:border-[#2D3F55]"}>
+            <RecordValue value={item} fieldKey={`${fieldKey ?? "item"} ${index + 1}`} nested />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return <span>None</span>;
+
+    return (
+      <div className="grid gap-x-5 gap-y-3 sm:grid-cols-2">
+        {entries.map(([key, childValue]) => (
+          <div key={key} className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#7A8BA5] dark:text-[#8294AF]">
+              {humanizeKey(key)}
+            </p>
+            <div className="mt-1 wrap-break-word text-xs leading-5 text-[#334B6B] dark:text-[#C0CCDD]">
+              <RecordValue value={childValue} fieldKey={key} nested />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <span>{formatValue(fieldKey ?? "", value)}</span>;
+}
+
 function SummaryItem({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-lg border border-[#DCE6F4] bg-[#F8FAFD] px-3 py-3 dark:border-[#2D3F55] dark:bg-[#16202E]">
@@ -33,11 +108,23 @@ export default function DeletionDependencyPanel({
   onClose: () => void;
 }) {
   const query = useAdminDeletionDependencies(userId, open);
-  const [showDetails, setShowDetails] = useState(false);
+  const [expandedBlockers, setExpandedBlockers] = useState<Set<string>>(new Set());
 
   if (!open) return null;
 
   const data = query.data;
+
+  const toggleBlocker = (code: string) => {
+    setExpandedBlockers((current) => {
+      const next = new Set(current);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 dark:bg-black/70">
@@ -52,7 +139,14 @@ export default function DeletionDependencyPanel({
               </p>
             )}
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#C5D5EE] px-3 py-2 text-sm font-semibold text-[#516786] hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:text-[#AAB9D0] dark:hover:bg-[#243247]">×</button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dependency check"
+            className="rounded-lg border border-[#C5D5EE] px-3 py-2 text-sm font-semibold text-[#516786] hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:text-[#AAB9D0] dark:hover:bg-[#243247]"
+          >
+            ×
+          </button>
         </div>
 
         <div className="overflow-y-auto p-5">
@@ -88,24 +182,74 @@ export default function DeletionDependencyPanel({
 
               {data.blockers.length > 0 && (
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Blocking dependencies</h3>
-                  {data.blockers.map((blocker) => (
-                    <div key={blocker.code} className="rounded-lg border border-red-200 bg-white p-4 dark:border-red-800 dark:bg-[#1E2A3A]">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">{blocker.title}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">{blocker.count}</span>
-                          {blocker.amountMilliFec !== null && <span className="text-xs font-semibold text-[#516786] dark:text-[#AAB9D0]">{formatFecFromMilli(blocker.amountMilliFec)}</span>}
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Blocking dependencies</h3>
+                    <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                      Each dependency has its own record viewer. Opening one does not open the others.
+                    </p>
+                  </div>
+
+                  {data.blockers.map((blocker) => {
+                    const isExpanded = expandedBlockers.has(blocker.code);
+
+                    return (
+                      <div key={blocker.code} className="rounded-lg border border-red-200 bg-white dark:border-red-800 dark:bg-[#1E2A3A]">
+                        <div className="p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">{blocker.title}</p>
+                              <p className="mt-1 text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+                                {blocker.count.toLocaleString("en-NG")} record{blocker.count === 1 ? "" : "s"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                                Blocking
+                              </span>
+                              {blocker.amountMilliFec !== null && (
+                                <span className="text-xs font-semibold text-[#516786] dark:text-[#AAB9D0]">
+                                  {formatFecFromMilli(blocker.amountMilliFec)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleBlocker(blocker.code)}
+                            aria-expanded={isExpanded}
+                            className="mt-3 rounded-lg border border-[#C5D5EE] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-[#315F96] hover:bg-[#EEF4FC] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#8FC1F2] dark:hover:bg-[#243247]"
+                          >
+                            {isExpanded ? "Hide records" : "Show records"}
+                          </button>
                         </div>
+
+                        {isExpanded && (
+                          <div className="border-t border-red-100 bg-[#FBFCFE] p-4 dark:border-red-900 dark:bg-[#182331]">
+                            <div className="space-y-3">
+                              {blocker.items.length === 0 ? (
+                                <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No records returned.</p>
+                              ) : (
+                                blocker.items.map((item, index) => (
+                                  <div key={`${blocker.code}-${index}`} className="rounded-lg border border-[#DCE6F4] bg-white p-4 dark:border-[#2D3F55] dark:bg-[#1E2A3A]">
+                                    <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#E5EBF4] pb-2 dark:border-[#2D3F55]">
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-[#5B8FCC] dark:text-[#7AAEE0]">
+                                        Record {index + 1}
+                                      </p>
+                                      <span className="text-[10px] font-medium text-[#7A8BA5] dark:text-[#8294AF]">
+                                        {blocker.code.replaceAll("_", " ")}
+                                      </span>
+                                    </div>
+                                    <RecordValue value={item} />
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <button type="button" onClick={() => setShowDetails((value) => !value)} className="mt-2 text-xs font-semibold text-[#315F96] hover:underline dark:text-[#8FC1F2]">
-                        {showDetails ? "Hide records" : "Show records"}
-                      </button>
-                      {showDetails && (
-                        <pre className="mt-3 max-h-72 overflow-auto rounded-lg bg-[#F8FAFD] p-3 text-xs leading-5 text-[#516786] dark:bg-[#16202E] dark:text-[#AAB9D0]">{JSON.stringify(blocker.items, null, 2)}</pre>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </section>
               )}
 
@@ -122,7 +266,7 @@ export default function DeletionDependencyPanel({
                 </p>
               </section>
 
-              <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">Dependency check performed from current database state at {formatDateTime(new Date().toISOString())}.</p>
+              <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">Dependency check uses the current database state. Recheck to refresh the results after resolving a dependency.</p>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useAdminUserInvestigation } from "@/lib/admin/users/queries";
 import { formatFecFromMilli } from "@/lib/wallet/ui";
 
@@ -177,11 +178,13 @@ function renderDisputeEvidence(
     return (
       <div className="mt-3 space-y-3">
         <div className="overflow-hidden rounded-lg border border-[#D9E3F1] bg-[#F8FAFD] dark:border-[#2D3F55] dark:bg-[#16202E]">
-          <img
+          <Image
             src={imagePath}
             alt="Dispute evidence"
-            className="max-h-[420px] w-full object-contain"
-            loading="lazy"
+            width={1600}
+            height={1200}
+            unoptimized
+            className="max-h-105 w-full object-contain"
           />
         </div>
 
@@ -199,7 +202,7 @@ function renderDisputeEvidence(
 
   try {
     return (
-      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-[#F8FAFD] p-3 text-xs leading-5 text-[#1A2B4A] dark:bg-[#16202E] dark:text-[#E8F0FA]">
+      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap wrap-break-word rounded-lg bg-[#F8FAFD] p-3 text-xs leading-5 text-[#1A2B4A] dark:bg-[#16202E] dark:text-[#E8F0FA]">
         {JSON.stringify(evidence, null, 2)}
       </pre>
     );
