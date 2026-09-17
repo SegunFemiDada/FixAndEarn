@@ -200,7 +200,7 @@ export class AdminLedgerRepo {
             ],
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          take: 10,
+          take: 20,
         }),
         this.prisma.ledgerEntry.findMany({
           where: {
@@ -211,7 +211,7 @@ export class AdminLedgerRepo {
             ],
           },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          take: 10,
+          take: 20,
         }),
         this.prisma.ledgerEntry.findMany({
           where: { walletId: entry.walletId },
@@ -343,7 +343,7 @@ export class AdminLedgerRepo {
             ],
           },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-          take: 10,
+          take: 20,
         }),
         this.prisma.platformLedgerEntry.findMany({
           where: {
@@ -354,7 +354,7 @@ export class AdminLedgerRepo {
             ],
           },
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          take: 10,
+          take: 20,
         }),
         this.prisma.platformLedgerEntry.findMany({
           where: { platformWalletId: entry.platformWalletId },

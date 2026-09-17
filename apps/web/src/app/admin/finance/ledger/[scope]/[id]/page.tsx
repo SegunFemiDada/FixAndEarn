@@ -75,29 +75,174 @@ function Field({
       <span className="block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6B7C99] dark:text-[#8FA0BC]">
         {label}
       </span>
-      <span className="mt-1 block wrap-break-word text-sm leading-5 text-[#1A2B4A] dark:text-[#E8F0FA]">
+      <span className="mt-1 block break-words text-sm leading-5 text-[#1A2B4A] dark:text-[#E8F0FA]">
         {value ?? "Not available"}
       </span>
     </div>
   );
 }
 
-function JsonBlock({ value }: { value: unknown }) {
+function formatLabel(key: string) {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function MetadataFields({
+  value,
+  depth = 0,
+}: {
+  value: unknown;
+  depth?: number;
+}) {
   if (value === null || value === undefined) {
     return <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Not available</p>;
   }
 
-  let text = "";
-  try {
-    text = JSON.stringify(value, null, 2);
-  } catch {
-    text = String(value);
+  if (!isRecord(value)) {
+    return (
+      <p className="break-words text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+        {Array.isArray(value) ? value.join(", ") : String(value)}
+      </p>
+    );
+  }
+
+  const entries = Object.entries(value);
+
+  if (entries.length === 0) {
+    return <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No metadata available.</p>;
   }
 
   return (
-    <pre className="max-h-80 overflow-auto rounded-lg border border-[#D9E3F1] bg-[#F7F9FC] p-4 text-xs leading-5 text-[#1A2B4A] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#D9E3F1]">
-      {text}
-    </pre>
+    <div className={depth === 0 ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "grid gap-3 sm:grid-cols-2"}>
+      {entries.map(([key, item]) => (
+        <div
+          key={key}
+          className="min-w-0 rounded-lg border border-[#D9E3F1] bg-[#F7F9FC] p-3 dark:border-[#2D3F55] dark:bg-[#16202E]"
+        >
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6B7C99] dark:text-[#8FA0BC]">
+            {formatLabel(key)}
+          </span>
+          <div className="mt-1">
+            {isRecord(item) ? (
+              <MetadataFields value={item} depth={depth + 1} />
+            ) : Array.isArray(item) ? (
+              <p className="break-words text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {item.length ? item.map(String).join(", ") : "None"}
+              </p>
+            ) : (
+              <p className="break-words text-sm text-[#1A2B4A] dark:text-[#E8F0FA]">
+                {item === null ? "Not available" : String(item)}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getRecordValue(record: unknown, key: string): unknown {
+  if (!isRecord(record)) return null;
+  return record[key];
+}
+
+function getRecordString(record: unknown, key: string) {
+  const value = getRecordValue(record, key);
+  return value === null || value === undefined || value === "" ? "Not available" : String(value);
+}
+
+function getRecordNumber(record: unknown, key: string): number | null {
+  const value = getRecordValue(record, key);
+  return typeof value === "number" ? value : null;
+}
+
+function FinancialRecord({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-[#D9E3F1] bg-[#F7F9FC] p-4 dark:border-[#2D3F55] dark:bg-[#16202E]">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+        {title}
+      </h4>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PaginationControls({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems <= pageSize) return null;
+
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t border-[#D9E3F1] pt-4 dark:border-[#2D3F55] sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-[#6B7C99] dark:text-[#8FA0BC]">
+        Showing {start}–{end} of {totalItems}
+      </p>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 1}
+          className="rounded-lg border border-[#C5D5EE] bg-white px-3 py-1.5 text-xs font-semibold text-[#315F96] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2]"
+        >
+          Previous
+        </button>
+
+        {pages.map((pageNumber) => (
+          <button
+            key={pageNumber}
+            type="button"
+            onClick={() => onPageChange(pageNumber)}
+            className={[
+              "min-w-8 rounded-lg border px-2.5 py-1.5 text-xs font-semibold",
+              pageNumber === page
+                ? "border-[#5B8FCC] bg-[#5B8FCC] text-white"
+                : "border-[#C5D5EE] bg-white text-[#315F96] hover:bg-[#F4F8FF] dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2] dark:hover:bg-[#16202E]",
+            ].join(" ")}
+          >
+            {pageNumber}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page === totalPages}
+          className="rounded-lg border border-[#C5D5EE] bg-white px-3 py-1.5 text-xs font-semibold text-[#315F96] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#2D3F55] dark:bg-[#1E2A3A] dark:text-[#8FC1F2]"
+        >
+          Next
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -108,35 +253,61 @@ function EntryList({
   title: string;
   entries: AdminLedgerSurroundingEntry[];
 }) {
+  const pageSize = 10;
+  const [page, setPage] = React.useState(1);
+  const totalPages = Math.max(1, Math.ceil(entries.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const visibleEntries = entries.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [entries]);
+
   return (
     <div>
-      <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-        {title}
-      </h4>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
+          {title}
+        </h4>
+        <span className="inline-flex rounded-full border border-[#C5D5EE] bg-[#F4F8FF] px-2.5 py-1 text-[11px] font-semibold text-[#516786] dark:border-[#2D3F55] dark:bg-[#16202E] dark:text-[#AAB9D0]">
+          {entries.length} records
+        </span>
+      </div>
+
       {entries.length === 0 ? (
         <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">No surrounding entries.</p>
       ) : (
-        <div className="space-y-2">
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              className="rounded-lg border border-[#D9E3F1] bg-[#F7F9FC] p-3 dark:border-[#2D3F55] dark:bg-[#16202E]"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge value={entry.direction} />
-                <Badge value={entry.type} />
-                <span className="text-xs font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
-                  {formatFec(entry.amountMilliFec)}
-                </span>
+        <>
+          <div className="space-y-2">
+            {visibleEntries.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded-lg border border-[#D9E3F1] bg-[#F7F9FC] p-3 dark:border-[#2D3F55] dark:bg-[#16202E]"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge value={entry.direction} />
+                  <Badge value={entry.type} />
+                  <span className="text-xs font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">
+                    {formatFec(entry.amountMilliFec)}
+                  </span>
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <Field label="Entry ID" value={entry.id} />
+                  <Field label="Created" value={formatDate(entry.createdAt)} />
+                  <Field label="Reference" value={entry.reference || "Not available"} />
+                </div>
               </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <Field label="Entry ID" value={entry.id} />
-                <Field label="Created" value={formatDate(entry.createdAt)} />
-                <Field label="Reference" value={entry.reference || "Not available"} />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <PaginationControls
+            page={safePage}
+            totalPages={totalPages}
+            totalItems={entries.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </div>
   );
@@ -281,7 +452,7 @@ export default function AdminLedgerInvestigationPage() {
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
             Metadata
           </h4>
-          <JsonBlock value={entry.metadata} />
+          <MetadataFields value={entry.metadata} />
         </div>
       </Section>
 
@@ -302,30 +473,40 @@ export default function AdminLedgerInvestigationPage() {
 
       <Section title="Related financial records">
         <div className="space-y-6">
-          {"deposit" in related ? (
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                Deposit
-              </h4>
-              <JsonBlock value={related.deposit} />
-            </div>
+          {"deposit" in related && related.deposit ? (
+            <FinancialRecord title="Deposit">
+              <Field label="Deposit ID" value={getRecordString(related.deposit, "id")} />
+              <Field label="User ID" value={getRecordString(related.deposit, "userId")} />
+              <Field label="Reference" value={getRecordString(related.deposit, "reference")} />
+              <Field label="Amount" value={formatFec(getRecordNumber(related.deposit, "amountMilliFec"))} />
+              <Field label="Created" value={formatDate(getRecordString(related.deposit, "createdAt"))} />
+            </FinancialRecord>
           ) : null}
 
-          {"withdrawal" in related ? (
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                Withdrawal
-              </h4>
-              <JsonBlock value={related.withdrawal} />
-            </div>
+          {"withdrawal" in related && related.withdrawal ? (
+            <FinancialRecord title="Withdrawal">
+              <Field label="Withdrawal ID" value={getRecordString(related.withdrawal, "id")} />
+              <Field label="Amount" value={formatFec(getRecordNumber(related.withdrawal, "amountMilliFec"))} />
+              <Field label="Status" value={<Badge value={getRecordString(related.withdrawal, "status")} />} />
+              <Field label="Created" value={formatDate(getRecordString(related.withdrawal, "createdAt"))} />
+              <Field label="Reviewed" value={formatDate(getRecordString(related.withdrawal, "reviewedAt"))} />
+              <Field label="Paid" value={formatDate(getRecordString(related.withdrawal, "paidAt"))} />
+              <Field label="Failure reason" value={getRecordString(related.withdrawal, "failureReason")} />
+            </FinancialRecord>
           ) : null}
 
-          <div>
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-              Job payment
-            </h4>
-            <JsonBlock value={related.jobPayment} />
-          </div>
+          {related.jobPayment ? (
+            <FinancialRecord title="Job payment">
+              <Field label="Payment ID" value={getRecordString(related.jobPayment, "id")} />
+              <Field label="Job ID" value={getRecordString(related.jobPayment, "jobId")} />
+              <Field label="Amount" value={formatFec(getRecordNumber(related.jobPayment, "amountMilliFec"))} />
+              <Field label="Payment fee" value={formatFec(getRecordNumber(related.jobPayment, "paymentFeeMilliFec"))} />
+              <Field label="Status" value={<Badge value={getRecordString(related.jobPayment, "status")} />} />
+              <Field label="Paid" value={formatDate(getRecordString(related.jobPayment, "paidAt"))} />
+              <Field label="Expires" value={formatDate(getRecordString(related.jobPayment, "expiresAt"))} />
+              <Field label="Created" value={formatDate(getRecordString(related.jobPayment, "createdAt"))} />
+            </FinancialRecord>
+          ) : null}
 
           {related.job ? (
             <div>
@@ -350,22 +531,27 @@ export default function AdminLedgerInvestigationPage() {
             </div>
           ) : null}
 
-          {"earnings" in related ? (
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                Fixer earnings
-              </h4>
-              <JsonBlock value={related.earnings} />
-            </div>
+          {"earnings" in related && related.earnings ? (
+            <FinancialRecord title="Fixer earnings">
+              <Field label="Earning ID" value={getRecordString(related.earnings, "id")} />
+              <Field label="Fixer ID" value={getRecordString(related.earnings, "fixerId")} />
+              <Field label="Job ID" value={getRecordString(related.earnings, "jobId")} />
+              <Field label="Amount" value={formatFec(getRecordNumber(related.earnings, "amountMilliFec"))} />
+              <Field label="Available" value={formatFec(getRecordNumber(related.earnings, "availableMilliFec"))} />
+              <Field label="Status" value={<Badge value={getRecordString(related.earnings, "status")} />} />
+              <Field label="Paid" value={formatDate(getRecordString(related.earnings, "paidAt"))} />
+              <Field label="Created" value={formatDate(getRecordString(related.earnings, "createdAt"))} />
+            </FinancialRecord>
           ) : null}
 
-          {"platformRevenue" in related ? (
-            <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#6B7C99] dark:text-[#8FA0BC]">
-                Platform revenue
-              </h4>
-              <JsonBlock value={related.platformRevenue} />
-            </div>
+          {"platformRevenue" in related && related.platformRevenue ? (
+            <FinancialRecord title="Platform revenue">
+              <Field label="Revenue ID" value={getRecordString(related.platformRevenue, "id")} />
+              <Field label="Job ID" value={getRecordString(related.platformRevenue, "jobId")} />
+              <Field label="Gross" value={formatFec(getRecordNumber(related.platformRevenue, "grossMilliFec"))} />
+              <Field label="Platform fee" value={formatFec(getRecordNumber(related.platformRevenue, "platformFeeMilliFec"))} />
+              <Field label="Created" value={formatDate(getRecordString(related.platformRevenue, "createdAt"))} />
+            </FinancialRecord>
           ) : null}
         </div>
       </Section>
