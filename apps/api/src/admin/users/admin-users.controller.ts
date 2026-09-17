@@ -1,4 +1,3 @@
-// Path: apps/api/src/admin/users/admin-users.controller.ts
 import {
   Body,
   Controller,
@@ -23,6 +22,7 @@ import { AdminUserSearchDto } from "./dto/admin-user-search.dto";
 import { AdminUserActionDto } from "./dto/admin-user-action.dto";
 import { AdminUsersService } from "./admin-users.service";
 import { AdminUserUpdateDto } from "./dto/admin-user-update.dto";
+import { AdminDeletionDependencyService } from "./admin-deletion-dependency.service";
 
 @Public()
 @ApiTags("admin-users")
@@ -35,6 +35,7 @@ import { AdminUserUpdateDto } from "./dto/admin-user-update.dto";
 export class AdminUsersController {
   constructor(
     private readonly svc: AdminUsersService,
+    private readonly deletionDependencies: AdminDeletionDependencyService,
   ) {}
 
   @AdminRoles(
@@ -51,20 +52,12 @@ export class AdminUsersController {
     return this.svc.search({
       q: q.q,
       role: q.role,
-      verificationStatus:
-        q.verificationStatus,
+      verificationStatus: q.verificationStatus,
       skip: q.skip ?? 0,
       take: q.take ?? 20,
     });
   }
 
-  @AdminRoles(
-    AdminRole.SUPER_ADMIN,
-    AdminRole.SUPPORT_OFFICER,
-    AdminRole.SECURITY_OFFICER,
-    AdminRole.VERIFICATION_OFFICER,
-    AdminRole.FINANCE_OFFICER,
-  )
   @AdminRoles(
     AdminRole.SUPER_ADMIN,
     AdminRole.SUPPORT_OFFICER,
@@ -77,9 +70,18 @@ export class AdminUsersController {
       | "APPROVED"
       | "REJECTED",
   ) {
-    return this.svc.getDeletionRequests(
-      status,
-    );
+    return this.svc.getDeletionRequests(status);
+  }
+
+  @AdminRoles(
+    AdminRole.SUPER_ADMIN,
+    AdminRole.SUPPORT_OFFICER,
+  )
+  @Get(":id/deletion-dependencies")
+  async getDeletionDependencies(
+    @Param("id") id: string,
+  ) {
+    return this.deletionDependencies.getDependencies(id);
   }
 
   @AdminRoles(
@@ -91,6 +93,8 @@ export class AdminUsersController {
     @Param("id") id: string,
     @Req() req: any,
   ) {
+    await this.deletionDependencies.assertCanApprove(id);
+
     return this.svc.approveDeletion(
       id,
       {

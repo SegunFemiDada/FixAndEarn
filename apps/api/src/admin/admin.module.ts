@@ -22,6 +22,8 @@ import { AdminLedgerRepo } from "./finance/admin-ledger.repo";
 import { AdminUsersController } from "./users/admin-users.controller";
 import { AdminUsersService } from "./users/admin-users.service";
 import { AdminUsersRepo } from "./users/admin-users.repo";
+import { AdminDeletionDependencyService } from "./users/admin-deletion-dependency.service";
+import { AdminDeletionDependencyRepo } from "./users/admin-deletion-dependency.repo";
 import { AdminExportsController } from "./exports/admin-exports.controller";
 import { AdminExportsService } from "./exports/admin-exports.service";
 import { AdminExportsRepo } from "./exports/admin-exports.repo";
@@ -120,6 +122,8 @@ import { VerificationModule } from "../modules/verification/verification.module"
     AdminLedgerService,
     AdminUsersRepo,
     AdminUsersService,
+    AdminDeletionDependencyRepo,
+    AdminDeletionDependencyService,
     AdminExportsRepo,
     AdminExportsService,
     AdminAnalyticsRepo,
