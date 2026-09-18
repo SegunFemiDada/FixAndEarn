@@ -3,8 +3,12 @@
 import * as React from "react";
 
 import { useAdminDashboard } from "@/lib/admin/dashboard/queries";
+import {
+  useAdminSidebarNotifications,
+} from "@/lib/admin/sidebar-notifications/queries";
 
 import DashboardHero from "@/components/admin/dashboard/DashboardHero";
+import DashboardActionCenter from "@/components/admin/dashboard/DashboardActionCenter";
 import DashboardOverview from "@/components/admin/dashboard/DashboardOverview";
 import DashboardJobs from "@/components/admin/dashboard/DashboardJobs";
 import DashboardFinance from "@/components/admin/dashboard/DashboardFinance";
@@ -24,6 +28,10 @@ export default function AdminDashboardPage() {
     error,
     refetch,
   } = useAdminDashboard();
+
+  const {
+    data: sidebarNotifications,
+  } = useAdminSidebarNotifications(Boolean(data));
 
   if (isLoading && !data) {
     return <DashboardLoading />;
@@ -53,6 +61,10 @@ export default function AdminDashboardPage() {
       <DashboardHero
         generatedAt={data.system.generatedAt}
         healthy={data.system.healthy}
+      />
+
+      <DashboardActionCenter
+        notifications={sidebarNotifications}
       />
 
       <DashboardOverview
