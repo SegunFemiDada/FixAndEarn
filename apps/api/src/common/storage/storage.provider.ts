@@ -2,6 +2,8 @@
 export abstract class StorageProvider {
   abstract save(
     file: Express.Multer.File,
-    folder: string
+    folder: string,
   ): Promise<string>;
+
+  abstract remove(url: string): Promise<void>;
 }

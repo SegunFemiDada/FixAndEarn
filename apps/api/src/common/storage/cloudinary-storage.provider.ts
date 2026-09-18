@@ -1,10 +1,11 @@
-//path: apps/api/src/common/storage/cloudinary-storage.provider.ts
 import { Injectable } from "@nestjs/common";
 import { v2 as cloudinary } from "cloudinary";
 import { randomUUID } from "crypto";
 import * as sharp from "sharp";
 
 import { StorageProvider } from "./storage.provider";
+
+type CloudinaryResourceType = "image" | "raw" | "video";
 
 @Injectable()
 export class CloudinaryStorageProvider
@@ -23,7 +24,7 @@ export class CloudinaryStorageProvider
 
   async save(
     file: Express.Multer.File,
-    folder: string
+    folder: string,
   ): Promise<string> {
     const publicId = randomUUID();
 
@@ -31,11 +32,11 @@ export class CloudinaryStorageProvider
 
     if (
       file.mimetype?.startsWith(
-        "image/"
+        "image/",
       )
     ) {
       buffer = await sharp(
-        file.buffer
+        file.buffer,
       )
         .rotate()
         .resize({
@@ -62,7 +63,7 @@ export class CloudinaryStorageProvider
             },
             (
               error,
-              result
+              result,
             ) => {
               if (
                 error ||
@@ -71,20 +72,161 @@ export class CloudinaryStorageProvider
                 reject(
                   error ??
                     new Error(
-                      "Cloudinary upload failed"
-                    )
+                      "Cloudinary upload failed",
+                    ),
                 );
                 return;
               }
 
               resolve(
-                result.secure_url
+                result.secure_url,
               );
-            }
+            },
           );
 
         stream.end(buffer);
-      }
+      },
     );
+  }
+
+  async remove(
+    url: string,
+  ): Promise<void> {
+    const {
+      publicId,
+      resourceType,
+    } =
+      this.getCloudinaryResource(
+        url,
+      );
+
+    await cloudinary.uploader.destroy(
+      publicId,
+      {
+        resource_type:
+          resourceType,
+        type: "upload",
+        invalidate: true,
+      },
+    );
+  }
+
+  private getCloudinaryResource(
+    url: string,
+  ): {
+    publicId: string;
+    resourceType: CloudinaryResourceType;
+  } {
+    const parsedUrl =
+      new URL(url);
+
+    const segments =
+      parsedUrl.pathname
+        .split("/")
+        .filter(Boolean);
+
+    const uploadIndex =
+      segments.indexOf(
+        "upload",
+      );
+
+    if (
+      uploadIndex < 1
+    ) {
+      throw new Error(
+        "INVALID_CLOUDINARY_URL",
+      );
+    }
+
+    const resourceType =
+      segments[
+        uploadIndex - 1
+      ] as CloudinaryResourceType;
+
+    if (
+      resourceType !==
+        "image" &&
+      resourceType !==
+        "raw" &&
+      resourceType !==
+        "video"
+    ) {
+      throw new Error(
+        "INVALID_CLOUDINARY_RESOURCE_TYPE",
+      );
+    }
+
+    const deliverySegments =
+      segments.slice(
+        uploadIndex + 1,
+      );
+
+    if (
+      deliverySegments.length ===
+      0
+    ) {
+      throw new Error(
+        "INVALID_CLOUDINARY_URL",
+      );
+    }
+
+    if (
+      /^v\d+$/.test(
+        deliverySegments[0],
+      )
+    ) {
+      deliverySegments.shift();
+    }
+
+    if (
+      deliverySegments.length ===
+      0
+    ) {
+      throw new Error(
+        "INVALID_CLOUDINARY_URL",
+      );
+    }
+
+    const lastSegment =
+      deliverySegments.pop();
+
+    if (!lastSegment) {
+      throw new Error(
+        "INVALID_CLOUDINARY_URL",
+      );
+    }
+
+    const extensionIndex =
+      lastSegment.lastIndexOf(
+        ".",
+      );
+
+    const publicIdLastSegment =
+      extensionIndex > 0
+        ? lastSegment.slice(
+            0,
+            extensionIndex,
+          )
+        : lastSegment;
+
+    deliverySegments.push(
+      publicIdLastSegment,
+    );
+
+    const publicId =
+      deliverySegments.join(
+        "/",
+      );
+
+    if (!publicId) {
+      throw new Error(
+        "INVALID_CLOUDINARY_PUBLIC_ID",
+      );
+    }
+
+    return {
+      publicId,
+      resourceType,
+    };
   }
 }
