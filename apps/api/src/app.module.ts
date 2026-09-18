@@ -1,9 +1,10 @@
 // Path: /apps/api/src/app.module.ts
+
 import { Module } from "@nestjs/common";
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./infra/prisma/prisma.module";
 import { HealthModule } from "./modules/health/health.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -12,9 +13,6 @@ import { AccountModule } from "./modules/account/account.module";
 import { VerificationModule } from "./modules/verification/verification.module";
 import { WalletModule } from "./modules/wallet/wallet.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
-import { RolesGuard } from "./common/auth/roles.guard";
-import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { JobsModule } from "./modules/jobs/jobs.module";
 import { AdminModule } from "./admin/admin.module";
 import { ChatModule } from "./chat/chat.module";
@@ -23,7 +21,6 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { DisputesModule } from "./modules/disputes/disputes.module";
 import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
-import { ScheduleModule } from "@nestjs/schedule";
 import { SupportModule } from "./modules/support/support.module";
 import { ReportsModule } from "./modules/reports/reports.module";
 import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
@@ -32,25 +29,29 @@ import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
 import { EarningsModule } from "./modules/earnings/earnings.module";
 import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/admin-sidebar-notifications.module";
 
-
+import { RolesGuard } from "./common/auth/roles.guard";
+import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [".env", ".env.local", "../../.env", "../../.env.local"],
+      envFilePath: [
+        ".env",
+        ".env.local",
+        "../../.env",
+        "../../.env.local",
+      ],
     }),
+
     ThrottlerModule.forRoot([
-  {
-    name: "default",
-    ttl: 60_000,
-    limit: 100,
-  },
-]),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads',
-    }),
+      {
+        name: "default",
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
+
     PrismaModule,
     HealthModule,
     UsersModule,
@@ -76,7 +77,8 @@ import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/a
     AdminSidebarNotificationsModule,
     ScheduleModule.forRoot(),
   ],
-    providers: [
+
+  providers: [
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -86,9 +88,9 @@ import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/a
       useClass: RolesGuard,
     },
     {
-    provide: APP_GUARD,
-    useClass: ThrottlerGuard,
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
-  ]
+  ],
 })
 export class AppModule {}
