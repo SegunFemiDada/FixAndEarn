@@ -6,15 +6,17 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma, FixerEarningStatus } from "@prisma/client";
+import { UsersService } from "../users/users.service";
 import { EarningsRepo } from "./earnings.repo";
 import { WithdrawalAllocationRepo } from "./withdrawal-allocation.repo";
 
 @Injectable()
 export class EarningsService {
   constructor(
-  private readonly repo: EarningsRepo,
-  private readonly allocationRepo: WithdrawalAllocationRepo,
-) {}
+    private readonly repo: EarningsRepo,
+    private readonly allocationRepo: WithdrawalAllocationRepo,
+    private readonly usersService: UsersService,
+  ) {}
 
   async getAvailableBalance(fixerId: string) {
     const available = await this.repo.getAvailableBalance(
@@ -28,32 +30,54 @@ export class EarningsService {
   }
 
   async getSummary(fixerId: string) {
-  const summary = await this.repo.getSummary(
-    fixerId,
-  );
+    const summary = await this.repo.getSummary(
+      fixerId,
+    );
 
-  return {
-    availableMilliFec:
-      summary.availableMilliFec,
-    availableNaira:
-      summary.availableMilliFec / 1000,
+    return {
+      availableMilliFec:
+        summary.availableMilliFec,
+      availableNaira:
+        summary.availableMilliFec / 1000,
 
-    paidMilliFec:
-      summary.paidMilliFec,
-    paidNaira:
-      summary.paidMilliFec / 1000,
-  };
-}
+      paidMilliFec:
+        summary.paidMilliFec,
+      paidNaira:
+        summary.paidMilliFec / 1000,
+    };
+  }
 
   async getHistory(fixerId: string) {
     return this.repo.getHistory(fixerId);
   }
 
-  async getEarningByJob(jobId: string) {
+  async getEarningByJob(
+    jobId: string,
+    requesterId: string,
+  ) {
     const earning =
       await this.repo.findByJobId(jobId);
 
     if (!earning) {
+      throw new NotFoundException(
+        "EARNING_NOT_FOUND",
+      );
+    }
+
+    if (earning.fixerId === requesterId) {
+      return earning;
+    }
+
+    const requester =
+      await this.usersService.findById(requesterId);
+
+    const isSuperAdmin = (requester?.roles ?? []).some(
+      (userRole) =>
+        String(userRole.role?.code ?? "").toUpperCase() ===
+        "SUPER_ADMIN",
+    );
+
+    if (!isSuperAdmin) {
       throw new NotFoundException(
         "EARNING_NOT_FOUND",
       );
@@ -104,34 +128,34 @@ export class EarningsService {
       }
 
       const consume = Math.min(
-  remaining,
-  earning.availableMilliFec,
-);
+        remaining,
+        earning.availableMilliFec,
+      );
 
-const nextStatus =
-  FixerEarningStatus.PARTIALLY_WITHDRAWN;
+      const nextStatus =
+        FixerEarningStatus.PARTIALLY_WITHDRAWN;
 
-const reserved = await this.repo.reserveAmount(
-  earning.id,
-  consume,
-  nextStatus,
-  tx,
-);
+      const reserved = await this.repo.reserveAmount(
+        earning.id,
+        consume,
+        nextStatus,
+        tx,
+      );
 
-if (reserved.count !== 1) {
-  continue;
-}
+      if (reserved.count !== 1) {
+        continue;
+      }
 
-await this.allocationRepo.create(
-  {
-    withdrawalId,
-    earningId: earning.id,
-    amountMilliFec: consume,
-  },
-  tx,
-);
+      await this.allocationRepo.create(
+        {
+          withdrawalId,
+          earningId: earning.id,
+          amountMilliFec: consume,
+        },
+        tx,
+      );
 
-remaining -= consume;
+      remaining -= consume;
     }
 
     if (remaining > 0) {
@@ -142,58 +166,58 @@ remaining -= consume;
   }
 
   async restoreWithdrawal(
-  tx: Prisma.TransactionClient,
-  withdrawalId: string,
-) {
-  const allocations =
-    await this.allocationRepo.findByWithdrawal(
-      withdrawalId,
-      tx,
-    );
+    tx: Prisma.TransactionClient,
+    withdrawalId: string,
+  ) {
+    const allocations =
+      await this.allocationRepo.findByWithdrawal(
+        withdrawalId,
+        tx,
+      );
 
-  for (const allocation of allocations) {
-    await this.repo.restoreAmount(
-    allocation.earningId,
-    allocation.amountMilliFec,
-    tx,
-  );
+    for (const allocation of allocations) {
+      await this.repo.restoreAmount(
+        allocation.earningId,
+        allocation.amountMilliFec,
+        tx,
+      );
 
-  await this.allocationRepo.delete(
-    allocation.id,
-    tx,
-  );
-}
-}
+      await this.allocationRepo.delete(
+        allocation.id,
+        tx,
+      );
+    }
+  }
 
   async finalizeWithdrawal(
-  tx: Prisma.TransactionClient,
-  withdrawalId: string,
-) {
-  const allocations =
-    await this.allocationRepo.findByWithdrawal(
-      withdrawalId,
-      tx,
-    );
+    tx: Prisma.TransactionClient,
+    withdrawalId: string,
+  ) {
+    const allocations =
+      await this.allocationRepo.findByWithdrawal(
+        withdrawalId,
+        tx,
+      );
 
-  for (const allocation of allocations) {
-    const earning = allocation.earning;
+    for (const allocation of allocations) {
+      const earning = allocation.earning;
 
-    await this.repo.update(
-      earning.id,
-      {
-        paidAt: new Date(),
-        status:
-          earning.availableMilliFec === 0
-            ? FixerEarningStatus.PAID
-            : FixerEarningStatus.PARTIALLY_WITHDRAWN,
-      },
-      tx,
-    );
+      await this.repo.update(
+        earning.id,
+        {
+          paidAt: new Date(),
+          status:
+            earning.availableMilliFec === 0
+              ? FixerEarningStatus.PAID
+              : FixerEarningStatus.PARTIALLY_WITHDRAWN,
+        },
+        tx,
+      );
 
-    await this.allocationRepo.delete(
-      allocation.id,
-      tx,
-    );
+      await this.allocationRepo.delete(
+        allocation.id,
+        tx,
+      );
+    }
   }
-}
 }

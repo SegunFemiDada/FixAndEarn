@@ -66,9 +66,11 @@ export class EarningsController {
   @Roles("FIXER", "SUPER_ADMIN")
   async byJob(
     @Param("jobId") jobId: string,
+    @CurrentUser() user: { userId: string },
   ) {
     return this.earningsService.getEarningByJob(
       jobId,
+      user.userId,
     );
   }
 }
