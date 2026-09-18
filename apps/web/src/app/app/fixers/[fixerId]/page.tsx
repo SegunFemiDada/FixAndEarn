@@ -22,10 +22,7 @@ type FixerProfileResponse = {
     average: number;
     count: number;
   };
-  socials?: {
-    instagram?: { handle: string; url: string } | null;
-    tiktok?: { handle: string; url: string } | null;
-  } | null;
+
   stats?: {
     completedJobs: number;
   } | null;
@@ -241,8 +238,6 @@ export default function FixerProfilePage() {
   const preferred = data?.availability?.preferred ?? "—";
   const updatedAt = data?.availability?.updatedAt ?? null;
 
-  const instagram = data?.socials?.instagram ?? null;
-  const tiktok = data?.socials?.tiktok ?? null;
   const primarySkill = firstSkill(data?.profile?.skills);
   const skills = parseSkills(data?.profile?.skills);
 
@@ -483,39 +478,6 @@ const reviewsTotalPages =
               )}
             </div>
           )}
-        </section>
-
-        {/* Socials */}
-        <section className="rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-5 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Socials</div>
-
-          <div className="mt-4 flex flex-col gap-2">
-            {instagram ? (
-              <a
-                href={instagram.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex w-fit items-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] underline transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-              >
-                Instagram: @{instagram.handle}
-              </a>
-            ) : (
-              <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Instagram not provided.</div>
-            )}
-
-            {tiktok ? (
-              <a
-                href={tiktok.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex w-fit items-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] underline transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-              >
-                TikTok: @{tiktok.handle}
-              </a>
-            ) : (
-              <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">TikTok not provided.</div>
-            )}
-          </div>
         </section>
 
         {/* Contact */}

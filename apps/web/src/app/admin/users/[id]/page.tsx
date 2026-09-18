@@ -194,8 +194,6 @@ export default function AdminUserDetailPage() {
     lga: "",
     city: "",
     state: "",
-    instagram: "",
-    tiktok: "",
   });
 
   const detail = detailQuery.data;
@@ -228,9 +226,6 @@ export default function AdminUserDetailPage() {
       lga: detail.verification?.lga || "",
       city: detail.verification?.city || "",
       state: detail.verification?.state || "",
-      instagram:
-        detail.verification?.instagram || "",
-      tiktok: detail.verification?.tiktok || "",
     });
   }, [detail]);
 
@@ -792,21 +787,6 @@ export default function AdminUserDetailPage() {
                       detail.verification.state
                     }
                   />
-
-                  <DetailField
-                    label="Instagram"
-                    value={
-                      detail.verification
-                        .instagram
-                    }
-                  />
-
-                  <DetailField
-                    label="TikTok"
-                    value={
-                      detail.verification.tiktok
-                    }
-                  />
                 </div>
 
                 <div>
@@ -1245,12 +1225,6 @@ export default function AdminUserDetailPage() {
                   ["LGA", "lga", "text"],
                   ["City", "city", "text"],
                   ["State", "state", "text"],
-                  [
-                    "Instagram",
-                    "instagram",
-                    "text",
-                  ],
-                  ["TikTok", "tiktok", "text"],
                 ].map(
                   ([label, field]) => {
                     const key =

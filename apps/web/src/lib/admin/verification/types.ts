@@ -11,9 +11,7 @@ export type VerificationReuploadField =
   | "utilityBill"
   | "bio"
   | "skills"
-  | "address"
-  | "instagram"
-  | "tiktok";
+  | "address";
 
 export type NinVerificationStatus =
   | "PENDING"
@@ -82,9 +80,6 @@ export type AdminVerificationDetail = {
   lga: string | null;
   city: string | null;
   state: string | null;
-
-  instagram: string | null;
-  tiktok: string | null;
 
   user: AdminVerificationUser;
 };

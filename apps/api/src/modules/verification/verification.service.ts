@@ -19,8 +19,6 @@ type SubmitVerificationInput = {
     city?: string;
     state?: string;
   };
-  instagram?: string;
-  tiktok?: string;
   ninImagePath?: string;
   selfiePath?: string;
   utilityBillPath?: string;
@@ -223,8 +221,6 @@ await this.ensureNoBiometricDuplicate({
           lga: address.lga,
           city: address.city,
           state: address.state,
-          instagram: input.instagram?.trim() || null,
-          tiktok: input.tiktok?.trim() || null,
         },
       });
     }
@@ -291,8 +287,6 @@ if (input.selfiePath) {
         lga: address.lga,
         city: address.city,
         state: address.state,
-        instagram: input.instagram?.trim() || null,
-        tiktok: input.tiktok?.trim() || null,
       },
     });
 
@@ -337,10 +331,6 @@ if (existing.status !== "REJECTED") {
           state: String(input.address?.state ?? existing.state ?? "").trim() || existing.state,
         };
 
-    const instagram =
-      input.instagram !== undefined ? input.instagram.trim() || null : existing.instagram ?? null;
-    const tiktok =
-      input.tiktok !== undefined ? input.tiktok.trim() || null : existing.tiktok ?? null;
 
     const ninImagePath = input.ninImagePath ?? existing.ninImagePath;
     const selfiePath = input.selfiePath ?? existing.selfieImagePath;
@@ -398,8 +388,6 @@ if (input.selfiePath) {
         lga: address.lga,
         city: address.city,
         state: address.state,
-        instagram,
-        tiktok,
       },
     });
   }
@@ -420,8 +408,6 @@ if (input.selfiePath) {
         lga: true,
         city: true,
         state: true,
-        instagram: true,
-        tiktok: true,
         ninImagePath: true,
         selfieImagePath: true,
         utilityBillPath: true,
@@ -457,8 +443,6 @@ if (input.selfiePath) {
       lga: record.lga ?? "",
       city: record.city ?? "",
       state: record.state ?? "",
-      instagram: record.instagram ?? "",
-      tiktok: record.tiktok ?? "",
       hasNinImage: Boolean(record.ninImagePath),
       hasSelfieImage: Boolean(record.selfieImagePath),
       hasUtilityBill: Boolean(record.utilityBillPath),

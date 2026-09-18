@@ -40,8 +40,6 @@ const REUPLOAD_FIELD_OPTIONS: Array<{
   { value: "bio", label: "Bio" },
   { value: "skills", label: "Skills" },
   { value: "address", label: "Address" },
-  { value: "instagram", label: "Instagram" },
-  { value: "tiktok", label: "TikTok" },
 ];
 
 function formatDateTime(value: string | null) {
@@ -576,12 +574,6 @@ export default function AdminVerificationDetailPage() {
 
                   <DetailField label="Bio" value={detail.bio} />
 
-                  <DetailField
-                    label="Instagram"
-                    value={detail.instagram}
-                  />
-
-                  <DetailField label="TikTok" value={detail.tiktok} />
                 </div>
 
                 <div className="mt-5">

@@ -106,8 +106,6 @@ model IdentityVerification {
   lga                   String
   city                  String
   state                 String
-  instagram             String?
-  tiktok                String?
   status                VerificationStatus    @default(PENDING)
   ninVerificationStatus NinVerificationStatus @default(PENDING)
   ninVerifiedAt         DateTime?

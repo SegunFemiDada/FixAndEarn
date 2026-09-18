@@ -20,8 +20,6 @@ type ReuploadField =
   | "bio"
   | "skills"
   | "address"
-  | "instagram"
-  | "tiktok"
 
 const REUPLOAD_LABELS: Record<ReuploadField, string> = {
   ninImage: "NIN image",
@@ -30,8 +28,6 @@ const REUPLOAD_LABELS: Record<ReuploadField, string> = {
   bio: "Bio",
   skills: "Skills",
   address: "Address",
-  instagram: "Instagram",
-  tiktok: "TikTok",
 };
 const SKILLS_LIST = [
   "Bricklayer", "Block Layer", "Concreter", "Woodworker", "Carpenter", "Cook", "Messenger",
@@ -265,7 +261,7 @@ const verificationSubmittingLabel =
   const needsFile = (field: "ninImage" | "selfie" | "utilityBill") =>
     !hasTargetedReupload || reuploadFields.includes(field);
 
-  const needsText = (field: "bio" | "skills" | "address" | "instagram" | "tiktok") =>
+  const needsText = (field: "bio" | "skills" | "address") =>
     !hasTargetedReupload || reuploadFields.includes(field);
 
   const showOnlyTargetedFields = hasTargetedReupload;
@@ -282,8 +278,6 @@ const verificationSubmittingLabel =
       lga: "",
       city: "",
       state: "",
-      instagram: "",
-      tiktok: "",
       ninImage: undefined,
       selfieImage: undefined,
       utilityBill: undefined,
@@ -311,8 +305,6 @@ const verificationSubmittingLabel =
       lga: submitted.lga ?? "",
       city: submitted.city ?? "",
       state: submitted.state ?? "",
-      instagram: submitted.instagram ?? "",
-      tiktok: submitted.tiktok ?? "",
       ninImage: undefined,
       selfieImage: undefined,
       utilityBill: undefined,
@@ -850,29 +842,7 @@ const verificationSubmittingLabel =
                 </div>
               )}
 
-              {(needsText("instagram") || needsText("tiktok")) && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {needsText("instagram") && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">Instagram (optional)</label>
-                      <input
-                        className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-                        {...form.register("instagram")}
-                      />
-                    </div>
-                  )}
 
-                  {needsText("tiktok") && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-[#1A2B4A] dark:text-[#E8F0FA]">TikTok (optional)</label>
-                      <input
-                        className="w-full rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-3 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-                        {...form.register("tiktok")}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
 
               {localError && (
                 <div className="rounded-xl border border-[#F2C0BC] dark:border-red-700 bg-[#FFF4F3] dark:bg-red-900/20 p-3 text-sm text-[#D9534F] dark:text-red-300">

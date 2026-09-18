@@ -58,9 +58,6 @@ export async function submitVerification(values: VerificationSubmitFormValues): 
   if (values.selfieImage) fd.append("selfie", values.selfieImage);
   if (values.utilityBill) fd.append("utilityBill", values.utilityBill);
 
-  if (values.instagram?.trim()) fd.append("instagram", values.instagram.trim());
-  if (values.tiktok?.trim()) fd.append("tiktok", values.tiktok.trim());
-
   await apiClient.post("/verification/submit", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });

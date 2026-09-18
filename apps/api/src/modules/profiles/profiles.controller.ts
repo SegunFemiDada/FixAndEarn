@@ -13,23 +13,6 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { PrismaService } from "../../infra/prisma/prisma.service";
 import { toPublicFileUrl } from "../../common/storage/storage-public-url";
 
-function normalizeHandle(v: unknown): string | null {
-  if (typeof v !== "string") return null;
-
-  const s = v.trim();
-
-  if (!s) return null;
-
-  return s.startsWith("@") ? s.slice(1) : s;
-}
-
-function toInstagramUrl(handle: string): string {
-  return `https://instagram.com/${encodeURIComponent(handle)}`;
-}
-
-function toTiktokUrl(handle: string): string {
-  return `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
-}
 
 function hasApprovedSelfie(
   verification:
@@ -202,8 +185,6 @@ export class ProfilesController {
               select: {
                 status: true,
                 selfieImagePath: true,
-                instagram: true,
-                tiktok: true,
                 bio: true,
                 skills: true,
               },
@@ -253,19 +234,6 @@ export class ProfilesController {
           )
         : null;
 
-    const instagramHandle =
-      approvedWithSelfie
-        ? normalizeHandle(
-            u.verification?.instagram
-          )
-        : null;
-
-    const tiktokHandle =
-      approvedWithSelfie
-        ? normalizeHandle(
-            u.verification?.tiktok
-          )
-        : null;
 
     return {
       id: u.id,
@@ -291,32 +259,6 @@ export class ProfilesController {
       },
 
       rating,
-
-      socials: {
-        instagram:
-          instagramHandle
-            ? {
-                handle:
-                  instagramHandle,
-                url:
-                  toInstagramUrl(
-                    instagramHandle
-                  ),
-              }
-            : null,
-
-        tiktok:
-          tiktokHandle
-            ? {
-                handle:
-                  tiktokHandle,
-                url:
-                  toTiktokUrl(
-                    tiktokHandle
-                  ),
-              }
-            : null,
-      },
 
       profile: {
         bio:
@@ -635,8 +577,6 @@ export class ProfilesController {
             select: {
               status: true,
               selfieImagePath: true,
-              instagram: true,
-              tiktok: true,
               bio: true,
               skills: true,
               state: true,
@@ -693,21 +633,6 @@ export class ProfilesController {
           )
         : null;
 
-    const instagramHandle =
-      approvedWithSelfie
-        ? normalizeHandle(
-            u.verification
-              ?.instagram
-          )
-        : null;
-
-    const tiktokHandle =
-      approvedWithSelfie
-        ? normalizeHandle(
-            u.verification
-              ?.tiktok
-          )
-        : null;
 
     return {
       id: u.id,
@@ -757,34 +682,6 @@ export class ProfilesController {
       },
 
       rating,
-
-      socials: {
-        instagram:
-          instagramHandle
-            ? {
-                handle:
-                  instagramHandle,
-
-                url:
-                  toInstagramUrl(
-                    instagramHandle
-                  ),
-              }
-            : null,
-
-        tiktok:
-          tiktokHandle
-            ? {
-                handle:
-                  tiktokHandle,
-
-                url:
-                  toTiktokUrl(
-                    tiktokHandle
-                  ),
-              }
-            : null,
-      },
 
       profile: {
         bio:

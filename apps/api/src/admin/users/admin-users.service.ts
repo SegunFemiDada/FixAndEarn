@@ -110,8 +110,6 @@ export class AdminUsersService {
           lga: v.lga,
           city: v.city,
           state: v.state,
-          instagram: v.instagram,
-          tiktok: v.tiktok,
           createdAt: v.createdAt,
           updatedAt: v.updatedAt,
           reviewedByAdminId: v.reviewedByAdminId,
@@ -554,16 +552,6 @@ export class AdminUsersService {
       if (dto.state !== undefined) {
         verificationUpdateData.state =
           dto.state?.trim() ?? null;
-      }
-
-      if (dto.instagram !== undefined) {
-        verificationUpdateData.instagram =
-          dto.instagram?.trim() ?? null;
-      }
-
-      if (dto.tiktok !== undefined) {
-        verificationUpdateData.tiktok =
-          dto.tiktok?.trim() ?? null;
       }
 
       if (

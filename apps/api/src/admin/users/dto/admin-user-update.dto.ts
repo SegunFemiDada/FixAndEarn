@@ -46,12 +46,4 @@ export class AdminUserUpdateDto {
   @IsOptional()
   @IsString()
   state?: string;
-
-  @IsOptional()
-  @IsString()
-  instagram?: string;
-
-  @IsOptional()
-  @IsString()
-  tiktok?: string;
 }

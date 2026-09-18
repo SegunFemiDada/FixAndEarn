@@ -13,8 +13,6 @@ export const VerificationSubmittedDataSchema = z.object({
   lga: z.string().optional().default(""),
   city: z.string().optional().default(""),
   state: z.string().optional().default(""),
-  instagram: z.string().optional().default(""),
-  tiktok: z.string().optional().default(""),
   hasNinImage: z.boolean().optional().default(false),
   hasSelfieImage: z.boolean().optional().default(false),
   hasUtilityBill: z.boolean().optional().default(false),
@@ -43,9 +41,6 @@ export const VerificationSubmitFormSchema = z.object({
   lga: z.string().optional().default(""),
   city: z.string().optional().default(""),
   state: z.string().optional().default(""),
-
-  instagram: z.string().optional().default(""),
-  tiktok: z.string().optional().default(""),
 
   ninImage: z.any().optional(),
   selfieImage: z.any().optional(),

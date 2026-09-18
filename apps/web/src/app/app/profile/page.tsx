@@ -46,10 +46,6 @@ type MyProfileResponse = {
     average: number;
     count: number;
   };
-  socials?: {
-    instagram?: { handle: string; url: string } | null;
-    tiktok?: { handle: string; url: string } | null;
-  } | null;
   profile?: {
     bio?: string | null;
     skills?: string | null;
@@ -521,35 +517,6 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-3 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-              <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Socials</div>
-              <div className="flex flex-col gap-2">
-                {data?.socials?.instagram ? (
-                  <a
-                    href={data.socials.instagram.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-fit items-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] underline transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-                  >
-                    Instagram: @{data.socials.instagram.handle}
-                  </a>
-                ) : (
-                  <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">Instagram not provided.</div>
-                )}
-
-                {data?.socials?.tiktok ? (
-                  <a
-                    href={data.socials.tiktok.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-fit items-center rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] px-4 py-2 text-sm font-medium text-[#5B8FCC] dark:text-[#7AAEE0] underline transition hover:bg-[#F4F8FF] dark:hover:bg-[#16202E]"
-                  >
-                    TikTok: @{data.socials.tiktok.handle}
-                  </a>
-                ) : (
-                  <div className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">TikTok not provided.</div>
-                )}
-              </div>
-
               {pinStatus?.hasPin ? (
                 <button
   type="button"

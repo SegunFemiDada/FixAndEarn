@@ -61,14 +61,4 @@ export class SubmitVerificationDto {
   @ValidateNested()
   @Type(() => AddressDto)
   address?: AddressDto;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  instagram?: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  tiktok?: string;
 }

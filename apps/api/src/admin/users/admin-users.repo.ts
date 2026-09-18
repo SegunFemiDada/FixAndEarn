@@ -172,8 +172,6 @@ export class AdminUsersRepo {
             addressStreet: true,
             addressArea: true,
             nearestBusStop: true,
-            instagram: true,
-            tiktok: true,
             ninVerificationStatus: true,
             ninVerifiedAt: true,
             ninVerifiedByAdminId: true,

@@ -80,8 +80,6 @@ export type AdminUserVerificationDetail = {
   addressStreet: string;
   addressArea: string;
   nearestBusStop: string;
-  instagram: string | null;
-  tiktok: string | null;
   ninVerificationStatus?: "PENDING" | "VERIFIED" | "FAILED";
   ninVerifiedAt?: string | null;
   ninVerifiedByAdminId?: string | null;

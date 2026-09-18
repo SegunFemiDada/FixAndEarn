@@ -105,8 +105,6 @@ describe("App E2E", () => {
         city: "Lagos",
         state: "Lagos"
       },
-      instagram: "",
-      tiktok: ""
     };
 
     const ninBuf = Buffer.from("nin-image");
@@ -127,8 +125,7 @@ describe("App E2E", () => {
       .field("address[lga]", dto.address.lga)
       .field("address[city]", dto.address.city)
       .field("address[state]", dto.address.state)
-      .field("instagram", dto.instagram)
-      .field("tiktok", dto.tiktok)
+
       .attach("ninImage", ninBuf, { filename: "nin.png" })
       .attach("selfie", selfieBuf, { filename: "selfie.png" })
       .attach("utilityBill", utilBuf, { filename: "bill.png" })
@@ -150,8 +147,7 @@ describe("App E2E", () => {
       .field("address[lga]", dto.address.lga)
       .field("address[city]", dto.address.city)
       .field("address[state]", dto.address.state)
-      .field("instagram", dto.instagram)
-      .field("tiktok", dto.tiktok)
+
       .attach("ninImage", ninBuf, { filename: "nin.png" })
       .attach("selfie", selfieBuf, { filename: "selfie.png" })
       .attach("utilityBill", utilBuf, { filename: "bill.png" })
