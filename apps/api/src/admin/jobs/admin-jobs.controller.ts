@@ -4,7 +4,9 @@ import {
   Param,
   Query,
   UseGuards,
-  Body, Post, Req,
+  Body,
+  Post,
+  Req,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { AdminRole } from "@prisma/client";
@@ -25,7 +27,7 @@ import { AdminJobActionDto } from "./dto/admin-job-action.dto";
   AdminRole.SUPPORT_OFFICER,
   AdminRole.SECURITY_OFFICER,
   AdminRole.VERIFICATION_OFFICER,
-  AdminRole.FINANCE_OFFICER
+  AdminRole.FINANCE_OFFICER,
 )
 @Controller("admin/jobs")
 export class AdminJobsController {
@@ -49,21 +51,28 @@ export class AdminJobsController {
   async getOne(@Param("id") id: string) {
     return this.svc.getOne(id);
   }
-  @Post(":id/flag")
-async flag(
-  @Req() req: any,
-  @Param("id") id: string,
-  @Body() dto: AdminJobActionDto,
-) {
-  return this.svc.flag(
-    id,
-    req.user.adminId,
-    dto.reason,
-  );
-}
 
-@Post(":id/unflag")
-async unflag(@Param("id") id: string) {
-  return this.svc.unflag(id);
-}
+  @Post(":id/flag")
+  async flag(
+    @Req() req: any,
+    @Param("id") id: string,
+    @Body() dto: AdminJobActionDto,
+  ) {
+    return this.svc.flag(
+      id,
+      req.user.adminId,
+      dto.reason,
+    );
+  }
+
+  @Post(":id/unflag")
+  async unflag(
+    @Req() req: any,
+    @Param("id") id: string,
+  ) {
+    return this.svc.unflag(
+      id,
+      req.user.adminId,
+    );
+  }
 }
