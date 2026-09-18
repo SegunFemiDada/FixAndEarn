@@ -1,4 +1,3 @@
-//path: apps/api/src/modules/auth/auth.service.ts
 import {
   BadRequestException,
   ConflictException,
@@ -24,7 +23,11 @@ export class AuthService {
     private readonly email: EmailService
   ) {}
 
-  async register(input: { email: string; fullName: string; password: string }) {
+  async register(input: {
+    email: string;
+    fullName: string;
+    password: string;
+  }) {
     const email = input.email.trim().toLowerCase();
     const fullName = input.fullName.trim();
 
@@ -39,11 +42,15 @@ export class AuthService {
       passwordHash,
     });
 
-    const verification = await this.createEmailVerificationToken(user.id, user.email);
+    const verification = await this.createEmailVerificationToken(
+      user.id,
+      user.email
+    );
+
     const accessToken = await this.signAccessToken(
-    user.id,
-    user.sessionVersion ?? 1
-  );
+      user.id,
+      user.sessionVersion ?? 1
+    );
 
     return {
       user: this.toUserResponse(user),
@@ -54,10 +61,16 @@ export class AuthService {
 
   async verifyEmail(token: string) {
     const cleanToken = String(token ?? "").trim();
-    if (!cleanToken) throw new BadRequestException("EMAIL_VERIFICATION_TOKEN_REQUIRED");
+
+    if (!cleanToken) {
+      throw new BadRequestException(
+        "EMAIL_VERIFICATION_TOKEN_REQUIRED"
+      );
+    }
 
     const hash = this.hashToken(cleanToken);
-    const user = await this.usersService.findByVerificationTokenHash(hash);
+    const user =
+      await this.usersService.findByVerificationTokenHash(hash);
 
     if (!user) {
       throw new UnauthorizedException("Invalid or expired token.");
@@ -70,7 +83,10 @@ export class AuthService {
 
   async resendVerification(email: string) {
     const cleanEmail = String(email ?? "").trim().toLowerCase();
-    if (!cleanEmail) throw new BadRequestException("EMAIL_REQUIRED");
+
+    if (!cleanEmail) {
+      throw new BadRequestException("EMAIL_REQUIRED");
+    }
 
     const user = await this.usersService.findByEmail(cleanEmail);
 
@@ -82,7 +98,10 @@ export class AuthService {
       return { ok: true };
     }
 
-    const verification = await this.createEmailVerificationToken(user.id, user.email);
+    const verification = await this.createEmailVerificationToken(
+      user.id,
+      user.email
+    );
 
     return {
       ok: true,
@@ -90,85 +109,113 @@ export class AuthService {
     };
   }
 
- async login(input: { email: string; password: string }) {
-  const email = input.email.trim().toLowerCase();
+  async login(input: { email: string; password: string }) {
+    const email = input.email.trim().toLowerCase();
 
-  const user = await this.usersService.findByEmail(email);
-  if (!user) throw new UnauthorizedException("Invalid credentials.");
+    const user = await this.usersService.findByEmail(email);
 
-  // Add this check
-  if (!user.emailVerifiedAt) {
-    throw new UnauthorizedException("EMAIL_NOT_VERIFIED");
-  }
+    if (!user) {
+      throw new UnauthorizedException("Invalid credentials.");
+    }
 
-  const ok = await argon2.verify(user.passwordHash, input.password);
-  if (!ok) throw new UnauthorizedException("Invalid credentials.");
-  if (!user.isActive) {
-  throw new UnauthorizedException("ACCOUNT_SUSPENDED");
-}
+    if (!user.emailVerifiedAt) {
+      throw new UnauthorizedException("EMAIL_NOT_VERIFIED");
+    }
 
-  const session = await this.usersService.incrementSessionVersion(user.id);
+    const ok = await argon2.verify(
+      user.passwordHash,
+      input.password
+    );
 
-const accessToken = await this.signAccessToken(
-  user.id,
-  session.sessionVersion
-);
+    if (!ok) {
+      throw new UnauthorizedException("Invalid credentials.");
+    }
 
-  return {
-    user: this.toUserResponse(user),
-    accessToken,
-  };
-}
+    if (!user.isActive) {
+      throw new UnauthorizedException("ACCOUNT_SUSPENDED");
+    }
 
-async forgotPassword(input: { email: string }) {
-  const email = input.email.trim().toLowerCase();
-  const user = await this.usersService.findByEmail(email);
+    const session = await this.usersService.incrementSessionVersion(
+      user.id
+    );
 
-  const baseResponse: {
-    ok: true;
-    message: string;
-    resetToken?: string;
-    resetUrl?: string;
-  } = {
-    ok: true,
-    message:
-      "If an account exists for that email, password reset instructions have been sent.",
-  };
+    const accessToken = await this.signAccessToken(
+      user.id,
+      session.sessionVersion
+    );
 
-  if (!user) {
-    return baseResponse;
-  }
-
-  const resetToken = await this.signResetToken(user.id);
-  const siteUrl = this.getWebAppUrl();
-  const resetUrl = `${siteUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
-
-  // Send the reset email
-  await this.email.sendResetPasswordEmail(user.email, resetUrl);
-
-  const allowTokenInResponse =
-    this.config.get<string>("AUTH_RETURN_RESET_TOKEN_IN_RESPONSE", "false") === "true";
-
-  if (allowTokenInResponse) {
     return {
-      ...baseResponse,
-      resetToken,
-      resetUrl,
+      user: this.toUserResponse(user),
+      accessToken,
     };
   }
 
-  return baseResponse;
-}
+  async forgotPassword(input: { email: string }) {
+    const email = input.email.trim().toLowerCase();
+    const user = await this.usersService.findByEmail(email);
 
-  async resetPassword(input: { token: string; password: string }) {
+    const baseResponse: {
+      ok: true;
+      message: string;
+      resetToken?: string;
+      resetUrl?: string;
+    } = {
+      ok: true,
+      message:
+        "If an account exists for that email, password reset instructions have been sent.",
+    };
+
+    if (!user) {
+      return baseResponse;
+    }
+
+    const resetToken = await this.signResetToken(user.id);
+    const siteUrl = this.getWebAppUrl();
+    const resetUrl = `${siteUrl}/reset-password?token=${encodeURIComponent(
+      resetToken
+    )}`;
+
+    await this.email.sendResetPasswordEmail(
+      user.email,
+      resetUrl
+    );
+
+    const allowTokenInResponse =
+      this.config.get<string>(
+        "AUTH_RETURN_RESET_TOKEN_IN_RESPONSE",
+        "false"
+      ) === "true";
+
+    if (allowTokenInResponse) {
+      return {
+        ...baseResponse,
+        resetToken,
+        resetUrl,
+      };
+    }
+
+    return baseResponse;
+  }
+
+  async resetPassword(input: {
+    token: string;
+    password: string;
+  }) {
     const token = input.token.trim();
-    if (!token) throw new BadRequestException("RESET_TOKEN_REQUIRED");
+
+    if (!token) {
+      throw new BadRequestException("RESET_TOKEN_REQUIRED");
+    }
 
     const payload = await this.verifyResetToken(token);
     const userId = String(payload?.sub ?? "").trim();
     const issuedAtSeconds = Number(payload?.iat ?? 0);
 
-    if (!userId || !Number.isFinite(issuedAtSeconds) || issuedAtSeconds <= 0) {
+    if (
+      !userId ||
+      !Number.isFinite(issuedAtSeconds) ||
+      issuedAtSeconds <= 0
+    ) {
       throw new BadRequestException("INVALID_RESET_TOKEN");
     }
 
@@ -197,33 +244,50 @@ async forgotPassword(input: { email: string }) {
       where: { id: user.id },
       data: {
         passwordHash,
+        sessionVersion: {
+          increment: 1,
+        },
       },
     });
 
     return {
       ok: true,
-      message: "Password reset successful. You can now log in with your new password.",
+      message:
+        "Password reset successful. You can now log in with your new password.",
     };
   }
 
-  private async createEmailVerificationToken(userId: string, email: string) {
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const hash = this.hashToken(rawToken);
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+  private async createEmailVerificationToken(
+    userId: string,
+    email: string
+  ) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hash = this.hashToken(rawToken);
+    const expiresAt = new Date(
+      Date.now() + 1000 * 60 * 60 * 24
+    );
 
-  await this.usersService.setEmailVerificationToken(userId, hash, expiresAt);
+    await this.usersService.setEmailVerificationToken(
+      userId,
+      hash,
+      expiresAt
+    );
 
-  const verifyUrl = `${this.getWebAppUrl()}/verify-email?token=${encodeURIComponent(rawToken)}`;
-  
-  // Send email
-  await this.email.sendVerificationEmail(email, verifyUrl);
+    const verifyUrl = `${this.getWebAppUrl()}/verify-email?token=${encodeURIComponent(
+      rawToken
+    )}`;
 
-  return {
-    rawToken,
-    verifyEmailUrl: verifyUrl,
-    expiresAt,
-  };
-}
+    await this.email.sendVerificationEmail(
+      email,
+      verifyUrl
+    );
+
+    return {
+      rawToken,
+      verifyEmailUrl: verifyUrl,
+      expiresAt,
+    };
+  }
 
   private getWebAppUrl() {
     const raw =
@@ -232,32 +296,46 @@ async forgotPassword(input: { email: string }) {
       "https://fixandearn.com";
 
     const clean = raw.trim();
-    return clean.endsWith("/") ? clean.slice(0, -1) : clean;
+
+    return clean.endsWith("/")
+      ? clean.slice(0, -1)
+      : clean;
   }
 
   private hashToken(token: string) {
-    return crypto.createHash("sha256").update(token).digest("hex");
+    return crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
   }
 
   private async signAccessToken(
-  userId: string,
-  sessionVersion: number
-): Promise<string> {
-  return this.jwt.signAsync({
-    sub: userId,
-    sessionVersion,
-  });
-}
+    userId: string,
+    sessionVersion: number
+  ): Promise<string> {
+    return this.jwt.signAsync({
+      sub: userId,
+      sessionVersion,
+    });
+  }
 
-  private async signResetToken(userId: string): Promise<string> {
+  private async signResetToken(
+    userId: string
+  ): Promise<string> {
     const secret =
       this.config.get<string>("JWT_RESET_SECRET") ||
       this.config.get<string>("JWT_ACCESS_SECRET");
 
-    const expiresIn = this.config.get<string>("JWT_RESET_EXPIRES_IN", "15m");
+    const expiresIn = this.config.get<string>(
+      "JWT_RESET_EXPIRES_IN",
+      "15m"
+    );
 
     return this.jwt.signAsync(
-      { sub: userId, typ: "password-reset" },
+      {
+        sub: userId,
+        typ: "password-reset",
+      },
       {
         secret,
         expiresIn,
@@ -265,21 +343,29 @@ async forgotPassword(input: { email: string }) {
     );
   }
 
-  private async verifyResetToken(token: string): Promise<Record<string, unknown>> {
+  private async verifyResetToken(
+    token: string
+  ): Promise<Record<string, unknown>> {
     const secret =
       this.config.get<string>("JWT_RESET_SECRET") ||
       this.config.get<string>("JWT_ACCESS_SECRET");
 
     try {
-      return (await this.jwt.verifyAsync(token, { secret })) as Record<string, unknown>;
+      return (await this.jwt.verifyAsync(token, {
+        secret,
+      })) as Record<string, unknown>;
     } catch {
-      throw new BadRequestException("INVALID_OR_EXPIRED_RESET_TOKEN");
+      throw new BadRequestException(
+        "INVALID_OR_EXPIRED_RESET_TOKEN"
+      );
     }
   }
 
   private toUserResponse(user: CurrentUserPayload) {
     const roles = Array.isArray(user.roles)
-      ? user.roles.map((ur: any) => ur?.role?.code).filter(Boolean)
+      ? user.roles
+          .map((ur: any) => ur?.role?.code)
+          .filter(Boolean)
       : [];
 
     return {
@@ -287,7 +373,8 @@ async forgotPassword(input: { email: string }) {
       email: user.email,
       fullName: user.fullName,
       roles,
-      emailVerifiedAt: (user as any).emailVerifiedAt ?? null,
+      emailVerifiedAt:
+        (user as any).emailVerifiedAt ?? null,
     };
   }
 }
