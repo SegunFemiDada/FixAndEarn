@@ -42,7 +42,7 @@ export class AuthService {
       passwordHash,
     });
 
-    const verification = await this.createEmailVerificationToken(
+    await this.createEmailVerificationToken(
       user.id,
       user.email
     );
@@ -55,7 +55,6 @@ export class AuthService {
     return {
       user: this.toUserResponse(user),
       accessToken,
-      verifyEmailUrl: verification.verifyEmailUrl,
     };
   }
 
@@ -98,14 +97,13 @@ export class AuthService {
       return { ok: true };
     }
 
-    const verification = await this.createEmailVerificationToken(
+    await this.createEmailVerificationToken(
       user.id,
       user.email
     );
 
     return {
       ok: true,
-      verifyEmailUrl: verification.verifyEmailUrl,
     };
   }
 
@@ -260,7 +258,7 @@ export class AuthService {
   private async createEmailVerificationToken(
     userId: string,
     email: string
-  ) {
+  ): Promise<void> {
     const rawToken = crypto.randomBytes(32).toString("hex");
     const hash = this.hashToken(rawToken);
     const expiresAt = new Date(
@@ -281,12 +279,6 @@ export class AuthService {
       email,
       verifyUrl
     );
-
-    return {
-      rawToken,
-      verifyEmailUrl: verifyUrl,
-      expiresAt,
-    };
   }
 
   private getWebAppUrl() {

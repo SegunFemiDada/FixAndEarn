@@ -2,17 +2,11 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import type { AxiosError } from "axios";
 import apiClient from "@/lib/apiClient";
 import { clearSession, saveSession } from "@/lib/auth/session";
 import { sendPhoneVerificationCode, verifyPhoneCode } from "./api";
 import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
 
-type ApiErrorPayload = {
-  message?: string | string[];
-  error?: string;
-  statusCode?: number;
-};
 
 type AuthUser = {
   id: string;
@@ -25,7 +19,6 @@ type AuthUser = {
 type AuthResponse = {
   user: AuthUser;
   accessToken: string;
-  verifyEmailUrl?: string;
 };
 
 type LoginInput = {
@@ -74,7 +67,6 @@ type ResendVerificationInput = {
 
 type ResendVerificationResponse = {
   ok: true;
-  verifyEmailUrl?: string;
 };
 
 export function extractAuthErrorMessage(error: unknown): string {
