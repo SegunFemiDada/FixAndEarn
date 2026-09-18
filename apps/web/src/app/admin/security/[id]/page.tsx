@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isValidElement } from "react";
 import { useParams } from "next/navigation";
 import { extractApiErrorMessage } from "@/lib/admin/queries";
 import { useAdminSecurityInvestigation } from "@/lib/admin/security/queries";
@@ -79,6 +80,10 @@ function Section({
 function renderFieldValue(value: unknown): React.ReactNode {
   if (value === null || value === undefined || value === "") {
     return "Not available";
+  }
+
+  if (isValidElement(value)) {
+    return value;
   }
 
   if (
