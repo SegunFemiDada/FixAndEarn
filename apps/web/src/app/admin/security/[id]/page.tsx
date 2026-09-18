@@ -95,9 +95,11 @@ function renderFieldValue(value: unknown): React.ReactNode {
 
   if (typeof value === "object") {
     return (
-      <span className="font-mono text-xs wrap-break-word">
-        {JSON.stringify(value)}
-      </span>
+      <div className="mt-1 rounded-lg border border-[#D9E3F1] bg-[#F8FAFD] p-3 dark:border-[#2D3F55] dark:bg-[#16202E]">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <MetadataFields value={value} />
+        </div>
+      </div>
     );
   }
 
