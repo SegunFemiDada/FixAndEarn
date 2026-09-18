@@ -35,16 +35,21 @@ export class EmailService {
       <p>Please verify your email address.</p>
 
       <p>
-  <a
-    href={verifyUrl}
-    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
-      bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg focus:ring-2 focus:ring-blue-400
-      transition-colors"
-  >
-    Verify Email
-  </a>
-</p>
-
+        <a
+          href="${verifyUrl}"
+          style="
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+          "
+        >
+          Verify Email
+        </a>
+      </p>
 
       <p>
         Or copy and paste this URL into your browser:
