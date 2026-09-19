@@ -174,7 +174,6 @@ The frontend does not calculate or assume financial outcomes. It displays the va
 - **Two-factor authentication** – mandatory for administrator accounts.
 - **Withdrawal PIN** – required for Fixers to request withdrawals.
 - **Email verification** – required before account access.
-- **Phone verification** – available as an additional verification mechanism.
 - **Role-based access control** – platform functionality is restricted according to user and administrator roles.
 - **Audit logging** – security-sensitive and administrative activities are recorded for accountability.
 

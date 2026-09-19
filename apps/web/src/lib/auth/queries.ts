@@ -1,12 +1,14 @@
-//path: apps/web/src/lib/auth/queries.ts
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
-import { clearSession, saveSession } from "@/lib/auth/session";
-import { sendPhoneVerificationCode, verifyPhoneCode } from "./api";
-import { getUserFacingErrorMessage } from "@/lib/shared/user-facing-error";
-
+import {
+  clearSession,
+  saveSession,
+} from "@/lib/auth/session";
+import {
+  getUserFacingErrorMessage,
+} from "@/lib/shared/user-facing-error";
 
 type AuthUser = {
   id: string;
@@ -69,7 +71,9 @@ type ResendVerificationResponse = {
   ok: true;
 };
 
-export function extractAuthErrorMessage(error: unknown): string {
+export function extractAuthErrorMessage(
+  error: unknown,
+): string {
   return getUserFacingErrorMessage(
     error,
     "We couldn't sign you in. Please check your details and try again.",
@@ -77,9 +81,18 @@ export function extractAuthErrorMessage(error: unknown): string {
 }
 
 export function useLogin() {
-  return useMutation<AuthResponse, Error, LoginInput>({
+  return useMutation<
+    AuthResponse,
+    Error,
+    LoginInput
+  >({
     mutationFn: async (payload) => {
-      const response = await apiClient.post<AuthResponse>("/auth/login", payload);
+      const response =
+        await apiClient.post<AuthResponse>(
+          "/auth/login",
+          payload,
+        );
+
       return response.data;
     },
     onSuccess: (data) => {
@@ -92,9 +105,18 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  return useMutation<AuthResponse, Error, RegisterInput>({
+  return useMutation<
+    AuthResponse,
+    Error,
+    RegisterInput
+  >({
     mutationFn: async (payload) => {
-      const response = await apiClient.post<AuthResponse>("/auth/register", payload);
+      const response =
+        await apiClient.post<AuthResponse>(
+          "/auth/register",
+          payload,
+        );
+
       return response.data;
     },
     // onSuccess: (data) => {
@@ -107,36 +129,54 @@ export function useRegister() {
 }
 
 export function useForgotPassword() {
-  return useMutation<ForgotPasswordResponse, Error, ForgotPasswordInput>({
+  return useMutation<
+    ForgotPasswordResponse,
+    Error,
+    ForgotPasswordInput
+  >({
     mutationFn: async (payload) => {
-      const response = await apiClient.post<ForgotPasswordResponse>(
-        "/auth/forgot-password",
-        payload
-      );
+      const response =
+        await apiClient.post<ForgotPasswordResponse>(
+          "/auth/forgot-password",
+          payload,
+        );
+
       return response.data;
     },
   });
 }
 
 export function useResetPassword() {
-  return useMutation<ResetPasswordResponse, Error, ResetPasswordInput>({
+  return useMutation<
+    ResetPasswordResponse,
+    Error,
+    ResetPasswordInput
+  >({
     mutationFn: async (payload) => {
-      const response = await apiClient.post<ResetPasswordResponse>(
-        "/auth/reset-password",
-        payload
-      );
+      const response =
+        await apiClient.post<ResetPasswordResponse>(
+          "/auth/reset-password",
+          payload,
+        );
+
       return response.data;
     },
   });
 }
 
 export function useVerifyEmail() {
-  return useMutation<VerifyEmailResponse, Error, VerifyEmailInput>({
+  return useMutation<
+    VerifyEmailResponse,
+    Error,
+    VerifyEmailInput
+  >({
     mutationFn: async (payload) => {
-      const response = await apiClient.post<VerifyEmailResponse>(
-        "/auth/verify-email",
-        payload
-      );
+      const response =
+        await apiClient.post<VerifyEmailResponse>(
+          "/auth/verify-email",
+          payload,
+        );
+
       return response.data;
     },
   });
@@ -149,19 +189,13 @@ export function useResendVerification() {
     ResendVerificationInput
   >({
     mutationFn: async (payload) => {
-      const res = await apiClient.post("/auth/resend-verification", payload);
+      const res =
+        await apiClient.post(
+          "/auth/resend-verification",
+          payload,
+        );
+
       return res.data;
     },
-  });
-}
-export function useSendPhoneVerificationCode() {
-  return useMutation({
-    mutationFn: (phone: string) => sendPhoneVerificationCode(phone),
-  });
-}
-
-export function useVerifyPhoneCode() {
-  return useMutation({
-    mutationFn: (code: string) => verifyPhoneCode(code),
   });
 }

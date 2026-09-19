@@ -36,10 +36,6 @@ function createValidConfig(): Record<
       "test-api-key",
     CLOUDINARY_API_SECRET:
       "test-api-secret",
-    TERMII_API_KEY:
-      "test-termii-api-key",
-    TERMII_SENDER_ID:
-      "FixAndEarn",
   };
 }
 
@@ -99,39 +95,6 @@ describe(
     );
 
     it(
-      "accepts the default Termii Nigeria base URL",
-      () => {
-        const config =
-          createValidConfig();
-
-        delete config.TERMII_BASE_URL;
-
-        expect(() =>
-          validateEnvironment(
-            config,
-          ),
-        ).not.toThrow();
-      },
-    );
-
-    it(
-      "accepts a custom Termii base URL",
-      () => {
-        const config =
-          createValidConfig();
-
-        config.TERMII_BASE_URL =
-          "https://api.ng.termii.com";
-
-        expect(() =>
-          validateEnvironment(
-            config,
-          ),
-        ).not.toThrow();
-      },
-    );
-
-    it(
       "rejects an invalid NODE_ENV",
       () => {
         const config =
@@ -169,42 +132,6 @@ describe(
     );
 
     it(
-      "rejects a missing Termii API key",
-      () => {
-        const config =
-          createValidConfig();
-
-        delete config.TERMII_API_KEY;
-
-        expect(() =>
-          validateEnvironment(
-            config,
-          ),
-        ).toThrow(
-          'Environment variable "TERMII_API_KEY" is required.',
-        );
-      },
-    );
-
-    it(
-      "rejects a missing Termii sender ID",
-      () => {
-        const config =
-          createValidConfig();
-
-        delete config.TERMII_SENDER_ID;
-
-        expect(() =>
-          validateEnvironment(
-            config,
-          ),
-        ).toThrow(
-          'Environment variable "TERMII_SENDER_ID" is required.',
-        );
-      },
-    );
-
-    it(
       "rejects an invalid Monnify URL",
       () => {
         const config =
@@ -219,25 +146,6 @@ describe(
           ),
         ).toThrow(
           'Environment variable "MONNIFY_BASE_URL" must be a valid URL.',
-        );
-      },
-    );
-
-    it(
-      "rejects an invalid Termii URL",
-      () => {
-        const config =
-          createValidConfig();
-
-        config.TERMII_BASE_URL =
-          "not-a-url";
-
-        expect(() =>
-          validateEnvironment(
-            config,
-          ),
-        ).toThrow(
-          'Environment variable "TERMII_BASE_URL" must be a valid URL.',
         );
       },
     );

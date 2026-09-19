@@ -1,4 +1,3 @@
-// Path: apps/web/src/lib/auth/api.ts
 import axios from "axios";
 import apiClient from "../apiClient";
 
@@ -34,7 +33,7 @@ function getApiBaseUrl(): string {
 
   if (!base) {
     throw new Error(
-      "Missing API base URL. Set NEXT_PUBLIC_API_BASE_URL (or NEXT_PUBLIC_API_URL) in apps/web/.env.local"
+      "Missing API base URL. Set NEXT_PUBLIC_API_BASE_URL (or NEXT_PUBLIC_API_URL) in apps/web/.env.local",
     );
   }
 
@@ -46,27 +45,38 @@ const authHttp = axios.create({
   withCredentials: false,
 });
 
-export async function registerUser(input: RegisterRequest): Promise<AuthResponse> {
-  const res = await authHttp.post<AuthResponse>("/auth/register", input, {
-    headers: { "Content-Type": "application/json" },
-  });
+export async function registerUser(
+  input: RegisterRequest,
+): Promise<AuthResponse> {
+  const res =
+    await authHttp.post<AuthResponse>(
+      "/auth/register",
+      input,
+      {
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+      },
+    );
 
   return res.data;
 }
 
-export async function loginUser(input: LoginRequest): Promise<AuthResponse> {
-  const res = await authHttp.post<AuthResponse>("/auth/login", input, {
-    headers: { "Content-Type": "application/json" },
-  });
+export async function loginUser(
+  input: LoginRequest,
+): Promise<AuthResponse> {
+  const res =
+    await authHttp.post<AuthResponse>(
+      "/auth/login",
+      input,
+      {
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+      },
+    );
 
   return res.data;
-}
-export async function sendPhoneVerificationCode(phone: string) {
-  const response = await apiClient.post("/phone-verification/send", { phone });
-  return response.data;
-}
-
-export async function verifyPhoneCode(code: string) {
-  const response = await apiClient.post("/phone-verification/verify", { code });
-  return response.data;
 }

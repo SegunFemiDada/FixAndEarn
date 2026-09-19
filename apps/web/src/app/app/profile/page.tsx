@@ -13,7 +13,6 @@ import {
 } from "@/lib/auth/session";
 import { useSwitchRole } from "@/lib/account/queries";
 import { useWithdrawalPinStatus, useSetWithdrawalPin } from "@/lib/wallet/queries";
-import { sendPhoneVerificationCode, verifyPhoneCode } from "@/lib/auth/api"; // you need to create these API functions
 
 type RecentReview = {
   id: string;
@@ -131,28 +130,6 @@ export default function ProfilePage() {
   mounted && activeRole === "FIXER"
 );
 
-  // Phone verification
-  const [phoneInput, setPhoneInput] = useState("");
-  const [showCodeInput, setShowCodeInput] = useState(false);
-  const [verifyCode, setVerifyCode] = useState("");
-  const sendPhoneMutation = useMutation({
-    mutationFn: (phone: string) => sendPhoneVerificationCode(phone),
-    onSuccess: () => setShowCodeInput(true),
-  });
-  const [phoneVerified] = useState(false);
-  const verifyMutation = useMutation({
-    mutationFn: (code: string) => verifyPhoneCode(code),
-    onSuccess: () => {
-  setFeedbackModal({
-    title: "Phone verification",
-    message: "Phone verified successfully.",
-  });
-  setShowCodeInput(false);
-  setVerifyCode("");
-  refetch(); // refresh profile data
-},
-  });
-
   // Account deletion
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
@@ -184,10 +161,6 @@ export default function ProfilePage() {
     enabled: mounted,
   });
 
-  // Update phone input when data loads
-  useEffect(() => {
-    if (data?.phone) setPhoneInput(data.phone);
-  }, [data]);
 
   if (!mounted || isLoading) {
     return (
@@ -564,70 +537,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Phone verification */}
-        <div className="space-y-3 rounded-2xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-white dark:bg-[#1E2A3A] p-4 shadow-[0_4px_24px_rgba(91,143,204,0.12)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <div className="font-semibold text-[#1A2B4A] dark:text-[#E8F0FA]">Phone verification</div>
-          {data?.phoneVerifiedAt || phoneVerified ? (
-            <div className="text-sm text-[#2E7D32] dark:text-green-200">
-              ✓ Phone verified: {data?.phone || phoneInput}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-[#6B7C99] dark:text-[#8FA0BC]">
-                Add your phone number to increase account security.
-              </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  type="tel"
-                  value={phoneInput}
-                  onChange={(e) => setPhoneInput(e.target.value)}
-                  placeholder="e.g. +2348012345678"
-                  className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none transition placeholder:text-[#9BAEC8] dark:placeholder:text-[#4A6080] focus:border-[#5B8FCC] dark:focus:border-[#5B8FCC] focus:ring-2 focus:ring-[#5B8FCC]/20"
-                />
-                <button
-  type="button"
-  onClick={() => sendPhoneMutation.mutate(phoneInput)}
-  disabled={sendPhoneMutation.isPending || !phoneInput.trim()}
-  className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
-    bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 shadow-md
-    disabled:opacity-50 disabled:cursor-not-allowed
-    dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-300`}
->
-  Send code
-</button>
-
-              </div>
-              {showCodeInput && (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input
-                    type="text"
-                    value={verifyCode}
-                    onChange={(e) => setVerifyCode(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="flex-1 rounded-xl border border-[#C5D5EE] dark:border-[#2D3F55] bg-[#F4F8FF] dark:bg-[#16202E] px-4 py-2 text-sm text-[#1A2B4A] dark:text-[#E8F0FA] outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => verifyMutation.mutate(verifyCode)}
-                    disabled={verifyMutation.isPending || !verifyCode.trim()}
-                    className={`rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
-                      bg-green-600 hover:bg-green-700 focus:ring-2 focus:ring-green-400
-                      disabled:opacity-50 disabled:cursor-not-allowed
-                      dark:bg-green-500 dark:hover:bg-green-600 dark:focus:ring-green-300`}
-                  >
-                    Verify
-                  </button>
-                </div>
-              )}
-              {sendPhoneMutation.isError && (
-                <p className="text-sm text-[#D9534F] dark:text-red-300">Failed to send code. Try again.</p>
-              )}
-              {verifyMutation.isError && (
-                <p className="text-sm text-[#D9534F] dark:text-red-300">Invalid or expired code.</p>
-              )}
-            </div>
-          )}
-        </div>
+        
 
         {/* Danger zone – Account deletion */}
       <div className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">

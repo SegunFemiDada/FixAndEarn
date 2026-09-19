@@ -15,8 +15,6 @@ const REQUIRED_ENV_VARS = [
   "CLOUDINARY_CLOUD_NAME",
   "CLOUDINARY_API_KEY",
   "CLOUDINARY_API_SECRET",
-  "TERMII_API_KEY",
-  "TERMII_SENDER_ID",
 ] as const;
 
 function getString(
@@ -255,11 +253,6 @@ export function validateEnvironment(
   validateUrl(
     config,
     "MONNIFY_BASE_URL",
-  );
-
-  validateUrl(
-    config,
-    "TERMII_BASE_URL",
   );
 
   validateUrl(
