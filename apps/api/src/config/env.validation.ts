@@ -1,4 +1,5 @@
-export type EnvironmentConfig = Record<string, unknown>;
+export type EnvironmentConfig =
+  Record<string, unknown>;
 
 const REQUIRED_ENV_VARS = [
   "DATABASE_URL",
@@ -14,6 +15,8 @@ const REQUIRED_ENV_VARS = [
   "CLOUDINARY_CLOUD_NAME",
   "CLOUDINARY_API_KEY",
   "CLOUDINARY_API_SECRET",
+  "TERMII_API_KEY",
+  "TERMII_SENDER_ID",
 ] as const;
 
 function getString(
@@ -50,7 +53,10 @@ function validateInteger(
     max?: number;
   } = {},
 ): void {
-  const value = getString(config, name);
+  const value = getString(
+    config,
+    name,
+  );
 
   if (value === undefined) {
     return;
@@ -89,7 +95,10 @@ function validateNumber(
     max?: number;
   } = {},
 ): void {
-  const value = getString(config, name);
+  const value = getString(
+    config,
+    name,
+  );
 
   if (value === undefined) {
     return;
@@ -114,7 +123,10 @@ function validateUrl(
   config: EnvironmentConfig,
   name: string,
 ): void {
-  const value = getString(config, name);
+  const value = getString(
+    config,
+    name,
+  );
 
   if (value === undefined) {
     return;
@@ -145,7 +157,10 @@ function validateBase64Key(
   name: string,
   expectedBytes: number,
 ): void {
-  const value = getString(config, name);
+  const value = getString(
+    config,
+    name,
+  );
 
   if (value === undefined) {
     return;
@@ -154,14 +169,19 @@ function validateBase64Key(
   let decoded: Buffer;
 
   try {
-    decoded = Buffer.from(value, "base64");
+    decoded = Buffer.from(
+      value,
+      "base64",
+    );
   } catch {
     throw new Error(
       `Environment variable "${name}" must be valid base64.`,
     );
   }
 
-  if (decoded.length !== expectedBytes) {
+  if (
+    decoded.length !== expectedBytes
+  ) {
     throw new Error(
       `Environment variable "${name}" must decode to exactly ${expectedBytes} bytes.`,
     );
@@ -172,27 +192,40 @@ export function validateEnvironment(
   config: EnvironmentConfig,
 ): EnvironmentConfig {
   const nodeEnv =
-    getString(config, "NODE_ENV") ??
-    "development";
+    getString(
+      config,
+      "NODE_ENV",
+    ) ?? "development";
 
   if (
-    !["development", "test", "production"].includes(
-      nodeEnv,
-    )
+    ![
+      "development",
+      "test",
+      "production",
+    ].includes(nodeEnv)
   ) {
     throw new Error(
       'Environment variable "NODE_ENV" must be one of: development, test, production.',
     );
   }
 
-  for (const name of REQUIRED_ENV_VARS) {
-    requireString(config, name);
+  for (
+    const name of REQUIRED_ENV_VARS
+  ) {
+    requireString(
+      config,
+      name,
+    );
   }
 
-  validateInteger(config, "API_PORT", {
-    min: 1,
-    max: 65535,
-  });
+  validateInteger(
+    config,
+    "API_PORT",
+    {
+      min: 1,
+      max: 65535,
+    },
+  );
 
   validateInteger(
     config,
@@ -219,9 +252,25 @@ export function validateEnvironment(
     },
   );
 
-  validateUrl(config, "MONNIFY_BASE_URL");
-  validateUrl(config, "FRONTEND_URL");
-  validateUrl(config, "WEB_APP_URL");
+  validateUrl(
+    config,
+    "MONNIFY_BASE_URL",
+  );
+
+  validateUrl(
+    config,
+    "TERMII_BASE_URL",
+  );
+
+  validateUrl(
+    config,
+    "FRONTEND_URL",
+  );
+
+  validateUrl(
+    config,
+    "WEB_APP_URL",
+  );
 
   validateBase64Key(
     config,
