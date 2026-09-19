@@ -21,7 +21,6 @@ import { RatingsModule } from "./modules/ratings/ratings.module";
 import { ProfilesModule } from "./modules/profiles/profiles.module";
 import { SupportModule } from "./modules/support/support.module";
 import { ReportsModule } from "./modules/reports/reports.module";
-import { PhoneVerificationModule } from "./modules/phone-verification/phone-verification.module";
 import { StorageModule } from "./common/storage/storage.module";
 import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
 import { EarningsModule } from "./modules/earnings/earnings.module";
@@ -68,7 +67,6 @@ import { validateEnvironment } from "./config/env.validation";
     DisputesModule,
     ProfilesModule,
     RatingsModule,
-    PhoneVerificationModule,
     ReportsModule,
     SupportModule,
     StorageModule,
