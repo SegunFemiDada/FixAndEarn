@@ -1,5 +1,3 @@
-// Path: /apps/api/src/app.module.ts
-
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_GUARD } from "@nestjs/core";
@@ -28,9 +26,9 @@ import { StorageModule } from "./common/storage/storage.module";
 import { JobPaymentsModule } from "./modules/job-payments/job-payments.module";
 import { EarningsModule } from "./modules/earnings/earnings.module";
 import { AdminSidebarNotificationsModule } from "./admin/sidebar-notifications/admin-sidebar-notifications.module";
-
 import { RolesGuard } from "./common/auth/roles.guard";
 import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
+import { validateEnvironment } from "./config/env.validation";
 
 @Module({
   imports: [
@@ -42,6 +40,7 @@ import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
         "../../.env",
         "../../.env.local",
       ],
+      validate: validateEnvironment,
     }),
 
     ThrottlerModule.forRoot([
